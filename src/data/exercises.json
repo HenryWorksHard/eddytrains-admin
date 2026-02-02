@@ -1,0 +1,1360 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2026-02-02",
+  "intensityTypes": [
+    { "id": "percentage", "label": "% of 1RM", "unit": "%" },
+    { "id": "rir", "label": "RIR (Reps in Reserve)", "unit": "RIR" },
+    { "id": "rpe", "label": "RPE (Rate of Perceived Exertion)", "unit": "RPE" }
+  ],
+  "categories": [
+    { "id": "chest", "label": "Chest", "icon": "💪" },
+    { "id": "back", "label": "Back", "icon": "🔙" },
+    { "id": "shoulders", "label": "Shoulders", "icon": "🎯" },
+    { "id": "biceps", "label": "Biceps", "icon": "💪" },
+    { "id": "triceps", "label": "Triceps", "icon": "💪" },
+    { "id": "legs", "label": "Legs", "icon": "🦵" },
+    { "id": "glutes", "label": "Glutes", "icon": "🍑" },
+    { "id": "core", "label": "Core", "icon": "🎯" },
+    { "id": "fullbody", "label": "Full Body", "icon": "🏋️" },
+    { "id": "cardio", "label": "Cardio", "icon": "❤️" }
+  ],
+  "equipment": [
+    { "id": "barbell", "label": "Barbell" },
+    { "id": "dumbbell", "label": "Dumbbell" },
+    { "id": "cable", "label": "Cable Machine" },
+    { "id": "machine", "label": "Machine" },
+    { "id": "bodyweight", "label": "Bodyweight" },
+    { "id": "kettlebell", "label": "Kettlebell" },
+    { "id": "bands", "label": "Resistance Bands" },
+    { "id": "smith", "label": "Smith Machine" },
+    { "id": "bench", "label": "Bench" },
+    { "id": "pullupbar", "label": "Pull-up Bar" },
+    { "id": "trx", "label": "TRX/Suspension" },
+    { "id": "box", "label": "Plyo Box" },
+    { "id": "medicineball", "label": "Medicine Ball" },
+    { "id": "foam_roller", "label": "Foam Roller" }
+  ],
+  "movementPatterns": [
+    { "id": "push_horizontal", "label": "Horizontal Push" },
+    { "id": "push_vertical", "label": "Vertical Push" },
+    { "id": "pull_horizontal", "label": "Horizontal Pull" },
+    { "id": "pull_vertical", "label": "Vertical Pull" },
+    { "id": "squat", "label": "Squat Pattern" },
+    { "id": "hinge", "label": "Hip Hinge" },
+    { "id": "lunge", "label": "Lunge Pattern" },
+    { "id": "carry", "label": "Carry" },
+    { "id": "rotation", "label": "Rotation" },
+    { "id": "isolation", "label": "Isolation" }
+  ],
+  "exercises": [
+    {
+      "id": "barbell_bench_press",
+      "name": "Barbell Bench Press",
+      "category": "chest",
+      "equipment": ["barbell", "bench"],
+      "movementPattern": "push_horizontal",
+      "primaryMuscles": ["chest", "front_delts", "triceps"],
+      "secondaryMuscles": ["core"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Lie flat on bench with eyes under the bar. Feet flat on floor, shoulder blades retracted and depressed. Grip bar slightly wider than shoulder width.",
+        "execution": "Unrack bar with arms locked. Lower bar to mid-chest with elbows at 45-75 degrees. Touch chest lightly, then press up and slightly back toward rack position.",
+        "cues": ["Drive feet into floor", "Keep chest high", "Tuck elbows slightly", "Control the descent", "Squeeze chest at top"],
+        "commonMistakes": ["Bouncing bar off chest", "Flaring elbows too wide", "Lifting hips off bench", "Incomplete range of motion"],
+        "breathingPattern": "Inhale on descent, exhale on press"
+      }
+    },
+    {
+      "id": "incline_barbell_bench",
+      "name": "Incline Barbell Bench Press",
+      "category": "chest",
+      "equipment": ["barbell", "bench"],
+      "movementPattern": "push_horizontal",
+      "primaryMuscles": ["upper_chest", "front_delts", "triceps"],
+      "secondaryMuscles": ["core"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Set bench to 30-45 degree incline. Lie back with eyes under bar, feet flat on floor, shoulder blades retracted.",
+        "execution": "Unrack and lower bar to upper chest/clavicle area. Press up in slight arc back toward rack.",
+        "cues": ["Keep upper back tight", "Control the weight", "Drive through the chest"],
+        "commonMistakes": ["Bench angle too steep (becomes shoulder press)", "Bar path drifting forward", "Losing upper back tightness"],
+        "breathingPattern": "Inhale on descent, exhale on press"
+      }
+    },
+    {
+      "id": "dumbbell_bench_press",
+      "name": "Dumbbell Bench Press",
+      "category": "chest",
+      "equipment": ["dumbbell", "bench"],
+      "movementPattern": "push_horizontal",
+      "primaryMuscles": ["chest", "front_delts", "triceps"],
+      "secondaryMuscles": ["core", "stabilizers"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Sit on bench with dumbbells on thighs. Kick back while lying down, bringing dumbbells to chest level. Feet flat, back arched, shoulders retracted.",
+        "execution": "Press dumbbells up until arms are extended, bringing them together at top. Lower with control to chest level.",
+        "cues": ["Squeeze chest at top", "Keep wrists stacked over elbows", "Control the negative"],
+        "commonMistakes": ["Dumbbells drifting too far forward or back", "Not going deep enough", "Losing shoulder position"],
+        "breathingPattern": "Inhale on descent, exhale on press"
+      }
+    },
+    {
+      "id": "incline_dumbbell_press",
+      "name": "Incline Dumbbell Press",
+      "category": "chest",
+      "equipment": ["dumbbell", "bench"],
+      "movementPattern": "push_horizontal",
+      "primaryMuscles": ["upper_chest", "front_delts", "triceps"],
+      "secondaryMuscles": ["core"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Set bench to 30-45 degrees. Sit with dumbbells on thighs, kick back to starting position.",
+        "execution": "Press dumbbells up and together, lower to upper chest with control.",
+        "cues": ["Focus on upper chest squeeze", "Keep elbows at 45 degrees", "Full range of motion"],
+        "commonMistakes": ["Angle too steep", "Letting shoulders take over", "Partial reps"],
+        "breathingPattern": "Inhale on descent, exhale on press"
+      }
+    },
+    {
+      "id": "dumbbell_flyes",
+      "name": "Dumbbell Flyes",
+      "category": "chest",
+      "equipment": ["dumbbell", "bench"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["chest"],
+      "secondaryMuscles": ["front_delts"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Lie flat on bench with dumbbells extended above chest, palms facing each other, slight bend in elbows.",
+        "execution": "Lower dumbbells in wide arc until chest stretch is felt. Squeeze chest to bring dumbbells back together.",
+        "cues": ["Maintain elbow bend throughout", "Feel the stretch", "Squeeze at top like hugging a tree"],
+        "commonMistakes": ["Straightening arms (becomes press)", "Going too heavy", "Not feeling chest stretch"],
+        "breathingPattern": "Inhale on descent, exhale on squeeze"
+      }
+    },
+    {
+      "id": "cable_crossover",
+      "name": "Cable Crossover",
+      "category": "chest",
+      "equipment": ["cable"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["chest"],
+      "secondaryMuscles": ["front_delts"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Set cables to high position. Stand in center with staggered stance, slight forward lean. Grab handles with arms extended wide.",
+        "execution": "Bring hands together in front of body in hugging motion. Squeeze chest, then control back to start.",
+        "cues": ["Lead with pinkies", "Cross hands at bottom for peak contraction", "Stay stable through core"],
+        "commonMistakes": ["Using too much momentum", "Standing too upright", "Not squeezing at contraction"],
+        "breathingPattern": "Exhale as you bring cables together"
+      }
+    },
+    {
+      "id": "push_ups",
+      "name": "Push-Ups",
+      "category": "chest",
+      "equipment": ["bodyweight"],
+      "movementPattern": "push_horizontal",
+      "primaryMuscles": ["chest", "triceps", "front_delts"],
+      "secondaryMuscles": ["core"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Hands slightly wider than shoulder width, body in straight line from head to heels, core braced.",
+        "execution": "Lower chest to floor by bending elbows to 45 degrees. Push back up to full extension.",
+        "cues": ["Body stays rigid like a plank", "Chest touches floor", "Full lockout at top"],
+        "commonMistakes": ["Sagging hips", "Flaring elbows", "Partial range of motion", "Leading with head"],
+        "breathingPattern": "Inhale on descent, exhale on push"
+      }
+    },
+    {
+      "id": "chest_dips",
+      "name": "Chest Dips",
+      "category": "chest",
+      "equipment": ["bodyweight"],
+      "movementPattern": "push_vertical",
+      "primaryMuscles": ["chest", "triceps", "front_delts"],
+      "secondaryMuscles": ["core"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Grip parallel bars, jump up to locked arm position. Lean torso forward 15-30 degrees.",
+        "execution": "Lower body by bending elbows until deep stretch in chest. Push back up to full lockout.",
+        "cues": ["Lean forward for chest emphasis", "Elbows flare out slightly", "Go deep for full stretch"],
+        "commonMistakes": ["Staying too upright (tricep focus)", "Not going deep enough", "Swinging"],
+        "breathingPattern": "Inhale on descent, exhale on push"
+      }
+    },
+    {
+      "id": "machine_chest_press",
+      "name": "Machine Chest Press",
+      "category": "chest",
+      "equipment": ["machine"],
+      "movementPattern": "push_horizontal",
+      "primaryMuscles": ["chest", "triceps", "front_delts"],
+      "secondaryMuscles": [],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Adjust seat so handles are at mid-chest level. Sit with back flat against pad, feet on floor.",
+        "execution": "Press handles forward until arms are extended. Control back to start position.",
+        "cues": ["Keep back against pad", "Don't lock elbows aggressively", "Squeeze chest on contraction"],
+        "commonMistakes": ["Seat too high or low", "Coming forward off the pad", "Rushing reps"],
+        "breathingPattern": "Exhale on press, inhale on return"
+      }
+    },
+    {
+      "id": "pec_deck",
+      "name": "Pec Deck / Machine Fly",
+      "category": "chest",
+      "equipment": ["machine"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["chest"],
+      "secondaryMuscles": ["front_delts"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Adjust seat so handles/pads are at chest level. Sit with back flat, grab handles or place forearms on pads.",
+        "execution": "Bring arms together in front of chest, squeezing at peak. Control back to stretch position.",
+        "cues": ["Feel the stretch at start", "Squeeze hard at contraction", "Keep shoulders down"],
+        "commonMistakes": ["Going too heavy", "Losing shoulder position", "Partial range of motion"],
+        "breathingPattern": "Exhale on squeeze, inhale on stretch"
+      }
+    },
+    {
+      "id": "barbell_row",
+      "name": "Barbell Bent-Over Row",
+      "category": "back",
+      "equipment": ["barbell"],
+      "movementPattern": "pull_horizontal",
+      "primaryMuscles": ["lats", "rhomboids", "rear_delts"],
+      "secondaryMuscles": ["biceps", "lower_back", "core"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Stand with feet hip-width, hinge at hips until torso is 45-60 degrees. Grip bar just outside knees, arms hanging straight.",
+        "execution": "Pull bar to lower chest/upper abdomen, driving elbows back. Lower with control.",
+        "cues": ["Lead with elbows", "Squeeze shoulder blades together", "Keep back flat", "Don't use momentum"],
+        "commonMistakes": ["Rounding lower back", "Standing too upright", "Using body momentum", "Pulling to wrong position"],
+        "breathingPattern": "Exhale on pull, inhale on lower"
+      }
+    },
+    {
+      "id": "dumbbell_row",
+      "name": "Single-Arm Dumbbell Row",
+      "category": "back",
+      "equipment": ["dumbbell", "bench"],
+      "movementPattern": "pull_horizontal",
+      "primaryMuscles": ["lats", "rhomboids", "rear_delts"],
+      "secondaryMuscles": ["biceps", "core"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Place one knee and hand on bench, other foot on floor. Hold dumbbell in free hand, arm hanging straight, back flat.",
+        "execution": "Pull dumbbell to hip, driving elbow toward ceiling. Lower with control.",
+        "cues": ["Row to hip, not chest", "Drive elbow up and back", "Squeeze lat at top", "Keep hips square"],
+        "commonMistakes": ["Rotating torso", "Pulling too high", "Rounding back", "Using momentum"],
+        "breathingPattern": "Exhale on pull, inhale on lower"
+      }
+    },
+    {
+      "id": "pull_ups",
+      "name": "Pull-Ups",
+      "category": "back",
+      "equipment": ["pullupbar"],
+      "movementPattern": "pull_vertical",
+      "primaryMuscles": ["lats", "biceps"],
+      "secondaryMuscles": ["rear_delts", "rhomboids", "core"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Hang from bar with overhand grip slightly wider than shoulders. Arms fully extended, shoulders engaged.",
+        "execution": "Pull body up until chin clears bar, driving elbows down and back. Lower with control to full hang.",
+        "cues": ["Initiate with lat engagement", "Drive elbows to hips", "Chest to bar", "Full range of motion"],
+        "commonMistakes": ["Kipping/swinging", "Partial reps", "Not engaging lats first", "Neck craning"],
+        "breathingPattern": "Exhale on pull, inhale on lower"
+      }
+    },
+    {
+      "id": "chin_ups",
+      "name": "Chin-Ups",
+      "category": "back",
+      "equipment": ["pullupbar"],
+      "movementPattern": "pull_vertical",
+      "primaryMuscles": ["lats", "biceps"],
+      "secondaryMuscles": ["rear_delts", "core"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Hang from bar with underhand (supinated) grip, hands shoulder-width apart.",
+        "execution": "Pull body up until chin clears bar. Lower with control.",
+        "cues": ["More bicep involvement than pull-ups", "Drive elbows down", "Control the negative"],
+        "commonMistakes": ["Swinging", "Partial reps", "Rushing the negative"],
+        "breathingPattern": "Exhale on pull, inhale on lower"
+      }
+    },
+    {
+      "id": "lat_pulldown",
+      "name": "Lat Pulldown",
+      "category": "back",
+      "equipment": ["cable"],
+      "movementPattern": "pull_vertical",
+      "primaryMuscles": ["lats"],
+      "secondaryMuscles": ["biceps", "rear_delts", "rhomboids"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Sit at lat pulldown machine, thighs secured under pads. Grip bar wider than shoulders with overhand grip.",
+        "execution": "Pull bar to upper chest, driving elbows down and back. Control bar back to full extension.",
+        "cues": ["Lead with elbows", "Chest up and proud", "Squeeze lats at bottom", "Don't lean back excessively"],
+        "commonMistakes": ["Leaning too far back", "Pulling behind neck", "Using momentum", "Grip too narrow or wide"],
+        "breathingPattern": "Exhale on pull, inhale on release"
+      }
+    },
+    {
+      "id": "seated_cable_row",
+      "name": "Seated Cable Row",
+      "category": "back",
+      "equipment": ["cable"],
+      "movementPattern": "pull_horizontal",
+      "primaryMuscles": ["lats", "rhomboids", "rear_delts"],
+      "secondaryMuscles": ["biceps", "lower_back"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Sit at cable row station, feet on platform, knees slightly bent. Grab handle with arms extended, back straight.",
+        "execution": "Pull handle to lower chest/upper abdomen, squeezing shoulder blades. Extend arms with control.",
+        "cues": ["Stay upright, minimal torso movement", "Squeeze at contraction", "Control the stretch"],
+        "commonMistakes": ["Excessive torso swing", "Rounding back at stretch", "Pulling too high or low"],
+        "breathingPattern": "Exhale on pull, inhale on extend"
+      }
+    },
+    {
+      "id": "deadlift",
+      "name": "Conventional Deadlift",
+      "category": "back",
+      "equipment": ["barbell"],
+      "movementPattern": "hinge",
+      "primaryMuscles": ["hamstrings", "glutes", "lower_back", "lats"],
+      "secondaryMuscles": ["quads", "traps", "forearms", "core"],
+      "difficulty": "advanced",
+      "tutorial": {
+        "setup": "Stand with feet hip-width, bar over mid-foot. Hinge and grip bar just outside legs. Chest up, back flat, hips back.",
+        "execution": "Drive through floor, extending hips and knees together. Stand tall at top, then reverse the movement.",
+        "cues": ["Push the floor away", "Bar stays close to body", "Hips and shoulders rise together", "Lock out with glutes"],
+        "commonMistakes": ["Rounding lower back", "Bar drifting forward", "Hips shooting up first", "Hyperextending at top"],
+        "breathingPattern": "Big breath and brace before lift, exhale at top"
+      }
+    },
+    {
+      "id": "romanian_deadlift",
+      "name": "Romanian Deadlift (RDL)",
+      "category": "back",
+      "equipment": ["barbell"],
+      "movementPattern": "hinge",
+      "primaryMuscles": ["hamstrings", "glutes", "lower_back"],
+      "secondaryMuscles": ["lats", "core"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Stand holding barbell at hip height, feet hip-width, slight knee bend. Shoulders back, chest up.",
+        "execution": "Hinge at hips, pushing them back while lowering bar along legs. Go until hamstring stretch, then drive hips forward to stand.",
+        "cues": ["Hips go BACK, not down", "Bar stays on legs", "Feel hamstring stretch", "Squeeze glutes at top"],
+        "commonMistakes": ["Bending knees too much (becomes squat)", "Rounding lower back", "Bar drifting away from body"],
+        "breathingPattern": "Inhale on descent, exhale on drive up"
+      }
+    },
+    {
+      "id": "tbar_row",
+      "name": "T-Bar Row",
+      "category": "back",
+      "equipment": ["barbell"],
+      "movementPattern": "pull_horizontal",
+      "primaryMuscles": ["lats", "rhomboids", "rear_delts"],
+      "secondaryMuscles": ["biceps", "lower_back"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Straddle T-bar or landmine setup. Hinge at hips, grip handles, back flat, chest up.",
+        "execution": "Pull weight to chest, driving elbows back. Lower with control.",
+        "cues": ["Drive elbows past torso", "Squeeze back at top", "Maintain hip hinge position"],
+        "commonMistakes": ["Standing too upright", "Using momentum", "Rounding back"],
+        "breathingPattern": "Exhale on pull, inhale on lower"
+      }
+    },
+    {
+      "id": "face_pulls",
+      "name": "Face Pulls",
+      "category": "back",
+      "equipment": ["cable"],
+      "movementPattern": "pull_horizontal",
+      "primaryMuscles": ["rear_delts", "rhomboids", "rotator_cuff"],
+      "secondaryMuscles": ["traps"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Set cable to face height with rope attachment. Grip rope with overhand grip, step back for tension.",
+        "execution": "Pull rope to face, separating hands and externally rotating shoulders. Squeeze rear delts, return with control.",
+        "cues": ["Pull to ears, not chin", "Separate the rope at end", "Externally rotate at peak", "Keep elbows high"],
+        "commonMistakes": ["Pulling too low", "Not separating rope", "Using momentum", "Elbows dropping"],
+        "breathingPattern": "Exhale on pull, inhale on return"
+      }
+    },
+    {
+      "id": "overhead_press",
+      "name": "Overhead Press (OHP)",
+      "category": "shoulders",
+      "equipment": ["barbell"],
+      "movementPattern": "push_vertical",
+      "primaryMuscles": ["front_delts", "medial_delts", "triceps"],
+      "secondaryMuscles": ["upper_chest", "traps", "core"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Stand with feet hip-width, bar racked on front delts. Grip just outside shoulders, elbows slightly in front of bar.",
+        "execution": "Press bar straight up, moving head back then forward as bar passes. Lock out overhead, bar over mid-foot.",
+        "cues": ["Squeeze glutes for stability", "Bar path is straight line", "Head through at top", "Full lockout"],
+        "commonMistakes": ["Pressing bar forward", "Excessive back arch", "Not locking out", "Flared elbows"],
+        "breathingPattern": "Big breath and brace, press and exhale at top"
+      }
+    },
+    {
+      "id": "dumbbell_shoulder_press",
+      "name": "Dumbbell Shoulder Press",
+      "category": "shoulders",
+      "equipment": ["dumbbell"],
+      "movementPattern": "push_vertical",
+      "primaryMuscles": ["front_delts", "medial_delts", "triceps"],
+      "secondaryMuscles": ["upper_chest", "traps"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Sit on bench with back support or stand with feet hip-width. Hold dumbbells at shoulder height, palms forward.",
+        "execution": "Press dumbbells overhead until arms are extended. Lower with control to shoulder height.",
+        "cues": ["Press up and slightly together", "Don't bang dumbbells at top", "Control the descent"],
+        "commonMistakes": ["Excessive back arch", "Partial range of motion", "Elbows flaring too wide"],
+        "breathingPattern": "Exhale on press, inhale on lower"
+      }
+    },
+    {
+      "id": "lateral_raises",
+      "name": "Lateral Raises",
+      "category": "shoulders",
+      "equipment": ["dumbbell"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["medial_delts"],
+      "secondaryMuscles": ["traps"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Stand with dumbbells at sides, slight bend in elbows, palms facing body.",
+        "execution": "Raise arms out to sides until parallel with floor. Lower with control.",
+        "cues": ["Lead with elbows, not hands", "Slight forward lean helps", "Pour water at top (pinky up)", "Control the negative"],
+        "commonMistakes": ["Going too heavy", "Using momentum", "Raising too high (trap takeover)", "Straight arms"],
+        "breathingPattern": "Exhale on raise, inhale on lower"
+      }
+    },
+    {
+      "id": "front_raises",
+      "name": "Front Raises",
+      "category": "shoulders",
+      "equipment": ["dumbbell"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["front_delts"],
+      "secondaryMuscles": ["upper_chest"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Stand with dumbbells in front of thighs, palms facing body, slight elbow bend.",
+        "execution": "Raise one or both dumbbells to shoulder height in front. Lower with control.",
+        "cues": ["Stop at shoulder height", "Don't swing", "Control throughout"],
+        "commonMistakes": ["Raising too high", "Using momentum", "Going too heavy"],
+        "breathingPattern": "Exhale on raise, inhale on lower"
+      }
+    },
+    {
+      "id": "rear_delt_flyes",
+      "name": "Rear Delt Flyes",
+      "category": "shoulders",
+      "equipment": ["dumbbell"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["rear_delts"],
+      "secondaryMuscles": ["rhomboids", "traps"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Hinge at hips with dumbbells hanging below chest, slight elbow bend, palms facing each other.",
+        "execution": "Raise arms out to sides, squeezing rear delts. Lower with control.",
+        "cues": ["Lead with elbows", "Squeeze at top", "Keep torso stable", "Don't use momentum"],
+        "commonMistakes": ["Using too much weight", "Standing too upright", "Moving torso"],
+        "breathingPattern": "Exhale on raise, inhale on lower"
+      }
+    },
+    {
+      "id": "cable_lateral_raise",
+      "name": "Cable Lateral Raise",
+      "category": "shoulders",
+      "equipment": ["cable"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["medial_delts"],
+      "secondaryMuscles": ["traps"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Stand sideways to low cable, grip handle with far hand across body.",
+        "execution": "Raise arm out to side until parallel. Lower with control.",
+        "cues": ["Constant tension throughout", "Lead with elbow", "Control the negative"],
+        "commonMistakes": ["Going too heavy", "Using body momentum", "Incomplete range"],
+        "breathingPattern": "Exhale on raise, inhale on lower"
+      }
+    },
+    {
+      "id": "arnold_press",
+      "name": "Arnold Press",
+      "category": "shoulders",
+      "equipment": ["dumbbell"],
+      "movementPattern": "push_vertical",
+      "primaryMuscles": ["front_delts", "medial_delts", "triceps"],
+      "secondaryMuscles": ["upper_chest"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Sit or stand with dumbbells at shoulder height, palms facing you (like top of a curl).",
+        "execution": "Press up while rotating palms to face forward at top. Reverse on the way down.",
+        "cues": ["Smooth rotation throughout press", "Full overhead lockout", "Control the twist down"],
+        "commonMistakes": ["Rotating too early or late", "Partial range of motion", "Going too heavy"],
+        "breathingPattern": "Exhale on press, inhale on lower"
+      }
+    },
+    {
+      "id": "upright_row",
+      "name": "Upright Row",
+      "category": "shoulders",
+      "equipment": ["barbell"],
+      "movementPattern": "pull_vertical",
+      "primaryMuscles": ["medial_delts", "traps"],
+      "secondaryMuscles": ["biceps", "front_delts"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Stand holding bar with shoulder-width or slightly narrower grip, arms extended.",
+        "execution": "Pull bar up along body to chin level, elbows leading. Lower with control.",
+        "cues": ["Lead with elbows", "Keep bar close to body", "Elbows higher than hands at top"],
+        "commonMistakes": ["Grip too narrow (shoulder impingement)", "Going too heavy", "Using momentum"],
+        "breathingPattern": "Exhale on pull, inhale on lower"
+      }
+    },
+    {
+      "id": "shrugs",
+      "name": "Barbell/Dumbbell Shrugs",
+      "category": "shoulders",
+      "equipment": ["barbell", "dumbbell"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["traps"],
+      "secondaryMuscles": [],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Stand holding weight at sides (dumbbells) or in front (barbell), arms straight.",
+        "execution": "Shrug shoulders straight up toward ears. Hold briefly, lower with control.",
+        "cues": ["Straight up, not rolling", "Hold at top", "Don't bend arms"],
+        "commonMistakes": ["Rolling shoulders", "Bending elbows", "Not pausing at top"],
+        "breathingPattern": "Exhale on shrug, inhale on lower"
+      }
+    },
+    {
+      "id": "barbell_curl",
+      "name": "Barbell Curl",
+      "category": "biceps",
+      "equipment": ["barbell"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["biceps"],
+      "secondaryMuscles": ["forearms"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Stand with feet hip-width, hold barbell with underhand grip at shoulder width, arms extended.",
+        "execution": "Curl bar up toward shoulders, keeping elbows stationary at sides. Lower with control.",
+        "cues": ["Pin elbows to sides", "Squeeze at top", "Control the negative", "Don't swing"],
+        "commonMistakes": ["Swinging body", "Elbows drifting forward", "Using momentum", "Partial reps"],
+        "breathingPattern": "Exhale on curl, inhale on lower"
+      }
+    },
+    {
+      "id": "dumbbell_curl",
+      "name": "Dumbbell Curl",
+      "category": "biceps",
+      "equipment": ["dumbbell"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["biceps"],
+      "secondaryMuscles": ["forearms"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Stand or sit with dumbbells at sides, palms facing forward.",
+        "execution": "Curl dumbbells up toward shoulders, keeping elbows stationary. Can alternate or do both together.",
+        "cues": ["Supinate (turn pinky up) at top for extra squeeze", "Control the weight", "No swinging"],
+        "commonMistakes": ["Using momentum", "Elbows moving", "Rushing reps"],
+        "breathingPattern": "Exhale on curl, inhale on lower"
+      }
+    },
+    {
+      "id": "hammer_curl",
+      "name": "Hammer Curl",
+      "category": "biceps",
+      "equipment": ["dumbbell"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["biceps", "brachialis"],
+      "secondaryMuscles": ["forearms"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Stand with dumbbells at sides, palms facing each other (neutral grip).",
+        "execution": "Curl dumbbells up keeping neutral grip throughout. Lower with control.",
+        "cues": ["Targets brachialis and forearms more", "Keep wrists neutral", "Elbows pinned"],
+        "commonMistakes": ["Rotating wrists", "Swinging", "Elbows drifting"],
+        "breathingPattern": "Exhale on curl, inhale on lower"
+      }
+    },
+    {
+      "id": "preacher_curl",
+      "name": "Preacher Curl",
+      "category": "biceps",
+      "equipment": ["barbell", "dumbbell"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["biceps"],
+      "secondaryMuscles": [],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Sit at preacher bench with armpits at top of pad. Hold weight with arms extended on pad.",
+        "execution": "Curl weight up, keeping arms on pad throughout. Lower with control.",
+        "cues": ["Eliminates momentum", "Don't lift elbows off pad", "Full stretch at bottom"],
+        "commonMistakes": ["Lifting off the pad", "Not going to full extension", "Going too heavy"],
+        "breathingPattern": "Exhale on curl, inhale on lower"
+      }
+    },
+    {
+      "id": "concentration_curl",
+      "name": "Concentration Curl",
+      "category": "biceps",
+      "equipment": ["dumbbell"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["biceps"],
+      "secondaryMuscles": [],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Sit on bench, spread legs, brace elbow against inner thigh. Hold dumbbell with arm extended.",
+        "execution": "Curl dumbbell up toward shoulder, squeezing at top. Lower with control.",
+        "cues": ["Maximum isolation", "Squeeze hard at top", "No body movement"],
+        "commonMistakes": ["Moving elbow off thigh", "Using momentum", "Partial reps"],
+        "breathingPattern": "Exhale on curl, inhale on lower"
+      }
+    },
+    {
+      "id": "cable_curl",
+      "name": "Cable Curl",
+      "category": "biceps",
+      "equipment": ["cable"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["biceps"],
+      "secondaryMuscles": ["forearms"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Stand facing low cable with straight bar or EZ bar attachment. Arms extended, grip underhand.",
+        "execution": "Curl handle up toward shoulders, elbows stationary. Lower with control.",
+        "cues": ["Constant tension throughout", "Squeeze at top", "Control the negative"],
+        "commonMistakes": ["Leaning back", "Elbows moving", "Using momentum"],
+        "breathingPattern": "Exhale on curl, inhale on lower"
+      }
+    },
+    {
+      "id": "incline_dumbbell_curl",
+      "name": "Incline Dumbbell Curl",
+      "category": "biceps",
+      "equipment": ["dumbbell", "bench"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["biceps"],
+      "secondaryMuscles": ["forearms"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Set bench to 45-60 degree incline. Sit back with dumbbells hanging at sides, arms perpendicular to floor.",
+        "execution": "Curl dumbbells up toward shoulders. Lower with control to full stretch.",
+        "cues": ["Great stretch at bottom", "Don't swing", "Elbows stay back"],
+        "commonMistakes": ["Bringing elbows forward", "Not using full range", "Using momentum"],
+        "breathingPattern": "Exhale on curl, inhale on lower"
+      }
+    },
+    {
+      "id": "tricep_pushdown",
+      "name": "Tricep Pushdown",
+      "category": "triceps",
+      "equipment": ["cable"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["triceps"],
+      "secondaryMuscles": [],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Stand at high cable with straight bar, V-bar, or rope. Grip with arms bent, elbows at sides.",
+        "execution": "Push handle down until arms are fully extended. Return with control, keeping elbows pinned.",
+        "cues": ["Elbows stay at sides", "Full lockout", "Control the return", "Squeeze at bottom"],
+        "commonMistakes": ["Elbows flaring or moving", "Leaning over the weight", "Partial reps"],
+        "breathingPattern": "Exhale on push, inhale on return"
+      }
+    },
+    {
+      "id": "skull_crushers",
+      "name": "Skull Crushers (Lying Tricep Extension)",
+      "category": "triceps",
+      "equipment": ["barbell", "dumbbell"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["triceps"],
+      "secondaryMuscles": [],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Lie on bench holding weight with arms extended over chest. Can use EZ bar, straight bar, or dumbbells.",
+        "execution": "Bend elbows to lower weight toward forehead/behind head, keeping upper arms still. Extend back up.",
+        "cues": ["Upper arms stay vertical", "Control the descent", "Full extension at top"],
+        "commonMistakes": ["Elbows flaring out", "Moving upper arms", "Going too heavy"],
+        "breathingPattern": "Inhale on lower, exhale on extend"
+      }
+    },
+    {
+      "id": "close_grip_bench",
+      "name": "Close-Grip Bench Press",
+      "category": "triceps",
+      "equipment": ["barbell", "bench"],
+      "movementPattern": "push_horizontal",
+      "primaryMuscles": ["triceps", "chest"],
+      "secondaryMuscles": ["front_delts"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Lie on bench, grip bar with hands 12-16 inches apart. Unrack with arms locked.",
+        "execution": "Lower bar to lower chest, keeping elbows tucked at sides. Press back up.",
+        "cues": ["Elbows stay close to body", "Bar goes to lower chest", "Tricep focus throughout"],
+        "commonMistakes": ["Grip too narrow (wrist strain)", "Elbows flaring out", "Bar too high on chest"],
+        "breathingPattern": "Inhale on lower, exhale on press"
+      }
+    },
+    {
+      "id": "overhead_tricep_extension",
+      "name": "Overhead Tricep Extension",
+      "category": "triceps",
+      "equipment": ["dumbbell", "cable"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["triceps"],
+      "secondaryMuscles": [],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Stand or sit holding dumbbell or cable overhead with both hands, arms extended.",
+        "execution": "Lower weight behind head by bending elbows. Extend arms back up overhead.",
+        "cues": ["Keep elbows close to head", "Full stretch at bottom", "Squeeze at top"],
+        "commonMistakes": ["Elbows flaring out", "Moving shoulders", "Partial reps"],
+        "breathingPattern": "Inhale on lower, exhale on extend"
+      }
+    },
+    {
+      "id": "tricep_dips",
+      "name": "Tricep Dips (Bench Dips)",
+      "category": "triceps",
+      "equipment": ["bench"],
+      "movementPattern": "push_vertical",
+      "primaryMuscles": ["triceps"],
+      "secondaryMuscles": ["front_delts", "chest"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Place hands on bench behind you, fingers forward. Legs extended or bent, heels on floor.",
+        "execution": "Lower body by bending elbows until 90 degrees. Push back up to full extension.",
+        "cues": ["Stay close to bench", "Elbows go straight back", "Don't shrug shoulders"],
+        "commonMistakes": ["Going too deep (shoulder stress)", "Elbows flaring out", "Shoulders shrugging"],
+        "breathingPattern": "Inhale on lower, exhale on push"
+      }
+    },
+    {
+      "id": "tricep_kickback",
+      "name": "Tricep Kickback",
+      "category": "triceps",
+      "equipment": ["dumbbell"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["triceps"],
+      "secondaryMuscles": [],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Hinge at hips with one hand on bench or knee for support. Hold dumbbell with arm bent 90 degrees, upper arm parallel to floor.",
+        "execution": "Extend arm straight back until fully locked out. Return to 90 degrees with control.",
+        "cues": ["Upper arm stays still", "Full lockout", "Squeeze at extension", "Control throughout"],
+        "commonMistakes": ["Dropping upper arm", "Swinging weight", "Partial range of motion"],
+        "breathingPattern": "Exhale on extend, inhale on return"
+      }
+    },
+    {
+      "id": "back_squat",
+      "name": "Back Squat",
+      "category": "legs",
+      "equipment": ["barbell"],
+      "movementPattern": "squat",
+      "primaryMuscles": ["quads", "glutes"],
+      "secondaryMuscles": ["hamstrings", "core", "lower_back"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Bar on upper back (high bar) or rear delts (low bar). Feet shoulder-width or wider, toes slightly out. Unrack and step back.",
+        "execution": "Break at hips and knees simultaneously. Descend until hip crease is below knee (parallel+). Drive up through whole foot.",
+        "cues": ["Chest up, brace core", "Knees track over toes", "Drive out of the hole", "Squeeze glutes at top"],
+        "commonMistakes": ["Knees caving in", "Forward lean", "Not hitting depth", "Rising on toes"],
+        "breathingPattern": "Big breath and brace at top, hold through rep, exhale at top"
+      }
+    },
+    {
+      "id": "front_squat",
+      "name": "Front Squat",
+      "category": "legs",
+      "equipment": ["barbell"],
+      "movementPattern": "squat",
+      "primaryMuscles": ["quads", "glutes"],
+      "secondaryMuscles": ["core", "upper_back"],
+      "difficulty": "advanced",
+      "tutorial": {
+        "setup": "Bar rests on front delts in clean grip or cross-arm grip. Elbows high, chest up. Feet shoulder-width, toes slightly out.",
+        "execution": "Descend with upright torso to below parallel. Drive up keeping elbows high.",
+        "cues": ["Elbows UP", "Very upright torso", "More quad dominant", "Core tight"],
+        "commonMistakes": ["Elbows dropping", "Bar rolling forward", "Forward lean", "Not hitting depth"],
+        "breathingPattern": "Big breath at top, brace, exhale at top"
+      }
+    },
+    {
+      "id": "goblet_squat",
+      "name": "Goblet Squat",
+      "category": "legs",
+      "equipment": ["dumbbell", "kettlebell"],
+      "movementPattern": "squat",
+      "primaryMuscles": ["quads", "glutes"],
+      "secondaryMuscles": ["core"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Hold dumbbell or kettlebell at chest, cupped in both hands. Feet shoulder-width or wider, toes out.",
+        "execution": "Squat down between legs, elbows tracking inside knees. Descend to depth, drive up.",
+        "cues": ["Great for learning squat pattern", "Elbows push knees out", "Stay upright", "Full depth"],
+        "commonMistakes": ["Weight pulling you forward", "Not going deep enough", "Knees caving"],
+        "breathingPattern": "Inhale on descent, exhale on drive"
+      }
+    },
+    {
+      "id": "leg_press",
+      "name": "Leg Press",
+      "category": "legs",
+      "equipment": ["machine"],
+      "movementPattern": "squat",
+      "primaryMuscles": ["quads", "glutes"],
+      "secondaryMuscles": ["hamstrings"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Sit in leg press with back flat against pad. Feet shoulder-width on platform, toes slightly out.",
+        "execution": "Lower weight by bending knees until 90 degrees. Press through whole foot to extend.",
+        "cues": ["Back stays flat on pad", "Knees don't lock aggressively", "Control the negative", "Don't go too deep (lower back rounding)"],
+        "commonMistakes": ["Lower back coming off pad", "Knees caving in", "Bouncing at bottom", "Locking out knees hard"],
+        "breathingPattern": "Inhale on lower, exhale on press"
+      }
+    },
+    {
+      "id": "leg_extension",
+      "name": "Leg Extension",
+      "category": "legs",
+      "equipment": ["machine"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["quads"],
+      "secondaryMuscles": [],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Sit in machine with back against pad, ankles behind roller pad. Adjust so knee is in line with pivot point.",
+        "execution": "Extend legs until straight, squeeze quads at top. Lower with control.",
+        "cues": ["Squeeze hard at full extension", "Control the negative", "Don't use momentum"],
+        "commonMistakes": ["Swinging weight", "Not full extension", "Lifting off seat"],
+        "breathingPattern": "Exhale on extend, inhale on lower"
+      }
+    },
+    {
+      "id": "leg_curl",
+      "name": "Leg Curl (Lying/Seated)",
+      "category": "legs",
+      "equipment": ["machine"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["hamstrings"],
+      "secondaryMuscles": [],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Lie face down (lying) or sit (seated) with ankles under/above pad. Knee in line with pivot point.",
+        "execution": "Curl heels toward glutes. Squeeze hamstrings at contraction. Lower with control.",
+        "cues": ["Full contraction", "Don't lift hips (lying)", "Control throughout"],
+        "commonMistakes": ["Lifting hips off pad", "Partial range", "Using momentum"],
+        "breathingPattern": "Exhale on curl, inhale on lower"
+      }
+    },
+    {
+      "id": "walking_lunges",
+      "name": "Walking Lunges",
+      "category": "legs",
+      "equipment": ["bodyweight", "dumbbell", "barbell"],
+      "movementPattern": "lunge",
+      "primaryMuscles": ["quads", "glutes"],
+      "secondaryMuscles": ["hamstrings", "core"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Stand with feet together, weights at sides or bar on back. Core braced.",
+        "execution": "Step forward into lunge, lowering until both knees at 90 degrees. Drive through front heel to step forward into next lunge.",
+        "cues": ["Front knee over ankle", "Back knee kisses floor", "Upright torso", "Drive through heel"],
+        "commonMistakes": ["Front knee past toes", "Leaning forward", "Narrow steps", "Not going deep enough"],
+        "breathingPattern": "Inhale on step, exhale on drive"
+      }
+    },
+    {
+      "id": "bulgarian_split_squat",
+      "name": "Bulgarian Split Squat",
+      "category": "legs",
+      "equipment": ["dumbbell", "bench"],
+      "movementPattern": "lunge",
+      "primaryMuscles": ["quads", "glutes"],
+      "secondaryMuscles": ["hamstrings", "core"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Stand 2-3 feet in front of bench. Place rear foot on bench, laces down. Front foot flat on floor.",
+        "execution": "Lower by bending front knee until back knee nearly touches floor. Drive up through front foot.",
+        "cues": ["Torso upright", "Front knee tracks over toes", "Most weight on front leg", "Control throughout"],
+        "commonMistakes": ["Standing too close to bench", "Leaning forward", "Front knee caving"],
+        "breathingPattern": "Inhale on lower, exhale on drive"
+      }
+    },
+    {
+      "id": "step_ups",
+      "name": "Step-Ups",
+      "category": "legs",
+      "equipment": ["box", "dumbbell"],
+      "movementPattern": "lunge",
+      "primaryMuscles": ["quads", "glutes"],
+      "secondaryMuscles": ["hamstrings"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Stand facing box or bench at knee height or below. Hold dumbbells at sides.",
+        "execution": "Place one foot on box, drive through that leg to stand up. Step down with control.",
+        "cues": ["Drive through the heel on box", "Don't push off back foot", "Control the descent"],
+        "commonMistakes": ["Using back leg to push", "Leaning forward", "Dropping down too fast"],
+        "breathingPattern": "Exhale on step up, inhale on step down"
+      }
+    },
+    {
+      "id": "calf_raises",
+      "name": "Calf Raises",
+      "category": "legs",
+      "equipment": ["machine", "dumbbell", "bodyweight"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["calves"],
+      "secondaryMuscles": [],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Stand on edge of step or calf raise machine, heels hanging off. Can hold weight or use machine resistance.",
+        "execution": "Lower heels for full stretch, then raise up onto balls of feet as high as possible.",
+        "cues": ["Full stretch at bottom", "Pause at top", "Control both directions", "Don't bounce"],
+        "commonMistakes": ["Bouncing", "Partial range of motion", "Going too fast"],
+        "breathingPattern": "Exhale on raise, inhale on lower"
+      }
+    },
+    {
+      "id": "hip_thrust",
+      "name": "Hip Thrust",
+      "category": "glutes",
+      "equipment": ["barbell", "bench"],
+      "movementPattern": "hinge",
+      "primaryMuscles": ["glutes"],
+      "secondaryMuscles": ["hamstrings", "core"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Sit with upper back against bench, barbell over hips (use pad). Feet flat on floor, shoulder-width apart.",
+        "execution": "Drive through heels, extending hips until torso is parallel to floor. Squeeze glutes hard at top. Lower with control.",
+        "cues": ["Chin tucked (look at knees at top)", "Squeeze glutes, not hyperextend back", "Feet positioned so shins are vertical at top"],
+        "commonMistakes": ["Hyperextending lower back", "Pushing through toes", "Not full hip extension"],
+        "breathingPattern": "Exhale on thrust, inhale on lower"
+      }
+    },
+    {
+      "id": "glute_bridge",
+      "name": "Glute Bridge",
+      "category": "glutes",
+      "equipment": ["bodyweight", "dumbbell", "barbell"],
+      "movementPattern": "hinge",
+      "primaryMuscles": ["glutes"],
+      "secondaryMuscles": ["hamstrings"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Lie on back with knees bent, feet flat on floor hip-width apart. Weight on hips if using.",
+        "execution": "Drive through heels, lifting hips until body forms straight line from knees to shoulders. Squeeze glutes, lower with control.",
+        "cues": ["Don't arch lower back", "Squeeze at top", "Feet not too far forward or back"],
+        "commonMistakes": ["Overarching lower back", "Not squeezing glutes", "Feet too close or far"],
+        "breathingPattern": "Exhale on lift, inhale on lower"
+      }
+    },
+    {
+      "id": "cable_pull_through",
+      "name": "Cable Pull-Through",
+      "category": "glutes",
+      "equipment": ["cable"],
+      "movementPattern": "hinge",
+      "primaryMuscles": ["glutes", "hamstrings"],
+      "secondaryMuscles": ["lower_back"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Stand facing away from low cable, rope between legs. Walk forward for tension, hinge at hips.",
+        "execution": "Drive hips forward to standing, squeezing glutes. Hinge back with control.",
+        "cues": ["Hip hinge, not squat", "Squeeze glutes at top", "Arms are just hooks"],
+        "commonMistakes": ["Squatting instead of hinging", "Rounding back", "Using arms to pull"],
+        "breathingPattern": "Exhale on stand, inhale on hinge"
+      }
+    },
+    {
+      "id": "sumo_deadlift",
+      "name": "Sumo Deadlift",
+      "category": "glutes",
+      "equipment": ["barbell"],
+      "movementPattern": "hinge",
+      "primaryMuscles": ["glutes", "quads", "hamstrings"],
+      "secondaryMuscles": ["lower_back", "adductors"],
+      "difficulty": "advanced",
+      "tutorial": {
+        "setup": "Wide stance with toes pointed out 45 degrees. Grip bar inside legs with arms straight. Chest up, hips down.",
+        "execution": "Drive through floor, extending hips and knees. Stand tall, then reverse to floor.",
+        "cues": ["Push knees out over toes", "Chest up", "Hips close to bar", "Spread the floor with feet"],
+        "commonMistakes": ["Hips shooting up first", "Knees caving in", "Shoulders in front of bar"],
+        "breathingPattern": "Big breath and brace, lift, exhale at top"
+      }
+    },
+    {
+      "id": "plank",
+      "name": "Plank",
+      "category": "core",
+      "equipment": ["bodyweight"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["core", "transverse_abdominis"],
+      "secondaryMuscles": ["shoulders", "glutes"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Forearms on ground, elbows under shoulders. Toes on ground, body in straight line.",
+        "execution": "Hold position, keeping core braced and body straight from head to heels.",
+        "cues": ["Squeeze glutes", "Don't let hips sag or pike", "Breathe normally while bracing", "Posterior pelvic tilt"],
+        "commonMistakes": ["Hips sagging", "Hips too high", "Not breathing", "Looking up (neck strain)"],
+        "breathingPattern": "Breathe normally while maintaining brace"
+      }
+    },
+    {
+      "id": "dead_bug",
+      "name": "Dead Bug",
+      "category": "core",
+      "equipment": ["bodyweight"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["core", "transverse_abdominis"],
+      "secondaryMuscles": ["hip_flexors"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Lie on back with arms extended toward ceiling, knees bent 90 degrees above hips.",
+        "execution": "Slowly lower opposite arm and leg toward floor while keeping lower back pressed into ground. Return and switch sides.",
+        "cues": ["Lower back stays flat", "Slow and controlled", "Exhale as you extend"],
+        "commonMistakes": ["Lower back arching", "Moving too fast", "Not full extension"],
+        "breathingPattern": "Exhale on extension, inhale on return"
+      }
+    },
+    {
+      "id": "bird_dog",
+      "name": "Bird Dog",
+      "category": "core",
+      "equipment": ["bodyweight"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["core", "lower_back"],
+      "secondaryMuscles": ["glutes", "shoulders"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Start on hands and knees, hands under shoulders, knees under hips. Spine neutral.",
+        "execution": "Extend opposite arm and leg until parallel with floor. Hold briefly, return with control. Switch sides.",
+        "cues": ["Keep hips square (don't rotate)", "Reach long", "Move slowly", "Core braced"],
+        "commonMistakes": ["Hips rotating", "Arching lower back", "Moving too fast"],
+        "breathingPattern": "Exhale on extension, inhale on return"
+      }
+    },
+    {
+      "id": "hanging_leg_raise",
+      "name": "Hanging Leg Raise",
+      "category": "core",
+      "equipment": ["pullupbar"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["core", "hip_flexors"],
+      "secondaryMuscles": ["forearms"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Hang from pull-up bar with overhand grip, arms fully extended, legs straight.",
+        "execution": "Raise legs by flexing hips and curling pelvis, bringing legs up until parallel or higher. Lower with control.",
+        "cues": ["Curl pelvis up (posterior tilt)", "Don't swing", "Control the descent", "Keep legs straight or bend knees for easier"],
+        "commonMistakes": ["Swinging", "Not curling pelvis", "Using momentum"],
+        "breathingPattern": "Exhale on raise, inhale on lower"
+      }
+    },
+    {
+      "id": "cable_woodchop",
+      "name": "Cable Woodchop",
+      "category": "core",
+      "equipment": ["cable"],
+      "movementPattern": "rotation",
+      "primaryMuscles": ["obliques", "core"],
+      "secondaryMuscles": ["shoulders"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Set cable to high (chop down) or low (chop up). Stand sideways to cable, feet wider than shoulders.",
+        "execution": "Rotate torso to pull cable diagonally across body. Control back to start.",
+        "cues": ["Rotation comes from core, not arms", "Pivot through feet and hips", "Control throughout"],
+        "commonMistakes": ["Using arms instead of core", "Not rotating hips", "Moving too fast"],
+        "breathingPattern": "Exhale on rotation, inhale on return"
+      }
+    },
+    {
+      "id": "russian_twist",
+      "name": "Russian Twist",
+      "category": "core",
+      "equipment": ["bodyweight", "medicineball", "dumbbell"],
+      "movementPattern": "rotation",
+      "primaryMuscles": ["obliques", "core"],
+      "secondaryMuscles": [],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Sit on floor with knees bent, feet flat or raised. Lean back slightly, holding weight at chest.",
+        "execution": "Rotate torso to touch weight to floor on each side, keeping core braced.",
+        "cues": ["Move with control", "Eyes follow hands", "Keep chest up"],
+        "commonMistakes": ["Moving too fast", "Not rotating enough", "Rounding back"],
+        "breathingPattern": "Exhale on each rotation"
+      }
+    },
+    {
+      "id": "ab_rollout",
+      "name": "Ab Rollout",
+      "category": "core",
+      "equipment": ["bodyweight"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["core", "lats"],
+      "secondaryMuscles": ["shoulders"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Kneel with ab wheel or barbell in hands. Core braced, arms extended.",
+        "execution": "Roll forward with straight arms until body is extended. Contract abs to roll back to start.",
+        "cues": ["Don't let lower back arch", "Squeeze abs to return", "Go only as far as you can control"],
+        "commonMistakes": ["Lower back sagging", "Going too far", "Using hip flexors to return"],
+        "breathingPattern": "Inhale on roll out, exhale on roll back"
+      }
+    },
+    {
+      "id": "mountain_climbers",
+      "name": "Mountain Climbers",
+      "category": "core",
+      "equipment": ["bodyweight"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["core", "hip_flexors"],
+      "secondaryMuscles": ["shoulders", "quads"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Start in push-up position, hands under shoulders, body in straight line.",
+        "execution": "Drive one knee toward chest, then quickly switch legs in running motion.",
+        "cues": ["Keep hips down", "Core braced throughout", "Quick but controlled"],
+        "commonMistakes": ["Hips bouncing up", "Moving too fast with poor form", "Shoulders moving"],
+        "breathingPattern": "Rhythmic breathing, don't hold breath"
+      }
+    },
+    {
+      "id": "pallof_press",
+      "name": "Pallof Press",
+      "category": "core",
+      "equipment": ["cable", "bands"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["core", "obliques"],
+      "secondaryMuscles": [],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Stand sideways to cable at chest height. Hold handle at chest, feet shoulder-width.",
+        "execution": "Press handle straight out from chest, resisting rotation. Hold briefly, return to chest.",
+        "cues": ["Fight the rotation", "Stay square", "Squeeze core throughout", "Slow and controlled"],
+        "commonMistakes": ["Rotating toward cable", "Arms moving too fast", "Not bracing"],
+        "breathingPattern": "Exhale on press, inhale on return"
+      }
+    },
+    {
+      "id": "farmers_carry",
+      "name": "Farmer's Carry",
+      "category": "fullbody",
+      "equipment": ["dumbbell", "kettlebell"],
+      "movementPattern": "carry",
+      "primaryMuscles": ["forearms", "traps", "core"],
+      "secondaryMuscles": ["full_body"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Stand holding heavy dumbbells or kettlebells at sides. Shoulders back, core braced.",
+        "execution": "Walk with controlled steps for distance or time. Maintain posture throughout.",
+        "cues": ["Shoulders back and down", "Don't lean", "Quick, controlled steps", "Core tight"],
+        "commonMistakes": ["Leaning to one side", "Shrugging shoulders", "Steps too long"],
+        "breathingPattern": "Breathe normally, don't hold breath"
+      }
+    },
+    {
+      "id": "kettlebell_swing",
+      "name": "Kettlebell Swing",
+      "category": "fullbody",
+      "equipment": ["kettlebell"],
+      "movementPattern": "hinge",
+      "primaryMuscles": ["glutes", "hamstrings", "core"],
+      "secondaryMuscles": ["shoulders", "lats"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Stand with feet shoulder-width, kettlebell on floor slightly in front. Hinge and grip with both hands.",
+        "execution": "Hike kettlebell back between legs, then explosively drive hips forward to swing kettlebell to chest height. Let it fall and repeat.",
+        "cues": ["Hip HINGE not squat", "Power comes from hips, not arms", "Squeeze glutes hard at top", "Arms are just ropes"],
+        "commonMistakes": ["Squatting instead of hinging", "Using arms to lift", "Not snapping hips", "Going too high"],
+        "breathingPattern": "Exhale sharply at top of swing"
+      }
+    },
+    {
+      "id": "burpees",
+      "name": "Burpees",
+      "category": "fullbody",
+      "equipment": ["bodyweight"],
+      "movementPattern": "fullbody",
+      "primaryMuscles": ["full_body"],
+      "secondaryMuscles": [],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Stand with feet shoulder-width.",
+        "execution": "Squat down, place hands on floor. Jump feet back to plank. Do a push-up. Jump feet to hands. Explosively jump up with arms overhead.",
+        "cues": ["Smooth transitions", "Full push-up", "Explosive jump", "Soft landing"],
+        "commonMistakes": ["Skipping push-up", "Sloppy form when tired", "Not jumping at top", "Landing hard"],
+        "breathingPattern": "Exhale on jump up"
+      }
+    },
+    {
+      "id": "box_jumps",
+      "name": "Box Jumps",
+      "category": "fullbody",
+      "equipment": ["box"],
+      "movementPattern": "fullbody",
+      "primaryMuscles": ["quads", "glutes", "calves"],
+      "secondaryMuscles": ["core"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Stand facing box at appropriate height. Feet shoulder-width.",
+        "execution": "Swing arms back, then explosively jump onto box, landing with soft knees. Stand tall, step down and repeat.",
+        "cues": ["Land softly with bent knees", "Step down, don't jump", "Full hip extension at top"],
+        "commonMistakes": ["Landing with straight legs", "Jumping down (Achilles strain)", "Box too high"],
+        "breathingPattern": "Exhale on jump"
+      }
+    },
+    {
+      "id": "battle_ropes",
+      "name": "Battle Ropes",
+      "category": "fullbody",
+      "equipment": ["battle_ropes"],
+      "movementPattern": "fullbody",
+      "primaryMuscles": ["shoulders", "core", "arms"],
+      "secondaryMuscles": ["legs"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Stand facing anchor point with rope end in each hand. Knees slightly bent, core braced.",
+        "execution": "Create waves by alternating arms up and down (alternating waves), both arms together (double waves), or side to side (snakes).",
+        "cues": ["Stay low in athletic stance", "Move from shoulders", "Keep waves consistent", "Core stays braced"],
+        "commonMistakes": ["Standing too upright", "Losing wave intensity", "Holding breath"],
+        "breathingPattern": "Rhythmic breathing throughout"
+      }
+    },
+    {
+      "id": "thrusters",
+      "name": "Thrusters",
+      "category": "fullbody",
+      "equipment": ["barbell", "dumbbell"],
+      "movementPattern": "fullbody",
+      "primaryMuscles": ["quads", "glutes", "shoulders"],
+      "secondaryMuscles": ["core", "triceps"],
+      "difficulty": "advanced",
+      "tutorial": {
+        "setup": "Hold weight at shoulder height (front rack position). Feet shoulder-width.",
+        "execution": "Squat to full depth, then explosively stand while pressing weight overhead in one fluid motion. Lower weight to shoulders as you descend into next rep.",
+        "cues": ["One fluid motion", "Use leg drive for press", "Full lockout overhead", "Stay upright in squat"],
+        "commonMistakes": ["Separating squat and press", "Not using leg drive", "Forward lean in squat"],
+        "breathingPattern": "Inhale on descent, exhale on drive and press"
+      }
+    },
+    {
+      "id": "clean_and_press",
+      "name": "Clean and Press",
+      "category": "fullbody",
+      "equipment": ["barbell", "dumbbell", "kettlebell"],
+      "movementPattern": "fullbody",
+      "primaryMuscles": ["full_body"],
+      "secondaryMuscles": [],
+      "difficulty": "advanced",
+      "tutorial": {
+        "setup": "Stand over weight with feet hip-width. Hinge and grip with straight arms.",
+        "execution": "Explosively pull weight from floor to shoulders (clean) in one motion. Then press overhead. Lower to shoulders, then to floor.",
+        "cues": ["Explosive hip drive", "Catch at shoulders with soft knees", "Press overhead to lockout"],
+        "commonMistakes": ["Pulling with arms instead of hips", "Not catching properly", "Press before stabilizing"],
+        "breathingPattern": "Exhale on clean, exhale on press"
+      }
+    },
+    {
+      "id": "rowing_machine",
+      "name": "Rowing Machine",
+      "category": "cardio",
+      "equipment": ["machine"],
+      "movementPattern": "fullbody",
+      "primaryMuscles": ["back", "legs", "arms"],
+      "secondaryMuscles": ["core"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Sit on rower, feet strapped in. Grip handle with overhand grip. Start with knees bent, arms extended, back straight.",
+        "execution": "Drive with legs first, then lean back slightly, then pull handle to lower chest. Return in reverse order: arms, body, legs.",
+        "cues": ["Legs-back-arms, then arms-back-legs", "Power from legs", "Don't over-lean", "Smooth continuous motion"],
+        "commonMistakes": ["Pulling with arms first", "Rushing the recovery", "Hunching back"],
+        "breathingPattern": "Exhale on drive, inhale on recovery"
+      }
+    },
+    {
+      "id": "assault_bike",
+      "name": "Assault/Air Bike",
+      "category": "cardio",
+      "equipment": ["machine"],
+      "movementPattern": "fullbody",
+      "primaryMuscles": ["legs", "arms", "core"],
+      "secondaryMuscles": [],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Sit on bike, feet on pedals, hands on handles. Adjust seat height so slight bend in knee at bottom of pedal stroke.",
+        "execution": "Push and pull handles while pedaling. Resistance increases with effort.",
+        "cues": ["Push and pull with arms", "Smooth pedaling", "Breathe rhythmically", "Maintain posture"],
+        "commonMistakes": ["Only using legs", "Hunching over", "Holding breath during intense efforts"],
+        "breathingPattern": "Rhythmic breathing based on intensity"
+      }
+    },
+    {
+      "id": "jump_rope",
+      "name": "Jump Rope",
+      "category": "cardio",
+      "equipment": ["jump_rope"],
+      "movementPattern": "fullbody",
+      "primaryMuscles": ["calves", "shoulders"],
+      "secondaryMuscles": ["core", "forearms"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Hold rope handles at hip height, rope behind you. Feet together.",
+        "execution": "Swing rope overhead and jump as it passes under feet. Land softly on balls of feet.",
+        "cues": ["Small jumps, just clear the rope", "Turn rope with wrists, not arms", "Stay on balls of feet", "Keep core tight"],
+        "commonMistakes": ["Jumping too high", "Using whole arm to turn rope", "Landing flat-footed"],
+        "breathingPattern": "Rhythmic breathing"
+      }
+    },
+    {
+      "id": "stair_climber",
+      "name": "Stair Climber / StairMaster",
+      "category": "cardio",
+      "equipment": ["machine"],
+      "movementPattern": "squat",
+      "primaryMuscles": ["quads", "glutes", "calves"],
+      "secondaryMuscles": ["hamstrings"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Step onto machine, grip handrails lightly for balance. Start at slow speed.",
+        "execution": "Step continuously, driving through whole foot. Maintain upright posture.",
+        "cues": ["Don't lean on rails", "Full steps, not shuffling", "Drive through heel", "Stay upright"],
+        "commonMistakes": ["Hanging on rails", "Leaning forward", "Small shuffling steps"],
+        "breathingPattern": "Rhythmic breathing based on intensity"
+      }
+    },
+    {
+      "id": "sled_push",
+      "name": "Sled Push",
+      "category": "cardio",
+      "equipment": ["sled"],
+      "movementPattern": "fullbody",
+      "primaryMuscles": ["quads", "glutes", "calves"],
+      "secondaryMuscles": ["core", "shoulders"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Grip sled handles with extended arms. Lean into sled at 45 degree angle.",
+        "execution": "Drive through legs, pushing sled forward with quick, powerful steps. Maintain forward lean.",
+        "cues": ["Stay low", "Drive through toes", "Quick powerful steps", "Arms locked"],
+        "commonMistakes": ["Standing too upright", "Slow steps", "Pushing with arms"],
+        "breathingPattern": "Exhale forcefully with each drive"
+      }
+    }
+  ]
+}
