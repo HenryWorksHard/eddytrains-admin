@@ -112,6 +112,8 @@ export default function EditProgramPage({ params }: PageProps) {
                   intensityType: s.intensity_type,
                   intensityValue: s.intensity_value,
                   restSeconds: s.rest_seconds,
+                  restBracket: s.rest_bracket || '90-120',
+                  weightType: s.weight_type || 'freeweight',
                   notes: s.notes || '',
                 })),
             })),
@@ -207,6 +209,8 @@ export default function EditProgramPage({ params }: PageProps) {
                   intensity_type: set.intensityType,
                   intensity_value: set.intensityValue,
                   rest_seconds: set.restSeconds,
+                  rest_bracket: set.restBracket || '90-120',
+                  weight_type: set.weightType || 'freeweight',
                   notes: set.notes || null,
                 }))
 
