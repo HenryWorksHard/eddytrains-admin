@@ -1173,30 +1173,30 @@ export default function UserProfilePage() {
           Track one-rep maxes to auto-calculate weights when programs use percentage-based intensity.
         </p>
         
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
           {client1RMs.map((rm) => (
             <div
               key={rm.exercise_name}
-              className={`p-3 rounded-lg border transition-all ${
+              className={`px-3 py-2 rounded-lg border transition-all ${
                 rm.weight_kg > 0 
                   ? 'bg-zinc-800/50 border-zinc-700' 
                   : 'bg-zinc-900/30 border-zinc-800'
               }`}
             >
-              <p className="text-xs text-zinc-400 mb-1 truncate">{rm.exercise_name}</p>
+              <p className="text-[10px] text-zinc-400 truncate leading-tight">{rm.exercise_name}</p>
               {editing1RM ? (
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 mt-1">
                   <input
                     type="number"
                     value={rm.weight_kg || ''}
                     onChange={(e) => update1RM(rm.exercise_name, parseFloat(e.target.value) || 0)}
                     placeholder="0"
-                    className="w-full px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white font-bold focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                    className="w-full px-1 py-0.5 bg-zinc-800 border border-zinc-700 rounded text-white text-sm font-bold focus:outline-none focus:ring-1 focus:ring-yellow-400"
                   />
-                  <span className="text-zinc-500 text-xs">kg</span>
+                  <span className="text-zinc-500 text-[10px]">kg</span>
                 </div>
               ) : (
-                <p className={`text-lg font-bold ${rm.weight_kg > 0 ? 'text-white' : 'text-zinc-600'}`}>
+                <p className={`text-base font-bold leading-tight ${rm.weight_kg > 0 ? 'text-white' : 'text-zinc-600'}`}>
                   {rm.weight_kg > 0 ? `${rm.weight_kg}kg` : '—'}
                 </p>
               )}
