@@ -12,6 +12,7 @@ interface ExerciseSet {
   intensityType: 'percentage' | 'rir' | 'rpe'
   intensityValue: string
   restSeconds: number
+  restBracket: string // e.g., "90-120"
   notes: string
 }
 
@@ -64,6 +65,7 @@ function createDefaultSet(setNumber: number): ExerciseSet {
     intensityType: 'rir',
     intensityValue: '2',
     restSeconds: 90,
+    restBracket: '90-120',
     notes: '',
   }
 }
@@ -360,10 +362,14 @@ export default function WorkoutBuilder({ workouts, onChange }: WorkoutBuilderPro
                               <td className="px-3 py-2">
                                 <div className="flex items-center gap-1">
                                   <input
-                                    type="number"
-                                    value={set.restSeconds}
-                                    onChange={(e) => updateSet(workout.id, exercise.id, set.id, { restSeconds: parseInt(e.target.value) || 0 })}
-                                    className="w-16 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                    type="text"
+                                    value={set.restBracket || `${set.restSeconds}`}
+                                    onChange={(e) => updateSet(workout.id, exercise.id, set.id, { 
+                                      restBracket: e.target.value,
+                                      restSeconds: parseInt(e.target.value.split('-')[0]) || 90
+                                    })}
+                                    className="w-20 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                    placeholder="90-120"
                                   />
                                   <span className="text-xs text-zinc-500">sec</span>
                                 </div>

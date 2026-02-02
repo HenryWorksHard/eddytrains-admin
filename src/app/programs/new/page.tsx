@@ -110,6 +110,7 @@ export default function CreateProgramPage() {
                   intensity_type: set.intensityType,
                   intensity_value: set.intensityValue,
                   rest_seconds: set.restSeconds,
+                  rest_bracket: set.restBracket || '90-120',
                   notes: set.notes || null,
                 }))
 
