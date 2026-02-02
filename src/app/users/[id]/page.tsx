@@ -22,7 +22,8 @@ import {
   User as UserIcon,
   Plus,
   X,
-  ChevronDown
+  ChevronDown,
+  Apple
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -92,6 +93,7 @@ export default function UserProfilePage() {
     strength: false,
     cardio: false,
     hyrox: false,
+    nutrition: false,
   })
 
   useEffect(() => {
@@ -121,6 +123,7 @@ export default function UserProfilePage() {
         strength: data.user.user_permissions?.[0]?.can_access_strength || false,
         cardio: data.user.user_permissions?.[0]?.can_access_cardio || false,
         hyrox: data.user.user_permissions?.[0]?.can_access_hyrox || false,
+        nutrition: data.user.can_access_nutrition || false,
       })
     } catch (err) {
       setError('Failed to load user')
@@ -283,6 +286,7 @@ export default function UserProfilePage() {
     { key: 'strength', name: 'Strength Training', icon: Dumbbell, color: 'text-blue-400', bg: 'bg-blue-500/10' },
     { key: 'cardio', name: 'Cardio', icon: Heart, color: 'text-red-400', bg: 'bg-red-500/10' },
     { key: 'hyrox', name: 'HYROX', icon: Zap, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
+    { key: 'nutrition', name: 'Nutrition', icon: Apple, color: 'text-green-400', bg: 'bg-green-500/10' },
   ]
 
   const getCategoryColor = (category?: string) => {

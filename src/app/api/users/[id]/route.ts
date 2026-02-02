@@ -164,6 +164,7 @@ export async function PATCH(
       updateData.can_access_strength = permissions.strength || false
       updateData.can_access_cardio = permissions.cardio || false
       updateData.can_access_hyrox = permissions.hyrox || false
+      updateData.can_access_nutrition = permissions.nutrition || false
     }
     
     const { error: profileError } = await adminClient

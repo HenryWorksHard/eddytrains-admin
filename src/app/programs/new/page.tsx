@@ -12,8 +12,6 @@ const categories = [
   { value: 'cardio', label: 'Cardio' },
   { value: 'hyrox', label: 'Hyrox' },
   { value: 'hybrid', label: 'Hybrid' },
-  { value: 'nutrition', label: 'Nutrition' },
-  { value: 'recovery', label: 'Recovery' },
 ]
 
 const difficulties = [

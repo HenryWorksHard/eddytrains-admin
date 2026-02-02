@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { ArrowLeft, Mail, User, Check, AlertCircle, Dumbbell, Heart, Zap, Loader2 } from 'lucide-react'
+import { ArrowLeft, Mail, User, Check, AlertCircle, Dumbbell, Heart, Zap, Loader2, Apple } from 'lucide-react'
 
 export default function NewUserPage() {
   const router = useRouter()
@@ -17,7 +17,6 @@ export default function NewUserPage() {
     cardio: false,
     hyrox: false,
     nutrition: false,
-    recovery: false,
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -68,8 +67,7 @@ export default function NewUserPage() {
     { key: 'strength', name: 'Strength Training', icon: Dumbbell, desc: 'Access to strength workouts and programs' },
     { key: 'cardio', name: 'Cardio', icon: Heart, desc: 'Access to cardio and conditioning programs' },
     { key: 'hyrox', name: 'HYROX', icon: Zap, desc: 'Access to HYROX-specific training' },
-    { key: 'nutrition', name: 'Nutrition', icon: Check, desc: 'Access to nutrition plans and guides' },
-    { key: 'recovery', name: 'Recovery', icon: Check, desc: 'Access to recovery protocols' },
+    { key: 'nutrition', name: 'Nutrition', icon: Apple, desc: 'Access to nutrition plans and guides' },
   ]
 
   if (success) {
