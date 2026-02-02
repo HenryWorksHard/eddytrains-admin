@@ -48,7 +48,7 @@ interface ClientProgram {
     category: string
     difficulty: string
     duration_weeks: number
-  }
+  } | null
 }
 
 export default function UserProfilePage() {
@@ -122,7 +122,12 @@ export default function UserProfilePage() {
         .order('start_date', { ascending: false })
       
       if (error) throw error
-      setClientPrograms(data || [])
+      // Transform data - Supabase returns program as array, we need single object
+      const transformed = (data || []).map(cp => ({
+        ...cp,
+        program: Array.isArray(cp.program) ? cp.program[0] : cp.program
+      }))
+      setClientPrograms(transformed)
     } catch (err) {
       console.error('Failed to fetch client programs:', err)
     }
@@ -192,7 +197,7 @@ export default function UserProfilePage() {
     { key: 'hyrox', name: 'HYROX', icon: Zap, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
   ]
 
-  const getCategoryColor = (category: string) => {
+  const getCategoryColor = (category?: string) => {
     switch (category?.toLowerCase()) {
       case 'strength': return 'bg-blue-500/10 text-blue-400 border-blue-500/20'
       case 'cardio': return 'bg-red-500/10 text-red-400 border-red-500/20'
@@ -201,7 +206,7 @@ export default function UserProfilePage() {
     }
   }
 
-  const getDifficultyColor = (difficulty: string) => {
+  const getDifficultyColor = (difficulty?: string) => {
     switch (difficulty?.toLowerCase()) {
       case 'beginner': return 'bg-green-500/10 text-green-400'
       case 'intermediate': return 'bg-yellow-500/10 text-yellow-400'
@@ -474,7 +479,7 @@ export default function UserProfilePage() {
                   {cp.program?.category?.toLowerCase() === 'strength' && <Dumbbell className="w-6 h-6" />}
                   {cp.program?.category?.toLowerCase() === 'cardio' && <Heart className="w-6 h-6" />}
                   {cp.program?.category?.toLowerCase() === 'hyrox' && <Zap className="w-6 h-6" />}
-                  {!['strength', 'cardio', 'hyrox'].includes(cp.program?.category?.toLowerCase()) && <Dumbbell className="w-6 h-6" />}
+                  {!['strength', 'cardio', 'hyrox'].includes(cp.program?.category?.toLowerCase() || '') && <Dumbbell className="w-6 h-6" />}
                 </div>
                 
                 <div className="flex-1 min-w-0">
