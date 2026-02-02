@@ -111,6 +111,7 @@ export default function CreateProgramPage() {
                   intensity_value: set.intensityValue,
                   rest_seconds: set.restSeconds,
                   rest_bracket: set.restBracket || '90-120',
+                  weight_type: set.weightType || 'freeweight',
                   notes: set.notes || null,
                 }))
 

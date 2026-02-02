@@ -13,8 +13,23 @@ interface ExerciseSet {
   intensityValue: string
   restSeconds: number
   restBracket: string // e.g., "90-120"
+  weightType: string // e.g., "freeweight", "bodyweight", etc.
   notes: string
 }
+
+const weightTypes = [
+  { id: 'bodyweight', label: 'Bodyweight' },
+  { id: 'freeweight', label: 'Freeweight (DB/BB)' },
+  { id: 'machine', label: 'Machine' },
+  { id: 'cable', label: 'Cable' },
+  { id: 'kettlebell', label: 'Kettlebell' },
+  { id: 'weight_belt', label: 'Weight Belt' },
+  { id: 'smith_machine', label: 'Smith Machine' },
+  { id: 'plate_loaded', label: 'Plate Loaded' },
+  { id: 'resistance_band', label: 'Resistance Band' },
+  { id: 'medicine_ball', label: 'Medicine Ball' },
+  { id: 'trx', label: 'TRX/Suspension' },
+]
 
 interface WorkoutExercise {
   id: string
@@ -66,6 +81,7 @@ function createDefaultSet(setNumber: number): ExerciseSet {
     intensityValue: '2',
     restSeconds: 90,
     restBracket: '90-120',
+    weightType: 'freeweight',
     notes: '',
   }
 }
@@ -317,6 +333,7 @@ export default function WorkoutBuilder({ workouts, onChange }: WorkoutBuilderPro
                           <tr className="text-xs text-zinc-500 uppercase">
                             <th className="px-3 py-2 text-left w-16">Set</th>
                             <th className="px-3 py-2 text-left">Reps</th>
+                            <th className="px-3 py-2 text-left">Weight Type</th>
                             <th className="px-3 py-2 text-left">Intensity</th>
                             <th className="px-3 py-2 text-left w-24">Rest</th>
                             <th className="px-3 py-2 w-10"></th>
@@ -336,6 +353,17 @@ export default function WorkoutBuilder({ workouts, onChange }: WorkoutBuilderPro
                                   className="w-20 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
                                   placeholder="8-12"
                                 />
+                              </td>
+                              <td className="px-3 py-2">
+                                <select
+                                  value={set.weightType || 'freeweight'}
+                                  onChange={(e) => updateSet(workout.id, exercise.id, set.id, { weightType: e.target.value })}
+                                  className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                >
+                                  {weightTypes.map(type => (
+                                    <option key={type.id} value={type.id}>{type.label}</option>
+                                  ))}
+                                </select>
                               </td>
                               <td className="px-3 py-2">
                                 <div className="flex gap-2">
