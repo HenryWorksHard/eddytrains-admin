@@ -73,8 +73,9 @@ interface ExerciseSet {
   reps: string
   intensity_type: string
   intensity_value: string
-  rest_bracket: string
-  weight_type: string
+  rest_bracket?: string
+  rest_seconds?: number
+  weight_type?: string
   notes: string
 }
 

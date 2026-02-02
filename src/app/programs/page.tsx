@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { Plus, Dumbbell, Search } from 'lucide-react'
-import ProgramCard from '@/components/ProgramCard' from 'lucide-react'
+import ProgramCard from '@/components/ProgramCard'
 
 interface Program {
   id: string
