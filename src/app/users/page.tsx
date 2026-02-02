@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { UserPlus, Search, Filter, Mail, Edit2, Trash2, Key, Clock, Copy, Check, RefreshCw } from 'lucide-react'
 
@@ -44,31 +43,17 @@ function CopyButton({ text }: { text: string }) {
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
 
   const fetchUsers = async () => {
     setLoading(true)
-    const { data } = await supabase
-      .from('profiles')
-      .select(`
-        id,
-        email,
-        full_name,
-        is_active,
-        created_at,
-        status,
-        temp_password,
-        password_changed,
-        user_permissions (
-          can_access_strength,
-          can_access_cardio,
-          can_access_hyrox
-        )
-      `)
-      .eq('role', 'user')
-      .order('created_at', { ascending: false })
-    
-    setUsers((data as User[]) || [])
+    try {
+      const response = await fetch('/api/users')
+      const data = await response.json()
+      setUsers(data.users || [])
+    } catch (error) {
+      console.error('Failed to fetch users:', error)
+      setUsers([])
+    }
     setLoading(false)
   }
 
