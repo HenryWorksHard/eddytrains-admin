@@ -29,58 +29,34 @@ export default function NewUserPage() {
     setLoading(true)
 
     try {
-      // Generate a temporary password
-      const tempPassword = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-4).toUpperCase()
-
-      // Create user with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password: tempPassword,
-        options: {
-          data: {
-            full_name: fullName,
-          },
-        },
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          full_name: fullName,
+          permissions
+        })
       })
-
-      if (authError) {
-        setError(authError.message)
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        setError(data.error || 'Failed to create user')
         return
       }
-
-      if (authData.user) {
-        // Update profile with name
-        await supabase
-          .from('profiles')
-          .update({ 
-            full_name: fullName,
-            must_change_password: true,
-          })
-          .eq('id', authData.user.id)
-
-        // Update permissions
-        await supabase
-          .from('user_permissions')
-          .update({
-            can_access_strength: permissions.strength,
-            can_access_cardio: permissions.cardio,
-            can_access_hyrox: permissions.hyrox,
-            can_access_nutrition: permissions.nutrition,
-            can_access_recovery: permissions.recovery,
-          })
-          .eq('user_id', authData.user.id)
-
-        // Note: In production, you'd send an email with the temp password here
-        // For now, we'll show success and the password in development
-        setSuccess(true)
-        console.log('Temp password for', email, ':', tempPassword)
-        
-        // Wait a moment then redirect
-        setTimeout(() => {
-          router.push('/users')
-          router.refresh()
-        }, 2000)
+      
+      setSuccess(true)
+      
+      // If temp password returned (Klaviyo not configured), log it
+      if (data.tempPassword) {
+        console.log('Temp password for', email, ':', data.tempPassword)
       }
+      
+      setTimeout(() => {
+        router.push('/users')
+        router.refresh()
+      }, 2000)
     } catch {
       setError('An unexpected error occurred')
     } finally {
@@ -152,7 +128,7 @@ export default function NewUserPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
               placeholder="client@example.com"
               required
             />
@@ -172,7 +148,7 @@ export default function NewUserPage() {
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
               placeholder="John Smith"
             />
           </div>
@@ -191,7 +167,7 @@ export default function NewUserPage() {
                 key={perm.key}
                 className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${
                   permissions[perm.key as keyof typeof permissions]
-                    ? 'bg-orange-500/10 border-orange-500/30'
+                    ? 'bg-yellow-400/10 border-yellow-400/30'
                     : 'bg-zinc-800/50 border-zinc-700 hover:border-zinc-600'
                 }`}
               >
@@ -203,7 +179,7 @@ export default function NewUserPage() {
                 />
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                   permissions[perm.key as keyof typeof permissions]
-                    ? 'bg-orange-500 text-white'
+                    ? 'bg-yellow-400 text-black'
                     : 'bg-zinc-700 text-zinc-400'
                 }`}>
                   <perm.icon className="w-5 h-5" />
@@ -218,7 +194,7 @@ export default function NewUserPage() {
                 </div>
                 <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
                   permissions[perm.key as keyof typeof permissions]
-                    ? 'bg-orange-500 border-orange-500'
+                    ? 'bg-yellow-400 border-yellow-400'
                     : 'border-zinc-600'
                 }`}>
                   {permissions[perm.key as keyof typeof permissions] && (
@@ -241,7 +217,7 @@ export default function NewUserPage() {
           <button
             type="submit"
             disabled={loading || !email}
-            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-500/50 text-white font-medium rounded-xl transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-yellow-400 hover:bg-yellow-500 disabled:bg-yellow-400/50 text-black font-medium rounded-xl transition-colors"
           >
             {loading ? (
               <Loader2 className="w-5 h-5 animate-spin" />

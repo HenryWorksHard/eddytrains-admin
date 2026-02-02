@@ -26,7 +26,7 @@ async function getPrograms(): Promise<Program[]> {
 const categoryColors: Record<string, string> = {
   strength: 'from-blue-500 to-blue-600',
   cardio: 'from-green-500 to-green-600',
-  hyrox: 'from-orange-500 to-orange-600',
+  hyrox: 'from-yellow-400 to-yellow-500',
   nutrition: 'from-purple-500 to-purple-600',
   recovery: 'from-pink-500 to-pink-600',
 }
@@ -50,7 +50,7 @@ export default async function ProgramsPage() {
         </div>
         <Link
           href="/programs/new"
-          className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl font-medium transition-colors"
+          className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded-xl font-medium transition-colors"
         >
           <Plus className="w-5 h-5" />
           Create Program
@@ -63,7 +63,7 @@ export default async function ProgramsPage() {
         <input
           type="search"
           placeholder="Search programs..."
-          className="w-full max-w-md pl-12 pr-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          className="w-full max-w-md pl-12 pr-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
         />
       </div>
 
@@ -128,7 +128,7 @@ export default async function ProgramsPage() {
           <p className="text-zinc-400 mb-6">Create your first fitness program to get started</p>
           <Link
             href="/programs/new"
-            className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-medium transition-colors"
+            className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-black px-6 py-3 rounded-xl font-medium transition-colors"
           >
             <Plus className="w-5 h-5" />
             Create Your First Program

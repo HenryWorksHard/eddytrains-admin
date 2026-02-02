@@ -37,11 +37,11 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="p-6 border-b border-zinc-800">
         <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
-            <span className="text-white font-bold">ET</span>
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center">
+            <span className="text-black font-bold">C</span>
           </div>
           <div>
-            <h1 className="font-bold text-white">EddyTrains</h1>
+            <h1 className="font-bold text-white">CMPD</h1>
             <p className="text-xs text-zinc-500">Admin Portal</p>
           </div>
         </Link>
@@ -57,7 +57,7 @@ export default function Sidebar() {
               href={item.href}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                 isActive
-                  ? 'bg-orange-500/10 text-orange-500 border border-orange-500/20'
+                  ? 'bg-yellow-400/10 text-yellow-400 border border-yellow-400/20'
                   : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
               }`}
             >

@@ -37,7 +37,7 @@ export default async function DashboardPage() {
 
   const statCards = [
     { name: 'Total Users', value: stats.totalUsers, icon: Users, color: 'from-blue-500 to-cyan-500', href: '/users' },
-    { name: 'Programs', value: stats.totalPrograms, icon: Dumbbell, color: 'from-orange-500 to-red-500', href: '/programs' },
+    { name: 'Programs', value: stats.totalPrograms, icon: Dumbbell, color: 'from-yellow-400 to-yellow-500', href: '/programs' },
     { name: 'Schedules', value: stats.totalSchedules, icon: Calendar, color: 'from-purple-500 to-pink-500', href: '/schedules' },
     { name: 'Active Today', value: '-', icon: Activity, color: 'from-green-500 to-emerald-500', href: '/users' },
   ]
@@ -52,7 +52,7 @@ export default async function DashboardPage() {
         </div>
         <Link
           href="/users/new"
-          className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl font-medium transition-colors"
+          className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded-xl font-medium transition-colors"
         >
           <UserPlus className="w-5 h-5" />
           Add User
@@ -85,7 +85,7 @@ export default async function DashboardPage() {
           <h2 className="text-xl font-semibold text-white">Recent Users</h2>
           <Link
             href="/users"
-            className="text-sm text-orange-500 hover:text-orange-400 font-medium"
+            className="text-sm text-yellow-400 hover:text-yellow-300 font-medium"
           >
             View all →
           </Link>
@@ -132,7 +132,7 @@ export default async function DashboardPage() {
             <p className="text-zinc-400">No users yet. Add your first user to get started.</p>
             <Link
               href="/users/new"
-              className="inline-flex items-center gap-2 mt-4 text-orange-500 hover:text-orange-400 font-medium"
+              className="inline-flex items-center gap-2 mt-4 text-yellow-400 hover:text-yellow-300 font-medium"
             >
               <UserPlus className="w-5 h-5" />
               Add User
@@ -143,19 +143,19 @@ export default async function DashboardPage() {
 
       {/* Quick Actions */}
       <div className="grid md:grid-cols-3 gap-6">
-        <Link href="/users/new" className="card p-6 group hover:border-orange-500/50">
-          <UserPlus className="w-8 h-8 text-orange-500 mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-orange-500 transition-colors">Add New User</h3>
+        <Link href="/users/new" className="card p-6 group hover:border-yellow-400/50">
+          <UserPlus className="w-8 h-8 text-yellow-400 mb-4" />
+          <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-yellow-400 transition-colors">Add New User</h3>
           <p className="text-zinc-400 text-sm">Invite a new client and assign them programs</p>
         </Link>
-        <Link href="/programs/new" className="card p-6 group hover:border-orange-500/50">
-          <Dumbbell className="w-8 h-8 text-orange-500 mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-orange-500 transition-colors">Create Program</h3>
+        <Link href="/programs/new" className="card p-6 group hover:border-yellow-400/50">
+          <Dumbbell className="w-8 h-8 text-yellow-400 mb-4" />
+          <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-yellow-400 transition-colors">Create Program</h3>
           <p className="text-zinc-400 text-sm">Build a new workout program for your clients</p>
         </Link>
-        <Link href="/schedules/new" className="card p-6 group hover:border-orange-500/50">
-          <Calendar className="w-8 h-8 text-orange-500 mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-orange-500 transition-colors">Create Schedule</h3>
+        <Link href="/schedules/new" className="card p-6 group hover:border-yellow-400/50">
+          <Calendar className="w-8 h-8 text-yellow-400 mb-4" />
+          <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-yellow-400 transition-colors">Create Schedule</h3>
           <p className="text-zinc-400 text-sm">Set up weekly workout schedules</p>
         </Link>
       </div>

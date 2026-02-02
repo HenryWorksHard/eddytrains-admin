@@ -1,8 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --background: #09090b;
+  --background: #000000;
   --foreground: #fafafa;
+  --primary: #FACC15;
+  --primary-dark: #EAB308;
+  --cmpd-yellow: #FACC15;
+  --cmpd-dark: #18181B;
+  --cmpd-border: #27272A;
+  --cmpd-muted: #A1A1AA;
 }
 
 body {
@@ -40,7 +46,7 @@ body {
 
 /* Gradient text */
 .gradient-text {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-orange-300;
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-yellow-300;
 }
 
 /* Table styles */

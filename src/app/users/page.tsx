@@ -50,7 +50,7 @@ export default async function UsersPage() {
         </div>
         <Link
           href="/users/new"
-          className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl font-medium transition-colors"
+          className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded-xl font-medium transition-colors"
         >
           <UserPlus className="w-5 h-5" />
           Add User
@@ -64,7 +64,7 @@ export default async function UsersPage() {
           <input
             type="search"
             placeholder="Search users by name or email..."
-            className="w-full pl-12 pr-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            className="w-full pl-12 pr-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
           />
         </div>
         <button className="flex items-center gap-2 px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors">
@@ -93,7 +93,7 @@ export default async function UsersPage() {
                   <tr key={user.id}>
                     <td>
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white font-medium">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center text-black font-medium">
                           {user.full_name?.[0]?.toUpperCase() || user.email[0].toUpperCase()}
                         </div>
                         <div>
@@ -161,7 +161,7 @@ export default async function UsersPage() {
             <p className="text-zinc-400 mb-6">Get started by adding your first client</p>
             <Link
               href="/users/new"
-              className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-medium transition-colors"
+              className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-black px-6 py-3 rounded-xl font-medium transition-colors"
             >
               <UserPlus className="w-5 h-5" />
               Add Your First User
