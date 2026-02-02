@@ -26,7 +26,8 @@ import {
   ChevronUp,
   ChevronRight,
   Apple,
-  Settings2
+  Settings2,
+  Weight
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -105,6 +106,24 @@ interface CustomizedSet {
   notes: string
 }
 
+interface Client1RM {
+  id?: string
+  exercise_name: string
+  weight_kg: number
+}
+
+// Common compound lifts for 1RM tracking
+const COMMON_LIFTS = [
+  'Squat',
+  'Bench Press',
+  'Deadlift',
+  'Overhead Press',
+  'Barbell Row',
+  'Front Squat',
+  'Romanian Deadlift',
+  'Incline Bench Press'
+]
+
 export default function UserProfilePage() {
   const router = useRouter()
   const params = useParams()
@@ -137,6 +156,11 @@ export default function UserProfilePage() {
   const [expandedWorkouts, setExpandedWorkouts] = useState<Set<string>>(new Set())
   const [loadingWorkouts, setLoadingWorkouts] = useState(false)
 
+  // 1RM State
+  const [client1RMs, setClient1RMs] = useState<Client1RM[]>([])
+  const [editing1RM, setEditing1RM] = useState(false)
+  const [saving1RM, setSaving1RM] = useState(false)
+
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [permissions, setPermissions] = useState({
@@ -153,6 +177,7 @@ export default function UserProfilePage() {
   useEffect(() => {
     if (user?.id) {
       fetchClientPrograms(user.id)
+      fetchClient1RMs(user.id)
     }
   }, [user?.id])
 
@@ -208,6 +233,90 @@ export default function UserProfilePage() {
     } catch (err) {
       console.error('Failed to fetch client programs:', err)
     }
+  }
+
+  const fetchClient1RMs = async (userUuid: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('client_1rms')
+        .select('id, exercise_name, weight_kg')
+        .eq('client_id', userUuid)
+      
+      if (error) {
+        // Table might not exist yet
+        console.error('Failed to fetch 1RMs:', error)
+        // Initialize with empty common lifts
+        setClient1RMs(COMMON_LIFTS.map(name => ({ exercise_name: name, weight_kg: 0 })))
+        return
+      }
+      
+      // Merge with common lifts (show all, even if not set)
+      const existingMap = new Map((data || []).map(rm => [rm.exercise_name, rm]))
+      const merged = COMMON_LIFTS.map(name => 
+        existingMap.get(name) || { exercise_name: name, weight_kg: 0 }
+      )
+      // Add any custom lifts not in COMMON_LIFTS
+      data?.forEach(rm => {
+        if (!COMMON_LIFTS.includes(rm.exercise_name)) {
+          merged.push(rm)
+        }
+      })
+      setClient1RMs(merged)
+    } catch (err) {
+      console.error('Failed to fetch 1RMs:', err)
+      setClient1RMs(COMMON_LIFTS.map(name => ({ exercise_name: name, weight_kg: 0 })))
+    }
+  }
+
+  const save1RMs = async () => {
+    if (!user) return
+    setSaving1RM(true)
+    
+    try {
+      // Filter to only save non-zero values
+      const toSave = client1RMs.filter(rm => rm.weight_kg > 0)
+      
+      for (const rm of toSave) {
+        const { error } = await supabase
+          .from('client_1rms')
+          .upsert({
+            client_id: user.id,
+            exercise_name: rm.exercise_name,
+            weight_kg: rm.weight_kg,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'client_id,exercise_name'
+          })
+        
+        if (error) throw error
+      }
+      
+      // Delete any that are now zero
+      const toDelete = client1RMs.filter(rm => rm.weight_kg === 0 && rm.id)
+      for (const rm of toDelete) {
+        await supabase
+          .from('client_1rms')
+          .delete()
+          .eq('id', rm.id)
+      }
+      
+      setEditing1RM(false)
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3000)
+      // Refresh the data
+      fetchClient1RMs(user.id)
+    } catch (err) {
+      console.error('Failed to save 1RMs:', err)
+      setError('Failed to save 1RMs')
+    } finally {
+      setSaving1RM(false)
+    }
+  }
+
+  const update1RM = (exerciseName: string, weightKg: number) => {
+    setClient1RMs(prev => prev.map(rm => 
+      rm.exercise_name === exerciseName ? { ...rm, weight_kg: weightKg } : rm
+    ))
   }
 
   const fetchAvailablePrograms = async () => {
@@ -1004,6 +1113,80 @@ export default function UserProfilePage() {
               <p className="text-sm text-zinc-400">Access Types</p>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* 1RM Board */}
+      <div className="card p-6 mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <Weight className="w-5 h-5 text-yellow-400" />
+            <h2 className="text-lg font-semibold text-white">1RM Board</h2>
+          </div>
+          {editing1RM ? (
+            <div className="flex gap-2">
+              <button
+                onClick={save1RMs}
+                disabled={saving1RM}
+                className="flex items-center gap-2 px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-black font-medium rounded-xl transition-colors disabled:opacity-50"
+              >
+                {saving1RM ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Save
+              </button>
+              <button
+                onClick={() => {
+                  setEditing1RM(false)
+                  if (user) fetchClient1RMs(user.id)
+                }}
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setEditing1RM(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-colors"
+            >
+              <Edit2 className="w-4 h-4" />
+              Edit
+            </button>
+          )}
+        </div>
+        
+        <p className="text-sm text-zinc-400 mb-4">
+          Track one-rep maxes to auto-calculate weights when programs use percentage-based intensity.
+        </p>
+        
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {client1RMs.map((rm) => (
+            <div
+              key={rm.exercise_name}
+              className={`p-4 rounded-xl border transition-all ${
+                rm.weight_kg > 0 
+                  ? 'bg-zinc-800/50 border-zinc-700' 
+                  : 'bg-zinc-900/30 border-zinc-800'
+              }`}
+            >
+              <p className="text-sm text-zinc-400 mb-2 truncate">{rm.exercise_name}</p>
+              {editing1RM ? (
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    value={rm.weight_kg || ''}
+                    onChange={(e) => update1RM(rm.exercise_name, parseFloat(e.target.value) || 0)}
+                    placeholder="0"
+                    className="w-full px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-lg font-bold focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                  />
+                  <span className="text-zinc-500 text-sm">kg</span>
+                </div>
+              ) : (
+                <p className={`text-2xl font-bold ${rm.weight_kg > 0 ? 'text-white' : 'text-zinc-600'}`}>
+                  {rm.weight_kg > 0 ? `${rm.weight_kg}kg` : '—'}
+                </p>
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
