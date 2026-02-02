@@ -34,7 +34,6 @@ export default function CreateProgramPage() {
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState('strength')
   const [difficulty, setDifficulty] = useState('intermediate')
-  const [durationWeeks, setDurationWeeks] = useState<number | null>(null)
   const [isActive, setIsActive] = useState(true)
 
   // Workouts
@@ -52,7 +51,7 @@ export default function CreateProgramPage() {
     setError(null)
 
     try {
-      // 1. Create the program
+      // 1. Create the program (duration is set per-assignment, not on program)
       const { data: program, error: programError } = await supabase
         .from('programs')
         .insert({
@@ -60,7 +59,6 @@ export default function CreateProgramPage() {
           description: description.trim() || null,
           category,
           difficulty,
-          duration_weeks: durationWeeks,
           is_active: isActive,
         })
         .select()
@@ -246,22 +244,6 @@ export default function CreateProgramPage() {
               </select>
               <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 pointer-events-none" />
             </div>
-          </div>
-
-          {/* Duration */}
-          <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-2">
-              Duration (weeks)
-            </label>
-            <input
-              type="number"
-              value={durationWeeks || ''}
-              onChange={(e) => setDurationWeeks(e.target.value ? parseInt(e.target.value) : null)}
-              min="1"
-              max="52"
-              className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              placeholder="e.g., 12"
-            />
           </div>
 
           {/* Active Status */}
