@@ -178,11 +178,14 @@ export async function POST(request: NextRequest) {
       .from('profiles')
       .upsert({
         id: newUser.user.id,
+        email: email,
         full_name: full_name || email.split('@')[0],
         role: 'user',
         is_active: true,
         must_change_password: true,
-        password_changed: false
+        password_changed: false,
+        temp_password: tempPassword,
+        status: 'pending'
       })
     
     if (profileError) {

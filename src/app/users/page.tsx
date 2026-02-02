@@ -1,6 +1,9 @@
-import { createClient } from '@/lib/supabase/server'
+'use client'
+
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { UserPlus, Search, Filter, MoreVertical, Mail, Edit2, Trash2 } from 'lucide-react'
+import { UserPlus, Search, Filter, Mail, Edit2, Trash2, Key, Clock, Copy, Check, RefreshCw } from 'lucide-react'
 
 interface User {
   id: string
@@ -8,6 +11,9 @@ interface User {
   full_name: string | null
   is_active: boolean
   created_at: string
+  status: string | null
+  temp_password: string | null
+  password_changed: boolean | null
   user_permissions?: {
     can_access_strength: boolean
     can_access_cardio: boolean
@@ -15,30 +21,60 @@ interface User {
   }[]
 }
 
-async function getUsers(): Promise<User[]> {
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('profiles')
-    .select(`
-      id,
-      email,
-      full_name,
-      is_active,
-      created_at,
-      user_permissions (
-        can_access_strength,
-        can_access_cardio,
-        can_access_hyrox
-      )
-    `)
-    .eq('role', 'user')
-    .order('created_at', { ascending: false })
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false)
   
-  return (data as User[]) || []
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+  
+  return (
+    <button 
+      onClick={handleCopy}
+      className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+      title="Copy password"
+    >
+      {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+    </button>
+  )
 }
 
-export default async function UsersPage() {
-  const users = await getUsers()
+export default function UsersPage() {
+  const [users, setUsers] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
+
+  const fetchUsers = async () => {
+    setLoading(true)
+    const { data } = await supabase
+      .from('profiles')
+      .select(`
+        id,
+        email,
+        full_name,
+        is_active,
+        created_at,
+        status,
+        temp_password,
+        password_changed,
+        user_permissions (
+          can_access_strength,
+          can_access_cardio,
+          can_access_hyrox
+        )
+      `)
+      .eq('role', 'user')
+      .order('created_at', { ascending: false })
+    
+    setUsers((data as User[]) || [])
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    fetchUsers()
+  }, [])
 
   return (
     <div className="space-y-6">
@@ -48,13 +84,22 @@ export default async function UsersPage() {
           <h1 className="text-3xl font-bold text-white">Users</h1>
           <p className="text-zinc-400 mt-1">Manage your fitness clients</p>
         </div>
-        <Link
-          href="/users/new"
-          className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded-xl font-medium transition-colors"
-        >
-          <UserPlus className="w-5 h-5" />
-          Add User
-        </Link>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={fetchUsers}
+            disabled={loading}
+            className="flex items-center gap-2 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+          <Link
+            href="/users/new"
+            className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded-xl font-medium transition-colors"
+          >
+            <UserPlus className="w-5 h-5" />
+            Add User
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}
@@ -82,8 +127,8 @@ export default async function UsersPage() {
                 <tr>
                   <th>User</th>
                   <th>Email</th>
-                  <th>Permissions</th>
                   <th>Status</th>
+                  <th>Temp Password</th>
                   <th>Joined</th>
                   <th className="w-12"></th>
                 </tr>
@@ -105,31 +150,34 @@ export default async function UsersPage() {
                     <td>
                       <div className="flex items-center gap-2">
                         <Mail className="w-4 h-4 text-zinc-500" />
-                        {user.email}
+                        {user.email || 'No email'}
                       </div>
                     </td>
                     <td>
-                      <div className="flex gap-1 flex-wrap">
-                        {user.user_permissions?.[0]?.can_access_strength && (
-                          <span className="badge badge-info">Strength</span>
-                        )}
-                        {user.user_permissions?.[0]?.can_access_cardio && (
-                          <span className="badge badge-success">Cardio</span>
-                        )}
-                        {user.user_permissions?.[0]?.can_access_hyrox && (
-                          <span className="badge badge-warning">HYROX</span>
-                        )}
-                        {!user.user_permissions?.[0]?.can_access_strength && 
-                         !user.user_permissions?.[0]?.can_access_cardio && 
-                         !user.user_permissions?.[0]?.can_access_hyrox && (
-                          <span className="text-zinc-500 text-xs">No permissions</span>
-                        )}
-                      </div>
+                      {user.password_changed ? (
+                        <span className="badge badge-success">Active</span>
+                      ) : user.status === 'pending' ? (
+                        <span className="badge badge-warning flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          Pending
+                        </span>
+                      ) : (
+                        <span className="badge badge-info">Invited</span>
+                      )}
                     </td>
                     <td>
-                      <span className={`badge ${user.is_active ? 'badge-success' : 'badge-error'}`}>
-                        {user.is_active ? 'Active' : 'Inactive'}
-                      </span>
+                      {user.temp_password && !user.password_changed ? (
+                        <div className="flex items-center gap-2">
+                          <code className="bg-zinc-800 px-2 py-1 rounded text-xs text-yellow-400 font-mono">
+                            {user.temp_password}
+                          </code>
+                          <CopyButton text={user.temp_password} />
+                        </div>
+                      ) : user.password_changed ? (
+                        <span className="text-zinc-500 text-xs">Changed</span>
+                      ) : (
+                        <span className="text-zinc-500 text-xs">—</span>
+                      )}
                     </td>
                     <td className="text-zinc-500">
                       {new Date(user.created_at).toLocaleDateString()}
