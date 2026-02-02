@@ -442,6 +442,24 @@ export default function UserProfilePage() {
     }
   }
 
+  // Update ALL sets for an exercise at once
+  const updateAllExerciseSets = (exerciseId: string, field: keyof CustomizedSet, value: string) => {
+    const updated = new Map(customizedSets)
+    // Find all sets for this exercise and update them
+    updated.forEach((setData, key) => {
+      if (key.startsWith(`${exerciseId}-`)) {
+        updated.set(key, { ...setData, [field]: value })
+      }
+    })
+    setCustomizedSets(updated)
+  }
+
+  // Get the first set's values for an exercise (to display in the single row)
+  const getExerciseSetValues = (exerciseId: string) => {
+    const firstSetKey = `${exerciseId}-1`
+    return customizedSets.get(firstSetKey)
+  }
+
   const toggleWorkoutExpanded = (workoutId: string) => {
     const newExpanded = new Set(expandedWorkouts)
     if (newExpanded.has(workoutId)) {
@@ -827,78 +845,75 @@ export default function UserProfilePage() {
                           
                           {expandedWorkouts.has(workout.id) && (
                             <div className="border-t border-zinc-800">
-                              {workout.workout_exercises.map((exercise: WorkoutExercise, exIdx: number) => (
-                                <div key={exercise.id} className="border-b border-zinc-800/50 last:border-b-0">
-                                  <div className="px-4 py-3 bg-zinc-800/30">
-                                    <span className="text-zinc-400 font-mono text-sm mr-2">{exIdx + 1}.</span>
-                                    <span className="text-white font-medium">{exercise.exercise_name}</span>
-                                  </div>
-                                  <table className="w-full text-sm">
-                                    <thead>
-                                      <tr className="text-xs text-zinc-500 uppercase bg-zinc-800/20">
-                                        <th className="px-4 py-2 text-left w-16">Set</th>
-                                        <th className="px-4 py-2 text-left">Reps</th>
-                                        <th className="px-4 py-2 text-left">Intensity</th>
-                                        <th className="px-4 py-2 text-left">Rest</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {exercise.exercise_sets.map((set: ExerciseSet) => {
-                                        const key = `${exercise.id}-${set.set_number}`
-                                        const customSet = customizedSets.get(key)
-                                        return (
-                                          <tr key={set.id} className="border-t border-zinc-800/30">
-                                            <td className="px-4 py-2">
-                                              <span className="text-zinc-400 font-mono">{set.set_number}</span>
-                                            </td>
-                                            <td className="px-4 py-2">
-                                              <input
-                                                type="text"
-                                                value={customSet?.reps || set.reps}
-                                                onChange={(e) => updateCustomizedSet(exercise.id, set.set_number, 'reps', e.target.value)}
-                                                className="w-20 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                                                placeholder="8-12"
-                                              />
-                                            </td>
-                                            <td className="px-4 py-2">
-                                              <div className="flex gap-1">
-                                                <select
-                                                  value={customSet?.intensity_type || set.intensity_type}
-                                                  onChange={(e) => updateCustomizedSet(exercise.id, set.set_number, 'intensity_type', e.target.value)}
-                                                  className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                                                >
-                                                  <option value="rir">RIR</option>
-                                                  <option value="rpe">RPE</option>
-                                                  <option value="percentage">%</option>
-                                                </select>
-                                                <input
-                                                  type="text"
-                                                  value={customSet?.intensity_value || set.intensity_value}
-                                                  onChange={(e) => updateCustomizedSet(exercise.id, set.set_number, 'intensity_value', e.target.value)}
-                                                  className="w-14 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                                                  placeholder="2"
-                                                />
-                                              </div>
-                                            </td>
-                                            <td className="px-4 py-2">
-                                              <div className="flex items-center gap-1">
-                                                <input
-                                                  type="text"
-                                                  value={customSet?.rest_bracket || set.rest_bracket || '90-120'}
-                                                  onChange={(e) => updateCustomizedSet(exercise.id, set.set_number, 'rest_bracket', e.target.value)}
-                                                  className="w-20 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                                                  placeholder="90-120"
-                                                />
-                                                <span className="text-xs text-zinc-500">s</span>
-                                              </div>
-                                            </td>
-                                          </tr>
-                                        )
-                                      })}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              ))}
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="text-xs text-zinc-500 uppercase bg-zinc-800/20">
+                                    <th className="px-4 py-2 text-left">Exercise</th>
+                                    <th className="px-4 py-2 text-left w-16">Sets</th>
+                                    <th className="px-4 py-2 text-left">Reps</th>
+                                    <th className="px-4 py-2 text-left">Intensity</th>
+                                    <th className="px-4 py-2 text-left">Rest</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                              {workout.workout_exercises.map((exercise: WorkoutExercise, exIdx: number) => {
+                                const setValues = getExerciseSetValues(exercise.id)
+                                const firstSet = exercise.exercise_sets[0]
+                                return (
+                                  <tr key={exercise.id} className="border-t border-zinc-800/30">
+                                    <td className="px-4 py-3">
+                                      <span className="text-zinc-500 font-mono text-xs mr-2">{exIdx + 1}.</span>
+                                      <span className="text-white font-medium">{exercise.exercise_name}</span>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <span className="text-zinc-400 font-mono">{exercise.exercise_sets.length}</span>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <input
+                                        type="text"
+                                        value={setValues?.reps || firstSet?.reps || ''}
+                                        onChange={(e) => updateAllExerciseSets(exercise.id, 'reps', e.target.value)}
+                                        className="w-20 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                        placeholder="8-12"
+                                      />
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <div className="flex gap-1">
+                                        <select
+                                          value={setValues?.intensity_type || firstSet?.intensity_type || 'rir'}
+                                          onChange={(e) => updateAllExerciseSets(exercise.id, 'intensity_type', e.target.value)}
+                                          className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                        >
+                                          <option value="rir">RIR</option>
+                                          <option value="rpe">RPE</option>
+                                          <option value="percentage">%</option>
+                                        </select>
+                                        <input
+                                          type="text"
+                                          value={setValues?.intensity_value || firstSet?.intensity_value || ''}
+                                          onChange={(e) => updateAllExerciseSets(exercise.id, 'intensity_value', e.target.value)}
+                                          className="w-14 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                          placeholder="2"
+                                        />
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <div className="flex items-center gap-1">
+                                        <input
+                                          type="text"
+                                          value={setValues?.rest_bracket || firstSet?.rest_bracket || '90-120'}
+                                          onChange={(e) => updateAllExerciseSets(exercise.id, 'rest_bracket', e.target.value)}
+                                          className="w-20 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                          placeholder="90-120"
+                                        />
+                                        <span className="text-xs text-zinc-500">s</span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )
+                              })}
+                                </tbody>
+                              </table>
                             </div>
                           )}
                         </div>
