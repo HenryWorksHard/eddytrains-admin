@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { 
   ArrowLeft, 
   Save, 
@@ -42,6 +43,7 @@ interface User {
   status: string | null
   temp_password: string | null
   password_changed: boolean | null
+  profile_picture_url: string | null
   created_at: string
   updated_at: string
 }
@@ -971,9 +973,21 @@ export default function UserProfilePage() {
       {/* Profile Header Card */}
       <div className="card p-6 mb-6">
         <div className="flex items-start gap-6">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center text-black text-3xl font-bold flex-shrink-0">
-            {user.full_name?.[0]?.toUpperCase() || user.email[0].toUpperCase()}
-          </div>
+          {user.profile_picture_url ? (
+            <div className="w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0 relative">
+              <Image
+                src={user.profile_picture_url}
+                alt={user.full_name || 'Profile'}
+                fill
+                className="object-cover"
+                sizes="80px"
+              />
+            </div>
+          ) : (
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center text-black text-3xl font-bold flex-shrink-0">
+              {user.full_name?.[0]?.toUpperCase() || user.email[0].toUpperCase()}
+            </div>
+          )}
           
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-2">
