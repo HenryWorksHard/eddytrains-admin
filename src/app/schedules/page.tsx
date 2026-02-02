@@ -91,6 +91,8 @@ export default function SchedulesPage() {
   const [saving, setSaving] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
   const [draggedItem, setDraggedItem] = useState<string | null>(null)
+  const [clientSearch, setClientSearch] = useState('')
+  const [showClientDropdown, setShowClientDropdown] = useState(false)
 
   // Wizard state
   const [wizardStep, setWizardStep] = useState<'select' | 'customize'>('select')
@@ -498,23 +500,62 @@ export default function SchedulesPage() {
       <div className="card p-6">
         <label className="block text-sm font-medium text-zinc-400 mb-3">Select Client</label>
         <div className="relative max-w-md">
-          <select
-            value={selectedClient?.id || ''}
+          <input
+            type="text"
+            value={selectedClient ? (selectedClient.full_name || selectedClient.email) : clientSearch}
             onChange={(e) => {
-              const client = clients.find(c => c.id === e.target.value)
-              setSelectedClient(client || null)
+              setClientSearch(e.target.value)
+              setSelectedClient(null)
+              setShowClientDropdown(true)
             }}
-            className="w-full appearance-none px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 pr-10"
-          >
-            <option value="">Choose a client...</option>
-            {clients.map(client => (
-              <option key={client.id} value={client.id}>
-                {client.full_name || client.email}
-              </option>
-            ))}
-          </select>
+            onFocus={() => setShowClientDropdown(true)}
+            placeholder="Search clients..."
+            className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 pr-10"
+          />
           <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 pointer-events-none" />
+          
+          {showClientDropdown && (
+            <div className="absolute z-50 mt-2 w-full bg-zinc-800 border border-zinc-700 rounded-xl shadow-xl max-h-64 overflow-y-auto">
+              {clients
+                .filter(c => {
+                  const search = clientSearch.toLowerCase()
+                  return (c.full_name?.toLowerCase().includes(search) || c.email.toLowerCase().includes(search))
+                })
+                .map(client => (
+                  <button
+                    key={client.id}
+                    onClick={() => {
+                      setSelectedClient(client)
+                      setClientSearch('')
+                      setShowClientDropdown(false)
+                    }}
+                    className={`w-full px-4 py-3 text-left hover:bg-zinc-700 transition-colors flex items-center justify-between ${
+                      selectedClient?.id === client.id ? 'bg-yellow-400/10 text-yellow-400' : 'text-white'
+                    }`}
+                  >
+                    <div>
+                      <p className="font-medium">{client.full_name || 'No name'}</p>
+                      <p className="text-sm text-zinc-500">{client.email}</p>
+                    </div>
+                    {selectedClient?.id === client.id && <Check className="w-4 h-4" />}
+                  </button>
+                ))}
+              {clients.filter(c => {
+                const search = clientSearch.toLowerCase()
+                return (c.full_name?.toLowerCase().includes(search) || c.email.toLowerCase().includes(search))
+              }).length === 0 && (
+                <p className="px-4 py-3 text-zinc-500 text-center">No clients found</p>
+              )}
+            </div>
+          )}
         </div>
+        {/* Click outside to close */}
+        {showClientDropdown && (
+          <div 
+            className="fixed inset-0 z-40" 
+            onClick={() => setShowClientDropdown(false)}
+          />
+        )}
       </div>
 
       {/* Program Timeline */}
