@@ -61,15 +61,14 @@ interface ProgramWorkout {
   workout_exercises: WorkoutExercise[]
 }
 
-interface CustomizedSet {
+// Exercise-level customization (applies to all sets)
+interface ExerciseCustomization {
   workout_exercise_id: string
-  set_number: number
+  set_count: number
   reps: string
   intensity_type: string
   intensity_value: string
   rest_bracket: string
-  weight_type: string
-  notes: string
 }
 
 const categoryColors: Record<string, string> = {
@@ -99,16 +98,14 @@ export default function SchedulesPage() {
   const [assignDuration, setAssignDuration] = useState(4)
   const [phaseName, setPhaseName] = useState('')
   const [programWorkouts, setProgramWorkouts] = useState<ProgramWorkout[]>([])
-  const [customizedSets, setCustomizedSets] = useState<Map<string, CustomizedSet>>(new Map())
+  const [exerciseCustomizations, setExerciseCustomizations] = useState<Map<string, ExerciseCustomization>>(new Map())
   const [expandedWorkouts, setExpandedWorkouts] = useState<Set<string>>(new Set())
   const [loadingWorkouts, setLoadingWorkouts] = useState(false)
 
-  // Load clients and programs on mount
   useEffect(() => {
     loadInitialData()
   }, [])
 
-  // Load client programs when client is selected
   useEffect(() => {
     if (selectedClient) {
       loadClientPrograms(selectedClient.id)
@@ -146,7 +143,6 @@ export default function SchedulesPage() {
 
       if (error) throw error
 
-      // Calculate end dates and set order
       const programsWithDates = (data || []).map((cp, index) => ({
         ...cp,
         duration_weeks: cp.duration_weeks || cp.program?.duration_weeks || 4,
@@ -183,7 +179,7 @@ export default function SchedulesPage() {
     setPhaseName('')
     setWizardStep('select')
     setProgramWorkouts([])
-    setCustomizedSets(new Map())
+    setExerciseCustomizations(new Map())
     setExpandedWorkouts(new Set())
     setShowAddModal(true)
   }
@@ -218,7 +214,6 @@ export default function SchedulesPage() {
       
       if (error) throw error
       
-      // Sort workout_exercises and their sets
       const sortedWorkouts = (workouts || []).map(w => ({
         ...w,
         workout_exercises: (w.workout_exercises || [])
@@ -227,37 +222,30 @@ export default function SchedulesPage() {
             ...ex,
             exercise_sets: (ex.exercise_sets || [])
               .sort((a: ExerciseSet, b: ExerciseSet) => a.set_number - b.set_number)
-              .map((set: ExerciseSet) => ({
-                ...set,
-                rest_bracket: set.rest_bracket || `${set.rest_seconds || 90}`
-              }))
           }))
       }))
       
       setProgramWorkouts(sortedWorkouts)
       
-      // Initialize customized sets with default values
-      const initialCustomizations = new Map<string, CustomizedSet>()
+      // Initialize exercise customizations with defaults from first set
+      const initialCustomizations = new Map<string, ExerciseCustomization>()
       sortedWorkouts.forEach(workout => {
         workout.workout_exercises.forEach((exercise: WorkoutExercise) => {
-          exercise.exercise_sets.forEach((set: ExerciseSet) => {
-            const key = `${exercise.id}-${set.set_number}`
-            initialCustomizations.set(key, {
+          const firstSet = exercise.exercise_sets[0]
+          if (firstSet) {
+            initialCustomizations.set(exercise.id, {
               workout_exercise_id: exercise.id,
-              set_number: set.set_number,
-              reps: set.reps,
-              intensity_type: set.intensity_type,
-              intensity_value: set.intensity_value,
-              rest_bracket: set.rest_bracket || '90-120',
-              weight_type: 'freeweight',
-              notes: set.notes || ''
+              set_count: exercise.exercise_sets.length,
+              reps: firstSet.reps,
+              intensity_type: firstSet.intensity_type,
+              intensity_value: firstSet.intensity_value,
+              rest_bracket: firstSet.rest_bracket || `${firstSet.rest_seconds || 90}`
             })
-          })
+          }
         })
       })
-      setCustomizedSets(initialCustomizations)
+      setExerciseCustomizations(initialCustomizations)
       
-      // Expand first workout by default
       if (sortedWorkouts.length > 0) {
         setExpandedWorkouts(new Set([sortedWorkouts[0].id]))
       }
@@ -274,13 +262,12 @@ export default function SchedulesPage() {
     setWizardStep('customize')
   }
 
-  const updateCustomizedSet = (exerciseId: string, setNumber: number, field: keyof CustomizedSet, value: string) => {
-    const key = `${exerciseId}-${setNumber}`
-    const existing = customizedSets.get(key)
+  const updateExerciseCustomization = (exerciseId: string, field: keyof ExerciseCustomization, value: string | number) => {
+    const existing = exerciseCustomizations.get(exerciseId)
     if (existing) {
-      const updated = new Map(customizedSets)
-      updated.set(key, { ...existing, [field]: value })
-      setCustomizedSets(updated)
+      const updated = new Map(exerciseCustomizations)
+      updated.set(exerciseId, { ...existing, [field]: value })
+      setExerciseCustomizations(updated)
     }
   }
 
@@ -311,7 +298,7 @@ export default function SchedulesPage() {
           end_date: endDate,
           duration_weeks: assignDuration,
           phase_name: phaseName || null,
-          is_active: clientPrograms.length === 0, // First program is active
+          is_active: clientPrograms.length === 0,
           current_week: 1,
         })
         .select(`
@@ -322,27 +309,45 @@ export default function SchedulesPage() {
 
       if (error) throw error
 
-      // Insert customized sets if we have any
-      if (customizedSets.size > 0 && clientProgram) {
-        const setsToInsert = Array.from(customizedSets.values()).map(set => ({
-          client_program_id: clientProgram.id,
-          workout_exercise_id: set.workout_exercise_id,
-          set_number: set.set_number,
-          reps: set.reps,
-          intensity_type: set.intensity_type,
-          intensity_value: set.intensity_value,
-          rest_bracket: set.rest_bracket,
-          weight_type: set.weight_type,
-          notes: set.notes || null
-        }))
+      // Convert exercise-level customizations to set-level for database
+      if (exerciseCustomizations.size > 0 && clientProgram) {
+        const setsToInsert: {
+          client_program_id: string
+          workout_exercise_id: string
+          set_number: number
+          reps: string
+          intensity_type: string
+          intensity_value: string
+          rest_bracket: string
+          weight_type: string
+          notes: string | null
+        }[] = []
         
-        const { error: setsError } = await supabase
-          .from('client_exercise_sets')
-          .insert(setsToInsert)
+        exerciseCustomizations.forEach((custom) => {
+          // Create sets based on set_count
+          for (let i = 1; i <= custom.set_count; i++) {
+            setsToInsert.push({
+              client_program_id: clientProgram.id,
+              workout_exercise_id: custom.workout_exercise_id,
+              set_number: i,
+              reps: custom.reps,
+              intensity_type: custom.intensity_type,
+              intensity_value: custom.intensity_value,
+              rest_bracket: custom.rest_bracket,
+              weight_type: 'freeweight',
+              notes: null
+            })
+          }
+        })
         
-        if (setsError) {
-          console.error('Failed to save custom sets:', setsError)
-          // Don't throw - program was assigned successfully
+        if (setsToInsert.length > 0) {
+          const { error: setsError } = await supabase
+            .from('client_exercise_sets')
+            .insert(setsToInsert)
+          
+          if (setsError) {
+            console.error('Failed to save custom sets:', setsError)
+          }
         }
       }
 
@@ -362,7 +367,6 @@ export default function SchedulesPage() {
     try {
       await supabase.from('client_programs').delete().eq('id', programId)
       setClientPrograms(clientPrograms.filter(cp => cp.id !== programId))
-      // Recalculate dates for remaining programs
       await recalculateDates(clientPrograms.filter(cp => cp.id !== programId))
     } catch (err) {
       console.error('Error removing program:', err)
@@ -385,11 +389,9 @@ export default function SchedulesPage() {
         .update({ duration_weeks: newDuration, end_date: newEndDate })
         .eq('id', programId)
 
-      // Update local state and recalculate subsequent dates
       const updated = [...clientPrograms]
       updated[programIndex] = { ...program, duration_weeks: newDuration, end_date: newEndDate }
       
-      // Recalculate start dates for subsequent programs
       for (let i = programIndex + 1; i < updated.length; i++) {
         const prevEndDate = updated[i - 1].end_date!
         const newStartDate = new Date(prevEndDate)
@@ -455,12 +457,10 @@ export default function SchedulesPage() {
 
     if (draggedIndex === -1 || targetIndex === -1) return
 
-    // Reorder the array
     const newPrograms = [...clientPrograms]
     const [removed] = newPrograms.splice(draggedIndex, 1)
     newPrograms.splice(targetIndex, 0, removed)
 
-    // Recalculate all dates based on new order
     await recalculateDates(newPrograms)
     setDraggedItem(null)
   }
@@ -543,7 +543,7 @@ export default function SchedulesPage() {
             <div className="text-center py-12 border-2 border-dashed border-zinc-800 rounded-xl">
               <Calendar className="w-12 h-12 text-zinc-700 mx-auto mb-3" />
               <h3 className="text-lg font-medium text-zinc-400 mb-2">No programs scheduled</h3>
-              <p className="text-zinc-500 text-sm mb-4">Add a program to start building this client's schedule</p>
+              <p className="text-zinc-500 text-sm mb-4">Add a program to start building this client&apos;s schedule</p>
               <button
                 onClick={openAddModal}
                 className="inline-flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-xl transition-colors"
@@ -579,14 +579,12 @@ export default function SchedulesPage() {
                       <GripVertical className="w-5 h-5" />
                     </div>
 
-                    {/* Order number */}
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
                       isCurrent ? 'bg-yellow-400 text-black' : 'bg-zinc-700 text-zinc-400'
                     }`}>
                       {index + 1}
                     </div>
 
-                    {/* Program info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <h3 className={`font-semibold ${isCurrent ? 'text-white' : 'text-zinc-300'}`}>
@@ -616,7 +614,6 @@ export default function SchedulesPage() {
                       </div>
                     </div>
 
-                    {/* Duration selector */}
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-zinc-500" />
                       <select
@@ -630,7 +627,6 @@ export default function SchedulesPage() {
                       </select>
                     </div>
 
-                    {/* Delete button */}
                     <button
                       onClick={() => removeProgram(cp.id)}
                       className="p-2 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-colors"
@@ -641,7 +637,6 @@ export default function SchedulesPage() {
                 )
               })}
 
-              {/* Timeline summary */}
               <div className="mt-6 pt-6 border-t border-zinc-800">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-zinc-500">Total scheduled:</span>
@@ -667,7 +662,7 @@ export default function SchedulesPage() {
       {/* Add Program Modal - Wizard */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className={`bg-zinc-900 border border-zinc-800 rounded-2xl w-full ${wizardStep === 'customize' ? 'max-w-4xl max-h-[90vh] overflow-hidden flex flex-col' : 'max-w-lg'}`}>
+          <div className={`bg-zinc-900 border border-zinc-800 rounded-2xl w-full ${wizardStep === 'customize' ? 'max-w-3xl max-h-[90vh] overflow-hidden flex flex-col' : 'max-w-lg'}`}>
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-zinc-800 flex-shrink-0">
               <div className="flex items-center gap-3">
@@ -681,7 +676,7 @@ export default function SchedulesPage() {
                 )}
                 <div>
                   <h3 className="text-xl font-semibold text-white">
-                    {wizardStep === 'select' ? 'Add Program to Schedule' : 'Customize Sets'}
+                    {wizardStep === 'select' ? 'Add Program to Schedule' : 'Customize Exercises'}
                   </h3>
                   <p className="text-sm text-zinc-500">
                     {wizardStep === 'select' 
@@ -700,7 +695,6 @@ export default function SchedulesPage() {
             {wizardStep === 'select' && (
               <>
                 <div className="p-6 space-y-6">
-                  {/* Program Selection */}
                   <div>
                     <label className="block text-sm font-medium text-zinc-400 mb-2">Select Program</label>
                     <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -733,13 +727,9 @@ export default function SchedulesPage() {
                           )}
                         </div>
                       ))}
-                      {programs.length === 0 && (
-                        <p className="text-zinc-500 text-center py-4">No programs available</p>
-                      )}
                     </div>
                   </div>
 
-                  {/* Phase Name & Duration */}
                   {selectedProgram && (
                     <>
                       <div>
@@ -772,27 +762,6 @@ export default function SchedulesPage() {
                             </button>
                           ))}
                         </div>
-                        <input
-                          type="number"
-                          value={assignDuration}
-                          onChange={(e) => setAssignDuration(parseInt(e.target.value) || 4)}
-                          min="1"
-                          max="52"
-                          className="mt-3 w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                          placeholder="Custom weeks"
-                        />
-                      </div>
-
-                      {/* Preview */}
-                      <div className="p-4 bg-zinc-800/50 rounded-xl">
-                        <p className="text-sm text-zinc-400 mb-2">Preview:</p>
-                        <p className="text-white font-medium">{selectedProgram.name}</p>
-                        <p className="text-sm text-zinc-500">
-                          {new Date(getNextStartDate()).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}
-                          {' → '}
-                          {new Date(new Date(getNextStartDate()).getTime() + (assignDuration * 7 * 24 * 60 * 60 * 1000)).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
-                          {' '}({assignDuration} weeks)
-                        </p>
                       </div>
                     </>
                   )}
@@ -811,14 +780,14 @@ export default function SchedulesPage() {
                     className="flex items-center gap-2 px-4 py-2 bg-yellow-400 hover:bg-yellow-500 disabled:bg-yellow-400/50 text-black font-medium rounded-xl transition-colors"
                   >
                     <Settings2 className="w-4 h-4" />
-                    Customize Sets
+                    Customize
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
               </>
             )}
             
-            {/* Step 2: Customize Sets */}
+            {/* Step 2: Customize Exercises (Grouped) */}
             {wizardStep === 'customize' && (
               <>
                 <div className="p-6 overflow-y-auto flex-1">
@@ -830,14 +799,13 @@ export default function SchedulesPage() {
                     <div className="text-center py-12">
                       <Dumbbell className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
                       <p className="text-zinc-400">This program has no workouts yet.</p>
-                      <p className="text-zinc-500 text-sm mt-2">You can still assign it with default values.</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
                       {phaseName && (
                         <div className="bg-yellow-400/10 border border-yellow-400/20 rounded-xl px-4 py-3">
                           <p className="text-sm text-yellow-400 font-medium">{phaseName}</p>
-                          <p className="text-xs text-zinc-400">{assignDuration} weeks • Customize the intensity below</p>
+                          <p className="text-xs text-zinc-400">{assignDuration} weeks</p>
                         </div>
                       )}
                       
@@ -864,79 +832,83 @@ export default function SchedulesPage() {
                           </button>
                           
                           {expandedWorkouts.has(workout.id) && (
-                            <div className="border-t border-zinc-800">
-                              {workout.workout_exercises.map((exercise: WorkoutExercise, exIdx: number) => (
-                                <div key={exercise.id} className="border-b border-zinc-800/50 last:border-b-0">
-                                  <div className="px-4 py-3 bg-zinc-800/30">
-                                    <span className="text-zinc-400 font-mono text-sm mr-2">{exIdx + 1}.</span>
-                                    <span className="text-white font-medium">{exercise.exercise_name}</span>
+                            <div className="border-t border-zinc-800 divide-y divide-zinc-800/50">
+                              {workout.workout_exercises.map((exercise: WorkoutExercise, exIdx: number) => {
+                                const custom = exerciseCustomizations.get(exercise.id)
+                                return (
+                                  <div key={exercise.id} className="p-4 hover:bg-zinc-800/20">
+                                    <div className="flex items-center gap-3 mb-3">
+                                      <span className="w-6 h-6 rounded bg-yellow-400/10 text-yellow-400 flex items-center justify-center text-xs font-bold">
+                                        {exIdx + 1}
+                                      </span>
+                                      <span className="text-white font-medium">{exercise.exercise_name}</span>
+                                    </div>
+                                    
+                                    {/* Grouped controls */}
+                                    <div className="grid grid-cols-4 gap-3">
+                                      {/* Sets */}
+                                      <div>
+                                        <label className="block text-xs text-zinc-500 mb-1">Sets</label>
+                                        <input
+                                          type="number"
+                                          min="1"
+                                          max="10"
+                                          value={custom?.set_count || exercise.exercise_sets.length}
+                                          onChange={(e) => updateExerciseCustomization(exercise.id, 'set_count', parseInt(e.target.value) || 1)}
+                                          className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                        />
+                                      </div>
+                                      
+                                      {/* Reps */}
+                                      <div>
+                                        <label className="block text-xs text-zinc-500 mb-1">Reps</label>
+                                        <input
+                                          type="text"
+                                          value={custom?.reps || ''}
+                                          onChange={(e) => updateExerciseCustomization(exercise.id, 'reps', e.target.value)}
+                                          placeholder="8-12"
+                                          className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                        />
+                                      </div>
+                                      
+                                      {/* Intensity */}
+                                      <div>
+                                        <label className="block text-xs text-zinc-500 mb-1">Intensity</label>
+                                        <div className="flex gap-1">
+                                          <select
+                                            value={custom?.intensity_type || 'rir'}
+                                            onChange={(e) => updateExerciseCustomization(exercise.id, 'intensity_type', e.target.value)}
+                                            className="flex-1 px-2 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                          >
+                                            <option value="rir">RIR</option>
+                                            <option value="rpe">RPE</option>
+                                            <option value="percentage">%</option>
+                                          </select>
+                                          <input
+                                            type="text"
+                                            value={custom?.intensity_value || ''}
+                                            onChange={(e) => updateExerciseCustomization(exercise.id, 'intensity_value', e.target.value)}
+                                            placeholder="2"
+                                            className="w-14 px-2 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                          />
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Rest */}
+                                      <div>
+                                        <label className="block text-xs text-zinc-500 mb-1">Rest (s)</label>
+                                        <input
+                                          type="text"
+                                          value={custom?.rest_bracket || ''}
+                                          onChange={(e) => updateExerciseCustomization(exercise.id, 'rest_bracket', e.target.value)}
+                                          placeholder="90-120"
+                                          className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                        />
+                                      </div>
+                                    </div>
                                   </div>
-                                  <table className="w-full text-sm">
-                                    <thead>
-                                      <tr className="text-xs text-zinc-500 uppercase bg-zinc-800/20">
-                                        <th className="px-4 py-2 text-left w-16">Set</th>
-                                        <th className="px-4 py-2 text-left">Reps</th>
-                                        <th className="px-4 py-2 text-left">Intensity</th>
-                                        <th className="px-4 py-2 text-left">Rest</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {exercise.exercise_sets.map((set: ExerciseSet) => {
-                                        const key = `${exercise.id}-${set.set_number}`
-                                        const customSet = customizedSets.get(key)
-                                        return (
-                                          <tr key={set.id} className="border-t border-zinc-800/30">
-                                            <td className="px-4 py-2">
-                                              <span className="text-zinc-400 font-mono">{set.set_number}</span>
-                                            </td>
-                                            <td className="px-4 py-2">
-                                              <input
-                                                type="text"
-                                                value={customSet?.reps || set.reps}
-                                                onChange={(e) => updateCustomizedSet(exercise.id, set.set_number, 'reps', e.target.value)}
-                                                className="w-20 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                                                placeholder="8-12"
-                                              />
-                                            </td>
-                                            <td className="px-4 py-2">
-                                              <div className="flex gap-1">
-                                                <select
-                                                  value={customSet?.intensity_type || set.intensity_type}
-                                                  onChange={(e) => updateCustomizedSet(exercise.id, set.set_number, 'intensity_type', e.target.value)}
-                                                  className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                                                >
-                                                  <option value="rir">RIR</option>
-                                                  <option value="rpe">RPE</option>
-                                                  <option value="percentage">%</option>
-                                                </select>
-                                                <input
-                                                  type="text"
-                                                  value={customSet?.intensity_value || set.intensity_value}
-                                                  onChange={(e) => updateCustomizedSet(exercise.id, set.set_number, 'intensity_value', e.target.value)}
-                                                  className="w-14 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                                                  placeholder="2"
-                                                />
-                                              </div>
-                                            </td>
-                                            <td className="px-4 py-2">
-                                              <div className="flex items-center gap-1">
-                                                <input
-                                                  type="text"
-                                                  value={customSet?.rest_bracket || set.rest_bracket || '90-120'}
-                                                  onChange={(e) => updateCustomizedSet(exercise.id, set.set_number, 'rest_bracket', e.target.value)}
-                                                  className="w-20 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                                                  placeholder="90-120"
-                                                />
-                                                <span className="text-xs text-zinc-500">s</span>
-                                              </div>
-                                            </td>
-                                          </tr>
-                                        )
-                                      })}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              ))}
+                                )
+                              })}
                             </div>
                           )}
                         </div>
