@@ -31,6 +31,7 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import UserSchedule from './UserSchedule'
+import UserProgressImages from './UserProgressImages'
 
 interface User {
   id: string
@@ -1037,7 +1038,7 @@ export default function UserProfilePage() {
             )}
           </div>
 
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 flex flex-col sm:flex-row gap-2">
             {editMode ? (
               <div className="flex gap-2">
                 <button
@@ -1056,13 +1057,16 @@ export default function UserProfilePage() {
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => setEditMode(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-colors"
-              >
-                <Edit2 className="w-4 h-4" />
-                Edit
-              </button>
+              <>
+                <UserProgressImages userId={user.id} userName={user.full_name || user.email} />
+                <button
+                  onClick={() => setEditMode(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-colors"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  Edit
+                </button>
+              </>
             )}
           </div>
         </div>
