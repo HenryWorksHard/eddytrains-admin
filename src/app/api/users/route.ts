@@ -147,6 +147,32 @@ export async function GET() {
   }
 }
 
+// Generate unique slug from name or email
+async function generateSlug(adminClient: ReturnType<typeof getAdminClient>, name: string | null, email: string): Promise<string> {
+  let base = name || email.split('@')[0]
+  base = base.toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .substring(0, 20)
+  
+  if (!base) base = 'user'
+  
+  // Check existing slugs
+  const { data } = await adminClient
+    .from('profiles')
+    .select('slug')
+    .not('slug', 'is', null)
+  
+  const existingSlugs = new Set((data || []).map(p => p.slug))
+  
+  let slug = base
+  let counter = 1
+  while (existingSlugs.has(slug)) {
+    slug = `${base}${counter}`
+    counter++
+  }
+  return slug
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { email, full_name, permissions } = await request.json()
@@ -158,11 +184,14 @@ export async function POST(request: NextRequest) {
     const tempPassword = generateTempPassword()
     const adminClient = getAdminClient()
     
+    // Generate unique slug
+    const slug = await generateSlug(adminClient, full_name, email)
+    
     // Create user with service role (bypasses email confirmation)
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
       email,
       password: tempPassword,
-      email_confirm: true, // Auto-confirm email
+      email_confirm: true,
       user_metadata: {
         full_name: full_name || email.split('@')[0]
       }
@@ -173,37 +202,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: createError.message }, { status: 400 })
     }
     
-    // Create/update profile
+    // Create profile with embedded permissions
     const { error: profileError } = await adminClient
       .from('profiles')
       .upsert({
         id: newUser.user.id,
         email: email,
+        slug: slug,
         full_name: full_name || email.split('@')[0],
         role: 'user',
         is_active: true,
         must_change_password: true,
         password_changed: false,
         temp_password: tempPassword,
-        status: 'pending'
+        status: 'pending',
+        // Permissions embedded directly
+        can_access_strength: permissions?.strength || false,
+        can_access_cardio: permissions?.cardio || false,
+        can_access_hyrox: permissions?.hyrox || false
       })
     
     if (profileError) {
       console.error('Profile error:', profileError)
-    }
-    
-    // Update permissions if provided
-    if (permissions) {
-      await adminClient
-        .from('user_permissions')
-        .upsert({
-          user_id: newUser.user.id,
-          can_access_strength: permissions.strength || false,
-          can_access_cardio: permissions.cardio || false,
-          can_access_hyrox: permissions.hyrox || false,
-          can_access_nutrition: permissions.nutrition || false,
-          can_access_recovery: permissions.recovery || false,
-        })
     }
     
     // Send to Klaviyo
@@ -213,10 +233,11 @@ export async function POST(request: NextRequest) {
       success: true, 
       user: {
         id: newUser.user.id,
-        email: newUser.user.email
+        email: newUser.user.email,
+        slug: slug
       },
       emailSent: klaviyoResult.success && !klaviyoResult.skipped,
-      tempPassword: klaviyoResult.skipped ? tempPassword : undefined // Only return if Klaviyo not configured
+      tempPassword: klaviyoResult.skipped ? tempPassword : undefined
     })
     
   } catch (error) {
