@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, Save } from 'lucide-react'
 import Link from 'next/link'
+import BMRCalculator from '@/components/BMRCalculator'
 
 export default function NewNutritionPlanPage() {
   const router = useRouter()
@@ -80,10 +81,23 @@ export default function NewNutritionPlanPage() {
             value={plan.description}
             onChange={(e) => setPlan({ ...plan, description: e.target.value })}
             placeholder="Brief description of this nutrition plan..."
-            rows={3}
+            rows={2}
             className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-yellow-400/50 resize-none"
           />
         </div>
+
+        {/* BMR Calculator */}
+        <BMRCalculator
+          onApply={(result) => {
+            setPlan({
+              ...plan,
+              calories: result.tdee,
+              protein: result.protein,
+              carbs: result.carbs,
+              fats: result.fats,
+            })
+          }}
+        />
 
         {/* Macros */}
         <div>
