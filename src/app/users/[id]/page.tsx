@@ -31,7 +31,7 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import UserSchedule from './UserSchedule'
-import UserProgressImages from './UserProgressImages'
+import UserProgressGallery from './UserProgressGallery'
 
 interface User {
   id: string
@@ -1057,16 +1057,13 @@ export default function UserProfilePage() {
                 </button>
               </div>
             ) : (
-              <>
-                <UserProgressImages userId={user.id} userName={user.full_name || user.email} />
-                <button
-                  onClick={() => setEditMode(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  Edit
-                </button>
-              </>
+              <button
+                onClick={() => setEditMode(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-colors"
+              >
+                <Edit2 className="w-4 h-4" />
+                Edit
+              </button>
             )}
           </div>
         </div>
@@ -1177,6 +1174,9 @@ export default function UserProfilePage() {
           ))}
         </div>
       </div>
+
+      {/* Progress Pictures */}
+      <UserProgressGallery userId={user.id} />
 
       {/* Assigned Programs */}
       <div className="card p-6 mt-6">
