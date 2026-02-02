@@ -31,6 +31,28 @@ const weightTypes = [
   { id: 'trx', label: 'TRX/Suspension' },
 ]
 
+// Auto-detect weight type from exercise equipment
+function getDefaultWeightType(exerciseId: string): string {
+  const exercise = exercisesData.exercises.find((e: { id: string }) => e.id === exerciseId)
+  if (!exercise) return 'freeweight'
+  
+  const equipment = exercise.equipment || []
+  
+  // Priority mapping: check in order
+  if (equipment.includes('barbell')) return 'plate_loaded'
+  if (equipment.includes('smith')) return 'smith_machine'
+  if (equipment.includes('dumbbell')) return 'freeweight'
+  if (equipment.includes('cable')) return 'cable'
+  if (equipment.includes('machine')) return 'machine'
+  if (equipment.includes('kettlebell')) return 'kettlebell'
+  if (equipment.includes('bands')) return 'resistance_band'
+  if (equipment.includes('trx')) return 'trx'
+  if (equipment.includes('medicineball')) return 'medicine_ball'
+  if (equipment.includes('bodyweight') || equipment.includes('pullupbar')) return 'bodyweight'
+  
+  return 'freeweight' // Default fallback
+}
+
 interface WorkoutExercise {
   id: string
   exerciseId: string
@@ -132,13 +154,21 @@ export default function WorkoutBuilder({ workouts, onChange }: WorkoutBuilderPro
     const workout = workouts.find(w => w.id === workoutId)
     if (!workout) return
 
+    // Get default weight type based on exercise equipment
+    const defaultWeightType = getDefaultWeightType(exercise.id)
+    
+    const createSetWithWeightType = (setNumber: number): ExerciseSet => ({
+      ...createDefaultSet(setNumber),
+      weightType: defaultWeightType,
+    })
+
     const newExercise: WorkoutExercise = {
       id: generateId(),
       exerciseId: exercise.id,
       exerciseName: exercise.name,
       category: exercise.category,
       order: workout.exercises.length,
-      sets: [createDefaultSet(1), createDefaultSet(2), createDefaultSet(3)],
+      sets: [createSetWithWeightType(1), createSetWithWeightType(2), createSetWithWeightType(3)],
       notes: '',
     }
 
