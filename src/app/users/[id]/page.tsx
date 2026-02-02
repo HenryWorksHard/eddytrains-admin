@@ -54,7 +54,9 @@ interface ClientProgram {
 export default function UserProfilePage() {
   const router = useRouter()
   const params = useParams()
-  const userId = params.id as string
+  const rawId = params.id as string
+  // Support both email and UUID - decode if it's a URL-encoded email
+  const userId = decodeURIComponent(rawId)
   const supabase = createClient()
 
   const [user, setUser] = useState<User | null>(null)
@@ -77,8 +79,14 @@ export default function UserProfilePage() {
 
   useEffect(() => {
     fetchUser()
-    fetchClientPrograms()
   }, [userId])
+  
+  // Fetch client programs after we have the user (need actual UUID)
+  useEffect(() => {
+    if (user?.id) {
+      fetchClientPrograms(user.id)
+    }
+  }, [user?.id])
 
   const fetchUser = async () => {
     try {
@@ -105,7 +113,7 @@ export default function UserProfilePage() {
     }
   }
 
-  const fetchClientPrograms = async () => {
+  const fetchClientPrograms = async (userUuid: string) => {
     try {
       const { data, error } = await supabase
         .from('client_programs')
@@ -118,7 +126,7 @@ export default function UserProfilePage() {
           is_active,
           program:programs (id, name, category, difficulty, duration_weeks)
         `)
-        .eq('client_id', userId)
+        .eq('client_id', userUuid)
         .order('start_date', { ascending: false })
       
       if (error) throw error
@@ -457,7 +465,7 @@ export default function UserProfilePage() {
             <h2 className="text-lg font-semibold text-white">Assigned Programs</h2>
           </div>
           <Link
-            href={`/schedules?client=${userId}`}
+            href={`/schedules?client=${user?.id || userId}`}
             className="text-sm text-yellow-400 hover:text-yellow-300 transition-colors"
           >
             Manage in Schedules →
@@ -519,7 +527,7 @@ export default function UserProfilePage() {
             </div>
             <p className="text-zinc-400 mb-2">No programs assigned yet</p>
             <Link
-              href={`/schedules?client=${userId}`}
+              href={`/schedules?client=${user?.id || userId}`}
               className="text-sm text-yellow-400 hover:text-yellow-300 transition-colors"
             >
               Assign a program →

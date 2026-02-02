@@ -79,10 +79,16 @@ export async function GET(
 ) {
   try {
     const { id } = await params
+    
+    // Support lookup by email or UUID
+    const isEmail = id.includes('@')
+    const lookupField = isEmail ? 'email' : 'id'
+    const lookupValue = isEmail ? decodeURIComponent(id) : id
+    
     const adminClient = getAdminClient()
     
     // Get profile
-    const { data: profile, error } = await adminClient
+    const { data: profile, error: profileError } = await adminClient
       .from('profiles')
       .select(`
         *,
@@ -92,16 +98,27 @@ export async function GET(
           can_access_hyrox
         )
       `)
-      .eq('id', id)
+      .eq(lookupField, lookupValue)
       .single()
     
-    if (error) throw error
+    if (profileError) {
+      console.error('Profile query error:', profileError)
+      return NextResponse.json({ 
+        error: 'User not found',
+        details: profileError.message 
+      }, { status: 404 })
+    }
+    
     if (!profile) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Get auth user for email
-    const { data: authUser } = await adminClient.auth.admin.getUserById(id)
+    // Get auth user for email (use profile.id which is always UUID)
+    const { data: authUser, error: authError } = await adminClient.auth.admin.getUserById(profile.id)
+    
+    if (authError) {
+      console.error('Auth lookup error:', authError)
+    }
     
     return NextResponse.json({ 
       user: {
@@ -111,8 +128,26 @@ export async function GET(
     })
   } catch (error) {
     console.error('Get user error:', error)
-    return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Failed to fetch user',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
+}
+
+// Helper to resolve email or UUID to profile
+async function resolveProfile(adminClient: ReturnType<typeof getAdminClient>, id: string) {
+  const isEmail = id.includes('@')
+  const lookupField = isEmail ? 'email' : 'id'
+  const lookupValue = isEmail ? decodeURIComponent(id) : id
+  
+  const { data: profile, error } = await adminClient
+    .from('profiles')
+    .select('*')
+    .eq(lookupField, lookupValue)
+    .single()
+  
+  return { profile, error }
 }
 
 export async function PATCH(
@@ -124,6 +159,14 @@ export async function PATCH(
     const { full_name, email, permissions } = await request.json()
     const adminClient = getAdminClient()
     
+    // Resolve to actual profile (supports email or UUID lookup)
+    const { profile, error: lookupError } = await resolveProfile(adminClient, id)
+    if (lookupError || !profile) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+    
+    const userId = profile.id // Always use UUID for updates
+    
     // Update profile
     const { error: profileError } = await adminClient
       .from('profiles')
@@ -132,13 +175,13 @@ export async function PATCH(
         email,
         updated_at: new Date().toISOString()
       })
-      .eq('id', id)
+      .eq('id', userId)
     
     if (profileError) throw profileError
 
     // Update auth user email if changed
     if (email) {
-      await adminClient.auth.admin.updateUserById(id, { email })
+      await adminClient.auth.admin.updateUserById(userId, { email })
     }
 
     // Update permissions
@@ -146,7 +189,7 @@ export async function PATCH(
       await adminClient
         .from('user_permissions')
         .upsert({
-          user_id: id,
+          user_id: userId,
           can_access_strength: permissions.strength || false,
           can_access_cardio: permissions.cardio || false,
           can_access_hyrox: permissions.hyrox || false,
@@ -168,28 +211,31 @@ export async function DELETE(
     const { id } = await params
     const adminClient = getAdminClient()
     
-    // Get user email first for Klaviyo
-    const { data: profile } = await adminClient
-      .from('profiles')
-      .select('email')
-      .eq('id', id)
-      .single()
+    // Resolve to actual profile (supports email or UUID lookup)
+    const { profile, error: lookupError } = await resolveProfile(adminClient, id)
+    if (lookupError || !profile) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
     
-    const { data: authUser } = await adminClient.auth.admin.getUserById(id)
-    const email = authUser?.user?.email || profile?.email
+    const userId = profile.id // Always use UUID for deletes
+    const email = profile.email
+    
+    // Get auth user email as backup
+    const { data: authUser } = await adminClient.auth.admin.getUserById(userId)
+    const userEmail = authUser?.user?.email || email
 
     // Move to inactive list in Klaviyo
-    if (email) {
-      await moveToInactiveList(email)
+    if (userEmail) {
+      await moveToInactiveList(userEmail)
     }
 
     // Delete from auth (this should cascade to profiles if FK is set)
-    const { error: authError } = await adminClient.auth.admin.deleteUser(id)
+    const { error: authError } = await adminClient.auth.admin.deleteUser(userId)
     if (authError) throw authError
 
     // Also delete profile manually in case no cascade
-    await adminClient.from('profiles').delete().eq('id', id)
-    await adminClient.from('user_permissions').delete().eq('user_id', id)
+    await adminClient.from('profiles').delete().eq('id', userId)
+    await adminClient.from('user_permissions').delete().eq('user_id', userId)
 
     return NextResponse.json({ success: true })
   } catch (error) {

@@ -122,13 +122,13 @@ export default function UsersPage() {
                 {users.map((user) => (
                   <tr key={user.id}>
                     <td>
-                      <Link href={`/users/${user.id}`} className="flex items-center gap-3 group">
+                      <Link href={`/users/${encodeURIComponent(user.email)}`} className="flex items-center gap-3 group">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center text-black font-medium group-hover:ring-2 group-hover:ring-yellow-400/50 transition-all">
                           {user.full_name?.[0]?.toUpperCase() || user.email[0].toUpperCase()}
                         </div>
                         <div>
                           <p className="font-medium text-white group-hover:text-yellow-400 transition-colors">{user.full_name || 'No name set'}</p>
-                          <p className="text-xs text-zinc-500">ID: {user.id.slice(0, 8)}...</p>
+                          <p className="text-xs text-zinc-500">{user.email}</p>
                         </div>
                       </Link>
                     </td>
@@ -170,7 +170,7 @@ export default function UsersPage() {
                     <td>
                       <div className="flex items-center gap-2">
                         <Link
-                          href={`/users/${user.id}`}
+                          href={`/users/${encodeURIComponent(user.email)}`}
                           className="p-2 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
                         >
                           <Edit2 className="w-4 h-4" />
