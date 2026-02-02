@@ -30,6 +30,7 @@ import {
   Weight
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import UserSchedule from './UserSchedule'
 
 interface User {
   id: string
@@ -1067,69 +1068,37 @@ export default function UserProfilePage() {
         </div>
       </div>
 
-      {/* Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Permissions Card */}
-        <div className="card p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <Shield className="w-5 h-5 text-yellow-400" />
-            <h2 className="text-lg font-semibold text-white">Program Access</h2>
-          </div>
-          
-          <div className="space-y-3">
-            {permissionOptions.map((perm) => {
-              const hasAccess = permissions[perm.key as keyof typeof permissions]
-              return (
-                <div
-                  key={perm.key}
-                  className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
-                    editMode ? 'cursor-pointer hover:border-zinc-600' : ''
-                  } ${hasAccess ? 'bg-zinc-800/50 border-zinc-700' : 'bg-zinc-900/50 border-zinc-800'}`}
-                  onClick={() => editMode && setPermissions(prev => ({ ...prev, [perm.key]: !hasAccess }))}
-                >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${hasAccess ? perm.bg : 'bg-zinc-800'}`}>
-                    <perm.icon className={`w-5 h-5 ${hasAccess ? perm.color : 'text-zinc-600'}`} />
-                  </div>
-                  <div className="flex-1">
-                    <p className={`font-medium ${hasAccess ? 'text-white' : 'text-zinc-500'}`}>{perm.name}</p>
-                  </div>
-                  {hasAccess ? <Check className="w-5 h-5 text-green-500" /> : <span className="text-xs text-zinc-600">No access</span>}
-                </div>
-              )
-            })}
-          </div>
-          {editMode && <p className="text-xs text-zinc-500 mt-3">Click to toggle access</p>}
+      {/* Quick Stats Card */}
+      <div className="card p-6 mb-6">
+        <div className="flex items-center gap-3 mb-4">
+          <Calendar className="w-5 h-5 text-yellow-400" />
+          <h2 className="text-lg font-semibold text-white">Quick Stats</h2>
         </div>
-
-        {/* Quick Stats Card */}
-        <div className="card p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <Calendar className="w-5 h-5 text-yellow-400" />
-            <h2 className="text-lg font-semibold text-white">Quick Stats</h2>
+        
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="bg-zinc-800/50 rounded-xl p-4 text-center">
+            <p className="text-2xl font-bold text-white">{clientPrograms.length}</p>
+            <p className="text-sm text-zinc-400">Total Programs</p>
           </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-zinc-800/50 rounded-xl p-4 text-center">
-              <p className="text-2xl font-bold text-white">{clientPrograms.length}</p>
-              <p className="text-sm text-zinc-400">Total Programs</p>
-            </div>
-            <div className="bg-zinc-800/50 rounded-xl p-4 text-center">
-              <p className="text-2xl font-bold text-green-500">{clientPrograms.filter(p => p.is_active).length}</p>
-              <p className="text-sm text-zinc-400">Active</p>
-            </div>
-            <div className="bg-zinc-800/50 rounded-xl p-4 text-center">
-              <p className="text-2xl font-bold text-white">
-                {Math.floor((Date.now() - new Date(user.created_at).getTime()) / (1000 * 60 * 60 * 24))}
-              </p>
-              <p className="text-sm text-zinc-400">Days as Client</p>
-            </div>
-            <div className="bg-zinc-800/50 rounded-xl p-4 text-center">
-              <p className="text-2xl font-bold text-white">{Object.values(permissions).filter(Boolean).length}</p>
-              <p className="text-sm text-zinc-400">Access Types</p>
-            </div>
+          <div className="bg-zinc-800/50 rounded-xl p-4 text-center">
+            <p className="text-2xl font-bold text-green-500">{clientPrograms.filter(p => p.is_active).length}</p>
+            <p className="text-sm text-zinc-400">Active</p>
+          </div>
+          <div className="bg-zinc-800/50 rounded-xl p-4 text-center">
+            <p className="text-2xl font-bold text-white">
+              {Math.floor((Date.now() - new Date(user.created_at).getTime()) / (1000 * 60 * 60 * 24))}
+            </p>
+            <p className="text-sm text-zinc-400">Days as Client</p>
+          </div>
+          <div className="bg-zinc-800/50 rounded-xl p-4 text-center">
+            <p className="text-2xl font-bold text-white">{Object.values(permissions).filter(Boolean).length}</p>
+            <p className="text-sm text-zinc-400">Access Types</p>
           </div>
         </div>
       </div>
+
+      {/* Training Schedule */}
+      <UserSchedule userId={user.id} />
 
       {/* 1RM Board */}
       <div className="card p-6 mt-6">
