@@ -558,6 +558,23 @@
       }
     },
     {
+      "id": "plate_loaded_shoulder_press",
+      "name": "Plate Loaded Shoulder Press",
+      "category": "shoulders",
+      "equipment": ["machine"],
+      "movementPattern": "push_vertical",
+      "primaryMuscles": ["front_delts", "medial_delts", "triceps"],
+      "secondaryMuscles": ["upper_chest", "traps"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Adjust seat so handles are at shoulder height. Sit with back flat against pad, feet on floor. Load plates evenly on both sides.",
+        "execution": "Press handles overhead until arms are extended. Lower with control to shoulder height.",
+        "cues": ["Keep back against pad", "Press straight up", "Control the negative", "Don't lock out aggressively"],
+        "commonMistakes": ["Seat too low", "Coming forward off pad", "Uneven loading", "Partial range of motion"],
+        "breathingPattern": "Exhale on press, inhale on lower"
+      }
+    },
+    {
       "id": "lateral_raises",
       "name": "Lateral Raises",
       "category": "shoulders",
