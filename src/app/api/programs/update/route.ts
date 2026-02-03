@@ -42,7 +42,6 @@ export async function POST(request: NextRequest) {
         difficulty,
         duration_weeks: durationWeeks,
         is_active: isActive,
-        updated_at: new Date().toISOString(),
       })
       .eq('id', id)
 
