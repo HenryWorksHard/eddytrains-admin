@@ -1306,6 +1306,23 @@
       }
     },
     {
+      "id": "dragon_flags",
+      "name": "Dragon Flags",
+      "category": "core",
+      "equipment": ["bench"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["abs", "rectus_abdominis"],
+      "secondaryMuscles": ["hip_flexors", "lower_back", "lats"],
+      "difficulty": "advanced",
+      "tutorial": {
+        "setup": "Lie on bench, grip behind head for anchor. Lift legs and hips off bench, body straight from shoulders to toes.",
+        "execution": "Lower body as one rigid unit toward bench, keeping only upper back in contact. Raise back up with control.",
+        "cues": ["Body stays straight like a plank", "Only shoulders touch bench", "Control the descent", "Squeeze entire core"],
+        "commonMistakes": ["Bending at hips", "Lowering too fast", "Not enough upper body anchor", "Arching lower back"],
+        "breathingPattern": "Inhale at top, exhale during lowering"
+      }
+    },
+    {
       "id": "dead_bug",
       "name": "Dead Bug",
       "category": "core",
