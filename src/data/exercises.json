@@ -473,6 +473,40 @@
       }
     },
     {
+      "id": "single_leg_deadlift",
+      "name": "Single Leg Deadlift",
+      "category": "legs",
+      "equipment": ["dumbbell", "kettlebell"],
+      "movementPattern": "hinge",
+      "primaryMuscles": ["hamstrings", "glutes"],
+      "secondaryMuscles": ["core", "lower_back"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Stand on one leg holding dumbbell or kettlebell in opposite hand. Slight bend in standing leg.",
+        "execution": "Hinge at hip, lowering weight toward floor while raising back leg behind you. Return to standing by driving through hip.",
+        "cues": ["Keep hips square", "Back leg and torso move as one unit", "Standing leg stays slightly bent", "Squeeze glute at top"],
+        "commonMistakes": ["Opening hips to the side", "Rounding back", "Standing leg locking out", "Losing balance"],
+        "breathingPattern": "Inhale on descent, exhale on drive up"
+      }
+    },
+    {
+      "id": "staggered_stance_rdl",
+      "name": "Staggered Stance DB/KB RDL",
+      "category": "legs",
+      "equipment": ["dumbbell", "kettlebell"],
+      "movementPattern": "hinge",
+      "primaryMuscles": ["hamstrings", "glutes"],
+      "secondaryMuscles": ["core", "lower_back"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Hold dumbbells or kettlebells at sides. Stagger stance with one foot slightly behind the other, back heel raised.",
+        "execution": "Hinge at hips, lowering weights along front leg. Most weight stays on front leg. Drive hips forward to return.",
+        "cues": ["80% weight on front leg", "Back foot is for balance only", "Feel stretch in front hamstring", "Squeeze glutes at top"],
+        "commonMistakes": ["Equal weight on both legs", "Rounding back", "Not hinging deep enough", "Back leg doing too much work"],
+        "breathingPattern": "Inhale on descent, exhale on drive up"
+      }
+    },
+    {
       "id": "tbar_row",
       "name": "T-Bar Row",
       "category": "back",
