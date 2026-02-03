@@ -34,6 +34,14 @@ const categoryColors: Record<string, string> = {
   cardio: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
 }
 
+// Format muscle names: "front_delts" -> "Front Delts"
+function formatMuscleName(muscle: string): string {
+  return muscle
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
 export default function ExerciseSelector({ onSelect, onSelectSuperset, onClose, allowSuperset = true }: ExerciseSelectorProps) {
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
@@ -253,7 +261,7 @@ export default function ExerciseSelector({ onSelect, onSelectSuperset, onClose, 
                           {exercise.category}
                         </span>
                         <span className="text-xs text-zinc-500">
-                          {exercise.primaryMuscles.slice(0, 2).join(', ')}
+                          {exercise.primaryMuscles.slice(0, 2).map(formatMuscleName).join(', ')}
                         </span>
                       </div>
                     </div>
