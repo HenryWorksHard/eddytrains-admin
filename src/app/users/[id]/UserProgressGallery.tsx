@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Camera, Loader2, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import Image from 'next/image'
 
@@ -20,7 +19,6 @@ export default function UserProgressGallery({ userId }: UserProgressGalleryProps
   const [images, setImages] = useState<ProgressImage[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
-  const supabase = createClient()
 
   useEffect(() => {
     fetchImages()
@@ -29,13 +27,10 @@ export default function UserProgressGallery({ userId }: UserProgressGalleryProps
   const fetchImages = async () => {
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('progress_images')
-        .select('*')
-        .eq('client_id', userId)
-        .order('created_at', { ascending: false })
+      const response = await fetch(`/api/users/${userId}/progress-images`)
+      const { data, error } = await response.json()
 
-      if (error) throw error
+      if (error) throw new Error(error)
       setImages(data || [])
     } catch (err) {
       console.error('Failed to fetch progress images:', err)

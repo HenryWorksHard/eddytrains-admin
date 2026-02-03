@@ -241,26 +241,22 @@ export default function UserProfilePage() {
 
   const fetchClient1RMs = async (userUuid: string) => {
     try {
-      const { data, error } = await supabase
-        .from('client_1rms')
-        .select('id, exercise_name, weight_kg')
-        .eq('client_id', userUuid)
+      const response = await fetch(`/api/users/${userUuid}/1rms`)
+      const { data, error } = await response.json()
       
       if (error) {
-        // Table might not exist yet
         console.error('Failed to fetch 1RMs:', error)
-        // Initialize with empty common lifts
         setClient1RMs(COMMON_LIFTS.map(name => ({ exercise_name: name, weight_kg: 0 })))
         return
       }
       
       // Merge with common lifts (show all, even if not set)
-      const existingMap = new Map((data || []).map(rm => [rm.exercise_name, rm]))
+      const existingMap = new Map((data || []).map((rm: Client1RM) => [rm.exercise_name, rm]))
       const merged = COMMON_LIFTS.map(name => 
         existingMap.get(name) || { exercise_name: name, weight_kg: 0 }
       )
       // Add any custom lifts not in COMMON_LIFTS
-      data?.forEach(rm => {
+      data?.forEach((rm: Client1RM) => {
         if (!COMMON_LIFTS.includes(rm.exercise_name)) {
           merged.push(rm)
         }

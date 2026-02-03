@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Calendar, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 
 interface WorkoutSchedule {
@@ -22,7 +21,6 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const today = new Date()
   
-  const supabase = createClient()
   const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   const fullDayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
@@ -33,70 +31,13 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
   const fetchScheduleData = async () => {
     setLoading(true)
     try {
-      // Get user's active program with workouts
-      const { data: clientPrograms } = await supabase
-        .from('client_programs')
-        .select(`
-          id,
-          program_id,
-          programs (
-            id,
-            name,
-            program_workouts (
-              id,
-              name,
-              day_of_week
-            )
-          )
-        `)
-        .eq('client_id', userId)
-        .eq('is_active', true)
-
-      // Get workout completions for the last 60 days
-      const sixtyDaysAgo = new Date()
-      sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60)
+      const response = await fetch(`/api/users/${userId}/schedule`)
+      const { scheduleByDay: schedule, completionsByDate: completions, error } = await response.json()
       
-      const { data: completions } = await supabase
-        .from('workout_completions')
-        .select('workout_id, scheduled_date')
-        .eq('client_id', userId)
-        .gte('scheduled_date', sixtyDaysAgo.toISOString().split('T')[0])
-
-      // Build schedule data
-      const schedule: Record<number, WorkoutSchedule> = {}
+      if (error) throw new Error(error)
       
-      if (clientPrograms) {
-        for (const cp of clientPrograms) {
-          const programData = cp.programs as unknown
-          const program = (Array.isArray(programData) ? programData[0] : programData) as {
-            id: string
-            name: string
-            program_workouts?: { id: string; name: string; day_of_week: number | null }[]
-          } | null
-          
-          if (program?.program_workouts) {
-            for (const workout of program.program_workouts) {
-              if (workout.day_of_week !== null) {
-                schedule[workout.day_of_week] = {
-                  dayOfWeek: workout.day_of_week,
-                  workoutId: workout.id,
-                  workoutName: workout.name,
-                  programName: program.name
-                }
-              }
-            }
-          }
-        }
-      }
-
-      setScheduleByDay(schedule)
-
-      // Format completions
-      const completionsMap: Record<string, string> = {}
-      completions?.forEach(c => {
-        completionsMap[c.scheduled_date] = c.workout_id
-      })
-      setCompletionsByDate(completionsMap)
+      setScheduleByDay(schedule || {})
+      setCompletionsByDate(completions || {})
     } catch (err) {
       console.error('Failed to fetch schedule:', err)
     } finally {
