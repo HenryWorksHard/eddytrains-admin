@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Trash2, GripVertical, Dumbbell, Info, ChevronDown, ChevronUp, Copy } from 'lucide-react'
+import { Plus, Minus, Trash2, GripVertical, Dumbbell, ChevronDown, ChevronUp, Copy, Settings2 } from 'lucide-react'
 import ExerciseSelector from './ExerciseSelector'
 import exercisesData from '@/data/exercises.json'
 
@@ -12,8 +12,8 @@ interface ExerciseSet {
   intensityType: 'percentage' | 'rir' | 'rpe'
   intensityValue: string
   restSeconds: number
-  restBracket: string // e.g., "90-120"
-  weightType: string // e.g., "freeweight", "bodyweight", etc.
+  restBracket: string
+  weightType: string
   notes: string
 }
 
@@ -31,14 +31,20 @@ const weightTypes = [
   { id: 'trx', label: 'TRX/Suspension' },
 ]
 
-// Auto-detect weight type from exercise equipment
+const restBrackets = [
+  { value: '30-60', label: '30-60s' },
+  { value: '60-90', label: '60-90s' },
+  { value: '90-120', label: '90-120s' },
+  { value: '120-180', label: '2-3min' },
+  { value: '180-300', label: '3-5min' },
+]
+
 function getDefaultWeightType(exerciseId: string): string {
   const exercise = exercisesData.exercises.find((e: { id: string }) => e.id === exerciseId)
   if (!exercise) return 'freeweight'
   
   const equipment = exercise.equipment || []
   
-  // Priority mapping: check in order
   if (equipment.includes('barbell')) return 'plate_loaded'
   if (equipment.includes('smith')) return 'smith_machine'
   if (equipment.includes('dumbbell')) return 'freeweight'
@@ -50,7 +56,7 @@ function getDefaultWeightType(exerciseId: string): string {
   if (equipment.includes('medicineball')) return 'medicine_ball'
   if (equipment.includes('bodyweight') || equipment.includes('pullupbar')) return 'bodyweight'
   
-  return 'freeweight' // Default fallback
+  return 'freeweight'
 }
 
 interface WorkoutExercise {
@@ -94,7 +100,7 @@ function generateId() {
   return Math.random().toString(36).substring(2, 9)
 }
 
-function createDefaultSet(setNumber: number): ExerciseSet {
+function createDefaultSet(setNumber: number, weightType: string = 'freeweight'): ExerciseSet {
   return {
     id: generateId(),
     setNumber,
@@ -103,7 +109,7 @@ function createDefaultSet(setNumber: number): ExerciseSet {
     intensityValue: '2',
     restSeconds: 90,
     restBracket: '90-120',
-    weightType: 'freeweight',
+    weightType,
     notes: '',
   }
 }
@@ -154,13 +160,7 @@ export default function WorkoutBuilder({ workouts, onChange }: WorkoutBuilderPro
     const workout = workouts.find(w => w.id === workoutId)
     if (!workout) return
 
-    // Get default weight type based on exercise equipment
     const defaultWeightType = getDefaultWeightType(exercise.id)
-    
-    const createSetWithWeightType = (setNumber: number): ExerciseSet => ({
-      ...createDefaultSet(setNumber),
-      weightType: defaultWeightType,
-    })
 
     const newExercise: WorkoutExercise = {
       id: generateId(),
@@ -168,14 +168,17 @@ export default function WorkoutBuilder({ workouts, onChange }: WorkoutBuilderPro
       exerciseName: exercise.name,
       category: exercise.category,
       order: workout.exercises.length,
-      sets: [createSetWithWeightType(1), createSetWithWeightType(2), createSetWithWeightType(3)],
+      sets: [
+        createDefaultSet(1, defaultWeightType),
+        createDefaultSet(2, defaultWeightType),
+        createDefaultSet(3, defaultWeightType),
+      ],
       notes: '',
     }
 
     updateWorkout(workoutId, {
       exercises: [...workout.exercises, newExercise],
     })
-    setExpandedExercises(prev => new Set([...prev, newExercise.id]))
     setShowExerciseSelector(null)
   }
 
@@ -199,15 +202,47 @@ export default function WorkoutBuilder({ workouts, onChange }: WorkoutBuilderPro
     })
   }
 
-  const addSet = (workoutId: string, exerciseId: string) => {
+  // Bulk update all sets for an exercise
+  const updateAllSets = (workoutId: string, exerciseId: string, updates: Partial<ExerciseSet>) => {
     const workout = workouts.find(w => w.id === workoutId)
     const exercise = workout?.exercises.find(ex => ex.id === exerciseId)
     if (!exercise) return
 
-    const newSet = createDefaultSet(exercise.sets.length + 1)
     updateExercise(workoutId, exerciseId, {
-      sets: [...exercise.sets, newSet],
+      sets: exercise.sets.map(s => ({ ...s, ...updates })),
     })
+  }
+
+  // Change set count
+  const setSetCount = (workoutId: string, exerciseId: string, count: number) => {
+    const workout = workouts.find(w => w.id === workoutId)
+    const exercise = workout?.exercises.find(ex => ex.id === exerciseId)
+    if (!exercise || count < 1 || count > 10) return
+
+    const currentCount = exercise.sets.length
+    const weightType = exercise.sets[0]?.weightType || 'freeweight'
+    
+    if (count > currentCount) {
+      // Add sets (copy from last set if available)
+      const lastSet = exercise.sets[exercise.sets.length - 1]
+      const newSets = [...exercise.sets]
+      for (let i = currentCount; i < count; i++) {
+        newSets.push({
+          ...createDefaultSet(i + 1, weightType),
+          reps: lastSet?.reps || '8-12',
+          intensityType: lastSet?.intensityType || 'rir',
+          intensityValue: lastSet?.intensityValue || '2',
+          restBracket: lastSet?.restBracket || '90-120',
+          weightType: lastSet?.weightType || weightType,
+        })
+      }
+      updateExercise(workoutId, exerciseId, { sets: newSets })
+    } else {
+      // Remove sets from end
+      updateExercise(workoutId, exerciseId, {
+        sets: exercise.sets.slice(0, count).map((s, i) => ({ ...s, setNumber: i + 1 })),
+      })
+    }
   }
 
   const updateSet = (workoutId: string, exerciseId: string, setId: string, updates: Partial<ExerciseSet>) => {
@@ -217,16 +252,6 @@ export default function WorkoutBuilder({ workouts, onChange }: WorkoutBuilderPro
 
     updateExercise(workoutId, exerciseId, {
       sets: exercise.sets.map(s => s.id === setId ? { ...s, ...updates } : s),
-    })
-  }
-
-  const deleteSet = (workoutId: string, exerciseId: string, setId: string) => {
-    const workout = workouts.find(w => w.id === workoutId)
-    const exercise = workout?.exercises.find(ex => ex.id === exerciseId)
-    if (!exercise) return
-
-    updateExercise(workoutId, exerciseId, {
-      sets: exercise.sets.filter(s => s.id !== setId).map((s, i) => ({ ...s, setNumber: i + 1 })),
     })
   }
 
@@ -256,7 +281,6 @@ export default function WorkoutBuilder({ workouts, onChange }: WorkoutBuilderPro
 
   return (
     <div className="space-y-6">
-      {/* Workouts List */}
       {workouts.map((workout, workoutIndex) => (
         <div key={workout.id} className="card overflow-hidden">
           {/* Workout Header */}
@@ -323,143 +347,231 @@ export default function WorkoutBuilder({ workouts, onChange }: WorkoutBuilderPro
           {expandedWorkouts.has(workout.id) && (
             <div className="p-4 space-y-4">
               {/* Exercises */}
-              {workout.exercises.map((exercise, exerciseIndex) => (
-                <div key={exercise.id} className="bg-zinc-800/30 border border-zinc-800 rounded-xl overflow-hidden">
-                  {/* Exercise Header */}
-                  <div 
-                    className="flex items-center gap-3 p-3 cursor-pointer hover:bg-zinc-800/50"
-                    onClick={() => toggleExerciseExpanded(exercise.id)}
-                  >
-                    <div className="text-zinc-600 cursor-grab">
-                      <GripVertical className="w-4 h-4" />
-                    </div>
-                    <span className="text-zinc-500 text-sm font-mono w-6">{exerciseIndex + 1}</span>
-                    <div className="w-10 h-10 rounded-lg bg-zinc-700 flex items-center justify-center">
-                      <Dumbbell className="w-5 h-5 text-zinc-400" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-medium text-white">{exercise.exerciseName}</h4>
-                      <span className="text-xs text-zinc-500 capitalize">{exercise.category}</span>
-                    </div>
-                    <span className="text-sm text-zinc-500">{exercise.sets.length} sets</span>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); deleteExercise(workout.id, exercise.id) }}
-                      className="p-1.5 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                    {expandedExercises.has(exercise.id) ? (
-                      <ChevronUp className="w-4 h-4 text-zinc-500" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 text-zinc-500" />
-                    )}
-                  </div>
+              {workout.exercises.map((exercise, exerciseIndex) => {
+                const isExpanded = expandedExercises.has(exercise.id)
+                const firstSet = exercise.sets[0]
+                
+                return (
+                  <div key={exercise.id} className="bg-zinc-800/30 border border-zinc-800 rounded-xl overflow-hidden">
+                    {/* Exercise Header with Quick Edit */}
+                    <div className="p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="text-zinc-600 cursor-grab">
+                          <GripVertical className="w-4 h-4" />
+                        </div>
+                        <span className="text-zinc-500 text-sm font-mono w-6">{exerciseIndex + 1}</span>
+                        <div className="w-10 h-10 rounded-lg bg-zinc-700 flex items-center justify-center">
+                          <Dumbbell className="w-5 h-5 text-zinc-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-white truncate">{exercise.exerciseName}</h4>
+                          <span className="text-xs text-zinc-500 capitalize">{exercise.category}</span>
+                        </div>
+                        <button
+                          onClick={() => deleteExercise(workout.id, exercise.id)}
+                          className="p-1.5 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
 
-                  {/* Sets Table */}
-                  {expandedExercises.has(exercise.id) && (
-                    <div className="border-t border-zinc-800">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="text-xs text-zinc-500 uppercase">
-                            <th className="px-3 py-2 text-left w-16">Set</th>
-                            <th className="px-3 py-2 text-left">Reps</th>
-                            <th className="px-3 py-2 text-left">Weight Type</th>
-                            <th className="px-3 py-2 text-left">Intensity</th>
-                            <th className="px-3 py-2 text-left w-24">Rest</th>
-                            <th className="px-3 py-2 w-10"></th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {exercise.sets.map((set) => (
-                            <tr key={set.id} className="border-t border-zinc-800/50">
-                              <td className="px-3 py-2">
-                                <span className="text-zinc-400 font-mono">{set.setNumber}</span>
-                              </td>
-                              <td className="px-3 py-2">
-                                <input
-                                  type="text"
-                                  value={set.reps}
-                                  onChange={(e) => updateSet(workout.id, exercise.id, set.id, { reps: e.target.value })}
-                                  className="w-20 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                                  placeholder="8-12"
-                                />
-                              </td>
-                              <td className="px-3 py-2">
-                                <select
-                                  value={set.weightType || 'freeweight'}
-                                  onChange={(e) => updateSet(workout.id, exercise.id, set.id, { weightType: e.target.value })}
-                                  className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                                >
-                                  {weightTypes.map(type => (
-                                    <option key={type.id} value={type.id}>{type.label}</option>
-                                  ))}
-                                </select>
-                              </td>
-                              <td className="px-3 py-2">
-                                <div className="flex gap-2">
+                      {/* Quick Edit Row - Always visible */}
+                      <div className="mt-3 flex flex-wrap items-center gap-3 pl-[72px]">
+                        {/* Set Count */}
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-zinc-500 mr-1">Sets</span>
+                          <button
+                            onClick={() => setSetCount(workout.id, exercise.id, exercise.sets.length - 1)}
+                            className="w-6 h-6 rounded bg-zinc-700 hover:bg-zinc-600 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+                            disabled={exercise.sets.length <= 1}
+                          >
+                            <Minus className="w-3 h-3" />
+                          </button>
+                          <span className="w-6 text-center text-white font-medium">{exercise.sets.length}</span>
+                          <button
+                            onClick={() => setSetCount(workout.id, exercise.id, exercise.sets.length + 1)}
+                            className="w-6 h-6 rounded bg-zinc-700 hover:bg-zinc-600 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+                            disabled={exercise.sets.length >= 10}
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </div>
+
+                        <div className="w-px h-6 bg-zinc-700" />
+
+                        {/* Reps (applies to all) */}
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-zinc-500">Reps</span>
+                          <input
+                            type="text"
+                            value={firstSet?.reps || '8-12'}
+                            onChange={(e) => updateAllSets(workout.id, exercise.id, { reps: e.target.value })}
+                            className="w-16 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                            placeholder="8-12"
+                          />
+                        </div>
+
+                        {/* Intensity */}
+                        <div className="flex items-center gap-1">
+                          <select
+                            value={firstSet?.intensityType || 'rir'}
+                            onChange={(e) => updateAllSets(workout.id, exercise.id, { 
+                              intensityType: e.target.value as ExerciseSet['intensityType'] 
+                            })}
+                            className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                          >
+                            {intensityTypes.map(type => (
+                              <option key={type.id} value={type.id}>{type.label}</option>
+                            ))}
+                          </select>
+                          <input
+                            type="text"
+                            value={firstSet?.intensityValue || '2'}
+                            onChange={(e) => updateAllSets(workout.id, exercise.id, { intensityValue: e.target.value })}
+                            className="w-12 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                          />
+                        </div>
+
+                        {/* Rest */}
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-zinc-500">Rest</span>
+                          <select
+                            value={firstSet?.restBracket || '90-120'}
+                            onChange={(e) => updateAllSets(workout.id, exercise.id, { 
+                              restBracket: e.target.value,
+                              restSeconds: parseInt(e.target.value.split('-')[0]) || 90
+                            })}
+                            className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                          >
+                            {restBrackets.map(bracket => (
+                              <option key={bracket.value} value={bracket.value}>{bracket.label}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Weight Type */}
+                        <div className="flex items-center gap-1">
+                          <select
+                            value={firstSet?.weightType || 'freeweight'}
+                            onChange={(e) => updateAllSets(workout.id, exercise.id, { weightType: e.target.value })}
+                            className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                          >
+                            {weightTypes.map(type => (
+                              <option key={type.id} value={type.id}>{type.label}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="flex-1" />
+
+                        {/* Expand for individual editing */}
+                        <button
+                          onClick={() => toggleExerciseExpanded(exercise.id)}
+                          className="flex items-center gap-1 text-xs text-zinc-500 hover:text-yellow-400 transition-colors"
+                        >
+                          <Settings2 className="w-3.5 h-3.5" />
+                          <span>{isExpanded ? 'Hide' : 'Edit'} individual sets</span>
+                          {isExpanded ? (
+                            <ChevronUp className="w-3.5 h-3.5" />
+                          ) : (
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Individual Sets Table (Expanded) */}
+                    {isExpanded && (
+                      <div className="border-t border-zinc-800">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="text-xs text-zinc-500 uppercase">
+                              <th className="px-3 py-2 text-left w-16">Set</th>
+                              <th className="px-3 py-2 text-left">Reps</th>
+                              <th className="px-3 py-2 text-left">Weight Type</th>
+                              <th className="px-3 py-2 text-left">Intensity</th>
+                              <th className="px-3 py-2 text-left">Rest</th>
+                              <th className="px-3 py-2 text-left">Notes</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {exercise.sets.map((set) => (
+                              <tr key={set.id} className="border-t border-zinc-800/50">
+                                <td className="px-3 py-2">
+                                  <span className="text-zinc-400 font-mono">{set.setNumber}</span>
+                                </td>
+                                <td className="px-3 py-2">
+                                  <input
+                                    type="text"
+                                    value={set.reps}
+                                    onChange={(e) => updateSet(workout.id, exercise.id, set.id, { reps: e.target.value })}
+                                    className="w-20 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                  />
+                                </td>
+                                <td className="px-3 py-2">
                                   <select
-                                    value={set.intensityType}
-                                    onChange={(e) => updateSet(workout.id, exercise.id, set.id, { 
-                                      intensityType: e.target.value as ExerciseSet['intensityType'] 
-                                    })}
+                                    value={set.weightType || 'freeweight'}
+                                    onChange={(e) => updateSet(workout.id, exercise.id, set.id, { weightType: e.target.value })}
                                     className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
                                   >
-                                    {intensityTypes.map(type => (
+                                    {weightTypes.map(type => (
                                       <option key={type.id} value={type.id}>{type.label}</option>
                                     ))}
                                   </select>
-                                  <input
-                                    type="text"
-                                    value={set.intensityValue}
-                                    onChange={(e) => updateSet(workout.id, exercise.id, set.id, { intensityValue: e.target.value })}
-                                    className="w-16 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                                    placeholder={set.intensityType === 'percentage' ? '75' : '2'}
-                                  />
-                                </div>
-                              </td>
-                              <td className="px-3 py-2">
-                                <div className="flex items-center gap-1">
-                                  <input
-                                    type="text"
-                                    value={set.restBracket || `${set.restSeconds}`}
+                                </td>
+                                <td className="px-3 py-2">
+                                  <div className="flex gap-2">
+                                    <select
+                                      value={set.intensityType}
+                                      onChange={(e) => updateSet(workout.id, exercise.id, set.id, { 
+                                        intensityType: e.target.value as ExerciseSet['intensityType'] 
+                                      })}
+                                      className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                    >
+                                      {intensityTypes.map(type => (
+                                        <option key={type.id} value={type.id}>{type.label}</option>
+                                      ))}
+                                    </select>
+                                    <input
+                                      type="text"
+                                      value={set.intensityValue}
+                                      onChange={(e) => updateSet(workout.id, exercise.id, set.id, { intensityValue: e.target.value })}
+                                      className="w-14 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                    />
+                                  </div>
+                                </td>
+                                <td className="px-3 py-2">
+                                  <select
+                                    value={set.restBracket || '90-120'}
                                     onChange={(e) => updateSet(workout.id, exercise.id, set.id, { 
                                       restBracket: e.target.value,
                                       restSeconds: parseInt(e.target.value.split('-')[0]) || 90
                                     })}
-                                    className="w-20 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                                    placeholder="90-120"
-                                  />
-                                  <span className="text-xs text-zinc-500">sec</span>
-                                </div>
-                              </td>
-                              <td className="px-3 py-2">
-                                {exercise.sets.length > 1 && (
-                                  <button
-                                    onClick={() => deleteSet(workout.id, exercise.id, set.id)}
-                                    className="p-1 rounded hover:bg-red-500/20 text-zinc-600 hover:text-red-400 transition-colors"
+                                    className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
                                   >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-
-                      {/* Add Set Button */}
-                      <div className="p-3 border-t border-zinc-800/50">
-                        <button
-                          onClick={() => addSet(workout.id, exercise.id)}
-                          className="text-sm text-zinc-400 hover:text-yellow-400 transition-colors"
-                        >
-                          + Add Set
-                        </button>
+                                    {restBrackets.map(bracket => (
+                                      <option key={bracket.value} value={bracket.value}>{bracket.label}</option>
+                                    ))}
+                                  </select>
+                                </td>
+                                <td className="px-3 py-2">
+                                  <input
+                                    type="text"
+                                    value={set.notes}
+                                    onChange={(e) => updateSet(workout.id, exercise.id, set.id, { notes: e.target.value })}
+                                    className="w-full px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                    placeholder="Set notes..."
+                                  />
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    )}
+                  </div>
+                )
+              })}
 
               {/* Add Exercise Button */}
               <button
