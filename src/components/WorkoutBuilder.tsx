@@ -15,6 +15,15 @@ interface ExerciseSet {
   restBracket: string
   weightType: string
   notes: string
+  // Cardio-specific fields
+  cardioType?: 'duration' | 'distance' | 'calories' | 'emom' | 'intervals'
+  cardioValue?: string // e.g., "20:00", "5km", "300cal", "10 rounds"
+  cardioUnit?: string // e.g., "min", "km", "m", "cal", "rounds"
+  heartRateZone?: 1 | 2 | 3 | 4 | 5
+  pace?: string // e.g., "5:00/km"
+  intervals?: number // number of intervals for EMOM/HIIT
+  workTime?: string // work period (e.g., "40s")
+  restTime?: string // rest period (e.g., "20s")
 }
 
 const weightTypes = [
@@ -37,6 +46,30 @@ const restBrackets = [
   { value: '90-120', label: '90-120s' },
   { value: '120-180', label: '2-3min' },
   { value: '180-300', label: '3-5min' },
+]
+
+// Cardio-specific options
+const cardioTypes = [
+  { value: 'duration', label: 'Duration', icon: '⏱️' },
+  { value: 'distance', label: 'Distance', icon: '📏' },
+  { value: 'calories', label: 'Calories', icon: '🔥' },
+  { value: 'emom', label: 'EMOM', icon: '⚡' },
+  { value: 'intervals', label: 'Intervals', icon: '🔄' },
+]
+
+const heartRateZones = [
+  { value: 1, label: 'Zone 1', desc: 'Recovery (50-60%)', color: 'text-blue-400' },
+  { value: 2, label: 'Zone 2', desc: 'Aerobic (60-70%)', color: 'text-green-400' },
+  { value: 3, label: 'Zone 3', desc: 'Tempo (70-80%)', color: 'text-yellow-400' },
+  { value: 4, label: 'Zone 4', desc: 'Threshold (80-90%)', color: 'text-orange-400' },
+  { value: 5, label: 'Zone 5', desc: 'Max (90-100%)', color: 'text-red-400' },
+]
+
+const distanceUnits = [
+  { value: 'm', label: 'meters' },
+  { value: 'km', label: 'km' },
+  { value: 'mi', label: 'miles' },
+  { value: 'cal', label: 'calories' },
 ]
 
 function getDefaultWeightType(exerciseId: string): string {
@@ -101,7 +134,25 @@ function generateId() {
   return Math.random().toString(36).substring(2, 9)
 }
 
-function createDefaultSet(setNumber: number, weightType: string = 'freeweight'): ExerciseSet {
+function createDefaultSet(setNumber: number, weightType: string = 'freeweight', isCardio: boolean = false): ExerciseSet {
+  if (isCardio) {
+    return {
+      id: generateId(),
+      setNumber,
+      reps: '1', // For cardio, typically 1 "round" or interval
+      intensityType: 'rpe',
+      intensityValue: '',
+      restSeconds: 60,
+      restBracket: '60-90',
+      weightType: 'bodyweight',
+      notes: '',
+      cardioType: 'duration',
+      cardioValue: '20',
+      cardioUnit: 'min',
+      heartRateZone: 2,
+    }
+  }
+  
   return {
     id: generateId(),
     setNumber,
@@ -113,6 +164,13 @@ function createDefaultSet(setNumber: number, weightType: string = 'freeweight'):
     weightType,
     notes: '',
   }
+}
+
+// Helper to check if exercise is cardio-based
+function isCardioExercise(exerciseId: string): boolean {
+  const exercise = exercisesData.exercises.find((e: any) => e.id === exerciseId)
+  if (!exercise) return false
+  return exercise.category === 'cardio' || (exercise.tags && exercise.tags.includes('cardio'))
 }
 
 export default function WorkoutBuilder({ workouts, onChange, programType }: WorkoutBuilderProps) {
@@ -338,6 +396,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
   const renderExerciseCard = (workout: Workout, exercise: WorkoutExercise, exerciseIndex: number, isSuperset: boolean = false) => {
     const isExpanded = expandedExercises.has(exercise.id)
     const firstSet = exercise.sets[0]
+    const isCardio = isCardioExercise(exercise.exerciseId) || programType === 'cardio'
 
     return (
       <div key={exercise.id} className="p-3">
@@ -367,92 +426,184 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
 
         {/* Quick Edit Row */}
         <div className={`mt-3 flex flex-wrap items-center gap-3 ${isSuperset ? 'pl-10' : 'pl-[72px]'}`}>
-          {/* Set Count */}
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-zinc-500 mr-1">Sets</span>
-            <button type="button"
-              onClick={() => setSetCount(workout.id, exercise.id, exercise.sets.length - 1)}
-              className="w-6 h-6 rounded bg-zinc-700 hover:bg-zinc-600 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
-              disabled={exercise.sets.length <= 1}
-            >
-              <Minus className="w-3 h-3" />
-            </button>
-            <span className="w-6 text-center text-white font-medium">{exercise.sets.length}</span>
-            <button type="button"
-              onClick={() => setSetCount(workout.id, exercise.id, exercise.sets.length + 1)}
-              className="w-6 h-6 rounded bg-zinc-700 hover:bg-zinc-600 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
-              disabled={exercise.sets.length >= 10}
-            >
-              <Plus className="w-3 h-3" />
-            </button>
-          </div>
+          {isCardio ? (
+            /* === CARDIO FIELDS === */
+            <>
+              {/* Cardio Type */}
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-zinc-500">Type</span>
+                <select
+                  value={firstSet?.cardioType || 'duration'}
+                  onChange={(e) => updateAllSets(workout.id, exercise.id, { cardioType: e.target.value as any })}
+                  className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                >
+                  {cardioTypes.map(type => (
+                    <option key={type.value} value={type.value}>{type.icon} {type.label}</option>
+                  ))}
+                </select>
+              </div>
 
-          <div className="w-px h-6 bg-zinc-700" />
+              <div className="w-px h-6 bg-zinc-700" />
 
-          {/* Reps */}
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-zinc-500">Reps</span>
-            <input
-              type="text"
-              value={firstSet?.reps || '8-12'}
-              onChange={(e) => updateAllSets(workout.id, exercise.id, { reps: e.target.value })}
-              className="w-16 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-              placeholder="8-12"
-            />
-          </div>
+              {/* Value & Unit */}
+              <div className="flex items-center gap-1">
+                <input
+                  type="text"
+                  value={firstSet?.cardioValue || '20'}
+                  onChange={(e) => updateAllSets(workout.id, exercise.id, { cardioValue: e.target.value })}
+                  className="w-16 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                  placeholder="20"
+                />
+                <select
+                  value={firstSet?.cardioUnit || 'min'}
+                  onChange={(e) => updateAllSets(workout.id, exercise.id, { cardioUnit: e.target.value })}
+                  className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                >
+                  <option value="min">min</option>
+                  <option value="sec">sec</option>
+                  <option value="m">meters</option>
+                  <option value="km">km</option>
+                  <option value="mi">miles</option>
+                  <option value="cal">calories</option>
+                  <option value="rounds">rounds</option>
+                </select>
+              </div>
 
-          {/* Intensity */}
-          <div className="flex items-center gap-1">
-            <select
-              value={firstSet?.intensityType || 'rir'}
-              onChange={(e) => updateAllSets(workout.id, exercise.id, { 
-                intensityType: e.target.value as ExerciseSet['intensityType'] 
-              })}
-              className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-            >
-              {intensityTypes.map(type => (
-                <option key={type.id} value={type.id}>{type.label}</option>
-              ))}
-            </select>
-            {firstSet?.intensityType !== 'failure' && (
-              <input
-                type="text"
-                value={firstSet?.intensityValue || '2'}
-                onChange={(e) => updateAllSets(workout.id, exercise.id, { intensityValue: e.target.value })}
-                className="w-12 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-              />
-            )}
-          </div>
+              <div className="w-px h-6 bg-zinc-700" />
 
-          {/* Rest */}
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-zinc-500">Rest</span>
-            <select
-              value={firstSet?.restBracket || '90-120'}
-              onChange={(e) => updateAllSets(workout.id, exercise.id, { 
-                restBracket: e.target.value,
-                restSeconds: parseInt(e.target.value.split('-')[0]) || 90
-              })}
-              className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-            >
-              {restBrackets.map(bracket => (
-                <option key={bracket.value} value={bracket.value}>{bracket.label}</option>
-              ))}
-            </select>
-          </div>
+              {/* Heart Rate Zone */}
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-zinc-500">HR Zone</span>
+                <select
+                  value={firstSet?.heartRateZone || 2}
+                  onChange={(e) => updateAllSets(workout.id, exercise.id, { heartRateZone: parseInt(e.target.value) as any })}
+                  className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                >
+                  <option value="">Optional</option>
+                  {heartRateZones.map(zone => (
+                    <option key={zone.value} value={zone.value}>{zone.label} - {zone.desc}</option>
+                  ))}
+                </select>
+              </div>
 
-          {/* Weight Type */}
-          <div className="flex items-center gap-1">
-            <select
-              value={firstSet?.weightType || 'freeweight'}
-              onChange={(e) => updateAllSets(workout.id, exercise.id, { weightType: e.target.value })}
-              className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-            >
-              {weightTypes.map(type => (
-                <option key={type.id} value={type.id}>{type.label}</option>
-              ))}
-            </select>
-          </div>
+              {/* EMOM/Intervals fields */}
+              {(firstSet?.cardioType === 'emom' || firstSet?.cardioType === 'intervals') && (
+                <>
+                  <div className="w-px h-6 bg-zinc-700" />
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-zinc-500">Work</span>
+                    <input
+                      type="text"
+                      value={firstSet?.workTime || '40s'}
+                      onChange={(e) => updateAllSets(workout.id, exercise.id, { workTime: e.target.value })}
+                      className="w-14 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                      placeholder="40s"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-zinc-500">Rest</span>
+                    <input
+                      type="text"
+                      value={firstSet?.restTime || '20s'}
+                      onChange={(e) => updateAllSets(workout.id, exercise.id, { restTime: e.target.value })}
+                      className="w-14 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                      placeholder="20s"
+                    />
+                  </div>
+                </>
+              )}
+            </>
+          ) : (
+            /* === STRENGTH FIELDS === */
+            <>
+              {/* Set Count */}
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-zinc-500 mr-1">Sets</span>
+                <button type="button"
+                  onClick={() => setSetCount(workout.id, exercise.id, exercise.sets.length - 1)}
+                  className="w-6 h-6 rounded bg-zinc-700 hover:bg-zinc-600 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+                  disabled={exercise.sets.length <= 1}
+                >
+                  <Minus className="w-3 h-3" />
+                </button>
+                <span className="w-6 text-center text-white font-medium">{exercise.sets.length}</span>
+                <button type="button"
+                  onClick={() => setSetCount(workout.id, exercise.id, exercise.sets.length + 1)}
+                  className="w-6 h-6 rounded bg-zinc-700 hover:bg-zinc-600 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+                  disabled={exercise.sets.length >= 10}
+                >
+                  <Plus className="w-3 h-3" />
+                </button>
+              </div>
+
+              <div className="w-px h-6 bg-zinc-700" />
+
+              {/* Reps */}
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-zinc-500">Reps</span>
+                <input
+                  type="text"
+                  value={firstSet?.reps || '8-12'}
+                  onChange={(e) => updateAllSets(workout.id, exercise.id, { reps: e.target.value })}
+                  className="w-16 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                  placeholder="8-12"
+                />
+              </div>
+
+              {/* Intensity */}
+              <div className="flex items-center gap-1">
+                <select
+                  value={firstSet?.intensityType || 'rir'}
+                  onChange={(e) => updateAllSets(workout.id, exercise.id, { 
+                    intensityType: e.target.value as ExerciseSet['intensityType'] 
+                  })}
+                  className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                >
+                  {intensityTypes.map(type => (
+                    <option key={type.id} value={type.id}>{type.label}</option>
+                  ))}
+                </select>
+                {firstSet?.intensityType !== 'failure' && (
+                  <input
+                    type="text"
+                    value={firstSet?.intensityValue || '2'}
+                    onChange={(e) => updateAllSets(workout.id, exercise.id, { intensityValue: e.target.value })}
+                    className="w-12 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                  />
+                )}
+              </div>
+
+              {/* Rest */}
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-zinc-500">Rest</span>
+                <select
+                  value={firstSet?.restBracket || '90-120'}
+                  onChange={(e) => updateAllSets(workout.id, exercise.id, { 
+                    restBracket: e.target.value,
+                    restSeconds: parseInt(e.target.value.split('-')[0]) || 90
+                  })}
+                  className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                >
+                  {restBrackets.map(bracket => (
+                    <option key={bracket.value} value={bracket.value}>{bracket.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Weight Type */}
+              <div className="flex items-center gap-1">
+                <select
+                  value={firstSet?.weightType || 'freeweight'}
+                  onChange={(e) => updateAllSets(workout.id, exercise.id, { weightType: e.target.value })}
+                  className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                >
+                  {weightTypes.map(type => (
+                    <option key={type.id} value={type.id}>{type.label}</option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
 
           <div className="flex-1" />
 
