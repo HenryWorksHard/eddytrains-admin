@@ -7,10 +7,10 @@ import { ArrowLeft, Save, Loader2, ChevronDown } from 'lucide-react'
 import WorkoutBuilder, { Workout } from '@/components/WorkoutBuilder'
 
 const categories = [
-  { value: 'strength', label: 'Strength Training' },
-  { value: 'cardio', label: 'Cardio' },
-  { value: 'hyrox', label: 'Hyrox' },
-  { value: 'hybrid', label: 'Hybrid' },
+  { value: 'strength', label: 'Strength Training', icon: '💪', description: 'Build muscle and increase strength' },
+  { value: 'cardio', label: 'Cardio', icon: '❤️', description: 'Improve cardiovascular fitness' },
+  { value: 'hyrox', label: 'Hyrox', icon: '🏃', description: 'Train for Hyrox competitions' },
+  { value: 'hybrid', label: 'Hybrid', icon: '⚡', description: 'Combine strength and cardio' },
 ]
 
 const difficulties = [
@@ -25,10 +25,12 @@ export default function CreateProgramPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Program details
+  // Step tracking
+  const [category, setCategory] = useState<string | null>(null)
+
+  // Program details (shown after category selected)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [category, setCategory] = useState('strength')
   const [difficulty, setDifficulty] = useState('intermediate')
   const [isActive, setIsActive] = useState(true)
 
@@ -78,10 +80,11 @@ export default function CreateProgramPage() {
     }
   }
 
-  return (
-    <form onSubmit={handleSubmit} className="max-w-5xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+  // Step 1: Category Selection
+  if (!category) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* Header */}
         <div className="flex items-center gap-4">
           <Link
             href="/programs"
@@ -91,7 +94,52 @@ export default function CreateProgramPage() {
           </Link>
           <div>
             <h1 className="text-3xl font-bold text-white">Create Program</h1>
-            <p className="text-zinc-400 mt-1">Build a new fitness program with workouts</p>
+            <p className="text-zinc-400 mt-1">First, select the program type</p>
+          </div>
+        </div>
+
+        {/* Category Cards */}
+        <div className="grid md:grid-cols-2 gap-4">
+          {categories.map(cat => (
+            <button
+              key={cat.value}
+              type="button"
+              onClick={() => setCategory(cat.value)}
+              className="p-6 bg-zinc-900 border border-zinc-800 hover:border-yellow-400/50 rounded-2xl text-left transition-all hover:bg-zinc-800/50 group"
+            >
+              <div className="text-4xl mb-3">{cat.icon}</div>
+              <h3 className="text-xl font-semibold text-white group-hover:text-yellow-400 transition-colors">
+                {cat.label}
+              </h3>
+              <p className="text-zinc-500 text-sm mt-1">{cat.description}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // Step 2: Program Details (after category selected)
+  const selectedCategory = categories.find(c => c.value === category)
+
+  return (
+    <form onSubmit={handleSubmit} className="max-w-5xl mx-auto space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={() => setCategory(null)}
+            className="p-2 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">{selectedCategory?.icon}</span>
+              <h1 className="text-3xl font-bold text-white">New {selectedCategory?.label} Program</h1>
+            </div>
+            <p className="text-zinc-400 mt-1">Configure your program details and workouts</p>
           </div>
         </div>
 
@@ -148,25 +196,6 @@ export default function CreateProgramPage() {
               rows={3}
               placeholder="Describe the program goals, target audience, and what to expect..."
             />
-          </div>
-
-          {/* Category */}
-          <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-2">
-              Category
-            </label>
-            <div className="relative">
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full appearance-none px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 pr-10"
-              >
-                {categories.map(cat => (
-                  <option key={cat.value} value={cat.value}>{cat.label}</option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 pointer-events-none" />
-            </div>
           </div>
 
           {/* Difficulty */}
