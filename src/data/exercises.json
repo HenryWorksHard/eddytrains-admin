@@ -1255,6 +1255,23 @@
       }
     },
     {
+      "id": "v_ups",
+      "name": "V-Ups",
+      "category": "core",
+      "equipment": ["bodyweight"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["abs", "rectus_abdominis"],
+      "secondaryMuscles": ["hip_flexors"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Lie flat on back with arms extended overhead and legs straight.",
+        "execution": "Simultaneously lift legs and torso, reaching hands toward toes to form a V shape. Lower with control.",
+        "cues": ["Keep legs straight", "Reach for toes", "Control the descent", "Squeeze abs at top"],
+        "commonMistakes": ["Bending knees", "Using momentum", "Not reaching full V position", "Dropping down too fast"],
+        "breathingPattern": "Exhale on the way up, inhale on the way down"
+      }
+    },
+    {
       "id": "dead_bug",
       "name": "Dead Bug",
       "category": "core",
