@@ -165,6 +165,30 @@ export default function UserProfilePage() {
   const [editing1RM, setEditing1RM] = useState(false)
   const [saving1RM, setSaving1RM] = useState(false)
 
+  // Nutrition State
+  const [clientNutrition, setClientNutrition] = useState<{
+    id: string
+    plan_id: string
+    plan_name: string
+    calories: number
+    protein: number
+    carbs: number
+    fats: number
+    notes?: string
+  } | null>(null)
+  const [availableNutritionPlans, setAvailableNutritionPlans] = useState<{
+    id: string
+    name: string
+    calories: number
+    protein: number
+    carbs: number
+    fats: number
+  }[]>([])
+  const [showNutritionModal, setShowNutritionModal] = useState(false)
+  const [selectedNutritionPlan, setSelectedNutritionPlan] = useState<string | null>(null)
+  const [nutritionNotes, setNutritionNotes] = useState('')
+  const [assigningNutrition, setAssigningNutrition] = useState(false)
+
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [permissions, setPermissions] = useState({
@@ -180,6 +204,7 @@ export default function UserProfilePage() {
     if (user?.id) {
       fetchClientPrograms(user.id)
       fetchClient1RMs(user.id)
+      fetchClientNutrition(user.id)
     }
   }, [user?.id])
 
@@ -297,6 +322,114 @@ export default function UserProfilePage() {
     setClient1RMs(prev => prev.map(rm => 
       rm.exercise_name === exerciseName ? { ...rm, weight_kg: weightKg } : rm
     ))
+  }
+
+  const fetchClientNutrition = async (userUuid: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('client_nutrition')
+        .select(`
+          id,
+          nutrition_plan_id,
+          notes,
+          custom_calories,
+          custom_protein,
+          custom_carbs,
+          custom_fats,
+          nutrition_plans (id, name, calories, protein, carbs, fats)
+        `)
+        .eq('client_id', userUuid)
+        .eq('is_active', true)
+        .single()
+      
+      if (error && error.code !== 'PGRST116') throw error // PGRST116 = no rows
+      
+      if (data) {
+        const plan = Array.isArray(data.nutrition_plans) ? data.nutrition_plans[0] : data.nutrition_plans
+        setClientNutrition({
+          id: data.id,
+          plan_id: data.nutrition_plan_id,
+          plan_name: plan?.name || 'Custom Plan',
+          calories: data.custom_calories || plan?.calories || 0,
+          protein: data.custom_protein || plan?.protein || 0,
+          carbs: data.custom_carbs || plan?.carbs || 0,
+          fats: data.custom_fats || plan?.fats || 0,
+          notes: data.notes
+        })
+      } else {
+        setClientNutrition(null)
+      }
+    } catch (err) {
+      console.error('Failed to fetch client nutrition:', err)
+    }
+  }
+
+  const fetchAvailableNutritionPlans = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('nutrition_plans')
+        .select('id, name, calories, protein, carbs, fats')
+        .order('name')
+      
+      if (error) throw error
+      setAvailableNutritionPlans(data || [])
+    } catch (err) {
+      console.error('Failed to fetch nutrition plans:', err)
+    }
+  }
+
+  const assignNutritionPlan = async () => {
+    if (!user || !selectedNutritionPlan) return
+    setAssigningNutrition(true)
+    
+    try {
+      // Deactivate any existing nutrition assignments
+      await supabase
+        .from('client_nutrition')
+        .update({ is_active: false })
+        .eq('client_id', user.id)
+      
+      // Create new assignment
+      const { error } = await supabase
+        .from('client_nutrition')
+        .insert({
+          client_id: user.id,
+          nutrition_plan_id: selectedNutritionPlan,
+          notes: nutritionNotes || null,
+          is_active: true
+        })
+      
+      if (error) throw error
+      
+      setShowNutritionModal(false)
+      setSelectedNutritionPlan(null)
+      setNutritionNotes('')
+      fetchClientNutrition(user.id)
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3000)
+    } catch (err) {
+      console.error('Failed to assign nutrition plan:', err)
+      setError('Failed to assign nutrition plan')
+    } finally {
+      setAssigningNutrition(false)
+    }
+  }
+
+  const removeNutritionPlan = async () => {
+    if (!user || !clientNutrition) return
+    
+    try {
+      await supabase
+        .from('client_nutrition')
+        .update({ is_active: false })
+        .eq('id', clientNutrition.id)
+      
+      setClientNutrition(null)
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3000)
+    } catch (err) {
+      console.error('Failed to remove nutrition plan:', err)
+    }
   }
 
   const fetchAvailablePrograms = async () => {
@@ -1312,6 +1445,161 @@ export default function UserProfilePage() {
           </div>
         )}
       </div>
+
+      {/* Nutrition Plan */}
+      <div className="card p-6 mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <Apple className="w-5 h-5 text-green-400" />
+            <h2 className="text-lg font-semibold text-white">Nutrition Plan</h2>
+          </div>
+          {!clientNutrition && (
+            <button
+              onClick={() => {
+                fetchAvailableNutritionPlans()
+                setShowNutritionModal(true)
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-xl transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Assign Plan
+            </button>
+          )}
+        </div>
+        
+        {clientNutrition ? (
+          <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-4">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="font-medium text-white">{clientNutrition.plan_name}</h3>
+                <p className="text-2xl font-bold text-green-400 mt-1">{clientNutrition.calories} cal</p>
+              </div>
+              <button
+                onClick={removeNutritionPlan}
+                className="p-2 text-zinc-500 hover:text-red-400 transition-colors"
+                title="Remove plan"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+                <p className="text-blue-400 font-bold">{clientNutrition.protein}g</p>
+                <p className="text-zinc-500 text-xs">Protein</p>
+              </div>
+              <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+                <p className="text-yellow-400 font-bold">{clientNutrition.carbs}g</p>
+                <p className="text-zinc-500 text-xs">Carbs</p>
+              </div>
+              <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+                <p className="text-red-400 font-bold">{clientNutrition.fats}g</p>
+                <p className="text-zinc-500 text-xs">Fats</p>
+              </div>
+            </div>
+            
+            {clientNutrition.notes && (
+              <p className="text-zinc-400 text-sm mt-3">{clientNutrition.notes}</p>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <div className="w-14 h-14 rounded-xl bg-zinc-800 flex items-center justify-center mx-auto mb-3">
+              <Apple className="w-7 h-7 text-zinc-600" />
+            </div>
+            <p className="text-zinc-400 mb-4">No nutrition plan assigned</p>
+            <button
+              onClick={() => {
+                fetchAvailableNutritionPlans()
+                setShowNutritionModal(true)
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-xl transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Assign Nutrition Plan
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Nutrition Assignment Modal */}
+      {showNutritionModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-md">
+            <div className="flex items-center justify-between p-6 border-b border-zinc-800">
+              <h3 className="text-xl font-semibold text-white">Assign Nutrition Plan</h3>
+              <button onClick={() => setShowNutritionModal(false)} className="p-2 hover:bg-zinc-800 rounded-lg transition-colors">
+                <X className="w-5 h-5 text-zinc-400" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-2">Select Plan</label>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {availableNutritionPlans.map(plan => (
+                    <div
+                      key={plan.id}
+                      onClick={() => setSelectedNutritionPlan(plan.id)}
+                      className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                        selectedNutritionPlan === plan.id
+                          ? 'border-green-400 bg-green-400/10'
+                          : 'border-zinc-700 hover:border-zinc-600 bg-zinc-800/50'
+                      }`}
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                        <Apple className="w-5 h-5 text-green-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-white">{plan.name}</p>
+                        <p className="text-xs text-zinc-400">
+                          {plan.calories} cal • P:{plan.protein}g • C:{plan.carbs}g • F:{plan.fats}g
+                        </p>
+                      </div>
+                      {selectedNutritionPlan === plan.id && (
+                        <Check className="w-5 h-5 text-green-400" />
+                      )}
+                    </div>
+                  ))}
+                  {availableNutritionPlans.length === 0 && (
+                    <p className="text-zinc-500 text-center py-4">No nutrition plans available. Create one first.</p>
+                  )}
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-2">
+                  Notes <span className="text-zinc-600">(optional)</span>
+                </label>
+                <textarea
+                  value={nutritionNotes}
+                  onChange={(e) => setNutritionNotes(e.target.value)}
+                  placeholder="Any special instructions for this client..."
+                  rows={3}
+                  className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-400 resize-none"
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3 p-6 border-t border-zinc-800">
+              <button
+                onClick={() => setShowNutritionModal(false)}
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={assignNutritionPlan}
+                disabled={!selectedNutritionPlan || assigningNutrition}
+                className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-green-500/50 text-white font-medium rounded-xl transition-colors"
+              >
+                {assigningNutrition ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                Assign Plan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Danger Zone */}
       <div className="card p-6 border-red-500/20 mt-6">
