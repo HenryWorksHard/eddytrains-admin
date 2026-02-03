@@ -2,10 +2,12 @@ import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getAdminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function GET(
   request: NextRequest,
@@ -23,7 +25,7 @@ export async function GET(
     }
 
     // Check if user is admin
-    const { data: profile } = await supabaseAdmin
+    const { data: profile } = await getAdminClient()
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -34,7 +36,7 @@ export async function GET(
     }
 
     // Fetch program with all nested data
-    const { data: program, error: programError } = await supabaseAdmin
+    const { data: program, error: programError } = await getAdminClient()
       .from('programs')
       .select('*')
       .eq('id', id)
@@ -46,7 +48,7 @@ export async function GET(
     }
 
     // Fetch workouts
-    const { data: workouts, error: workoutsError } = await supabaseAdmin
+    const { data: workouts, error: workoutsError } = await getAdminClient()
       .from('program_workouts')
       .select(`
         *,
@@ -92,7 +94,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: profile } = await supabaseAdmin
+    const { data: profile } = await getAdminClient()
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -103,7 +105,7 @@ export async function DELETE(
     }
 
     // Delete program (should cascade)
-    const { error } = await supabaseAdmin
+    const { error } = await getAdminClient()
       .from('programs')
       .delete()
       .eq('id', id)
