@@ -1186,7 +1186,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                 onDragEnd={handleDragEnd(workout.id)}
               >
                 <SortableContext
-                  items={workout.exercises.map(ex => ex.id)}
+                  items={workout.exercises.filter(ex => !ex.supersetGroup).map(ex => ex.id)}
                   strategy={verticalListSortingStrategy}
                 >
                   <div className="space-y-4">
