@@ -143,86 +143,25 @@ export default function EditProgramPage({ params }: PageProps) {
     setError(null)
 
     try {
-      // 1. Update the program
-      const { error: programError } = await supabase
-        .from('programs')
-        .update({
-          name: name.trim(),
-          description: description.trim() || null,
+      const response = await fetch('/api/programs/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id,
+          name,
+          description,
           category,
           difficulty,
-          duration_weeks: durationWeeks,
-          is_active: isActive,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', id)
+          durationWeeks,
+          isActive,
+          workouts,
+        }),
+      })
 
-      if (programError) throw programError
+      const data = await response.json()
 
-      // 2. Delete existing workouts (cascade deletes exercises and sets)
-      await supabase
-        .from('program_workouts')
-        .delete()
-        .eq('program_id', id)
-
-      // 3. Recreate workouts
-      if (workouts.length > 0) {
-        for (const workout of workouts) {
-          const { data: workoutData, error: workoutError } = await supabase
-            .from('program_workouts')
-            .insert({
-              program_id: id,
-              name: workout.name,
-              day_of_week: workout.dayOfWeek,
-              order_index: workout.order,
-              notes: workout.notes || null,
-            })
-            .select()
-            .single()
-
-          if (workoutError) throw workoutError
-
-          // 4. Create workout exercises
-          if (workout.exercises.length > 0 && workoutData) {
-            for (const exercise of workout.exercises) {
-              const { data: exerciseData, error: exerciseError } = await supabase
-                .from('workout_exercises')
-                .insert({
-                  workout_id: workoutData.id,
-                  exercise_id: exercise.exerciseId,
-                  exercise_name: exercise.exerciseName,
-                  order_index: exercise.order,
-                  notes: exercise.notes || null,
-                  superset_group: exercise.supersetGroup || null,
-                })
-                .select()
-                .single()
-
-              if (exerciseError) throw exerciseError
-
-              // 5. Create exercise sets
-              if (exercise.sets.length > 0 && exerciseData) {
-                const setsToInsert = exercise.sets.map(set => ({
-                  exercise_id: exerciseData.id,
-                  set_number: set.setNumber,
-                  reps: set.reps,
-                  intensity_type: set.intensityType,
-                  intensity_value: set.intensityValue,
-                  rest_seconds: set.restSeconds,
-                  rest_bracket: set.restBracket || '90-120',
-                  weight_type: set.weightType || 'freeweight',
-                  notes: set.notes || null,
-                }))
-
-                const { error: setsError } = await supabase
-                  .from('exercise_sets')
-                  .insert(setsToInsert)
-
-                if (setsError) throw setsError
-              }
-            }
-          }
-        }
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update program')
       }
 
       // Success - redirect to programs list
