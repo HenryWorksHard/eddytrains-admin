@@ -1272,6 +1272,23 @@
       }
     },
     {
+      "id": "crunches",
+      "name": "Crunches",
+      "category": "core",
+      "equipment": ["bodyweight"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["abs", "rectus_abdominis"],
+      "secondaryMuscles": [],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Lie on back with knees bent, feet flat on floor. Hands across chest or lightly behind head.",
+        "execution": "Curl shoulders off the ground by contracting abs. Lift until shoulder blades clear the floor. Lower with control.",
+        "cues": ["Lead with chest, not chin", "Keep lower back on floor", "Squeeze abs at top", "Don't pull on neck"],
+        "commonMistakes": ["Pulling on neck", "Using momentum", "Lifting too high (becomes sit-up)", "Going too fast"],
+        "breathingPattern": "Exhale on the way up, inhale on the way down"
+      }
+    },
+    {
       "id": "dead_bug",
       "name": "Dead Bug",
       "category": "core",
