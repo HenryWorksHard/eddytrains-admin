@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Search, X, Dumbbell, ChevronDown } from 'lucide-react'
+import { Search, X, Dumbbell, ChevronDown, Check, Layers } from 'lucide-react'
 import exercisesData from '@/data/exercises.json'
 
 interface Exercise {
@@ -16,7 +16,9 @@ interface Exercise {
 
 interface ExerciseSelectorProps {
   onSelect: (exercise: Exercise) => void
+  onSelectSuperset?: (exercises: Exercise[]) => void
   onClose: () => void
+  allowSuperset?: boolean
 }
 
 const categoryColors: Record<string, string> = {
@@ -32,10 +34,12 @@ const categoryColors: Record<string, string> = {
   cardio: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
 }
 
-export default function ExerciseSelector({ onSelect, onClose }: ExerciseSelectorProps) {
+export default function ExerciseSelector({ onSelect, onSelectSuperset, onClose, allowSuperset = true }: ExerciseSelectorProps) {
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [selectedEquipment, setSelectedEquipment] = useState<string | null>(null)
+  const [isSupersetMode, setIsSupersetMode] = useState(false)
+  const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([])
   const modalRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
 
@@ -61,6 +65,29 @@ export default function ExerciseSelector({ onSelect, onClose }: ExerciseSelector
     return matchesSearch && matchesCategory && matchesEquipment
   })
 
+  const handleExerciseClick = (exercise: Exercise) => {
+    if (isSupersetMode) {
+      // Toggle selection
+      if (selectedExercises.find(e => e.id === exercise.id)) {
+        setSelectedExercises(selectedExercises.filter(e => e.id !== exercise.id))
+      } else {
+        setSelectedExercises([...selectedExercises, exercise])
+      }
+    } else {
+      onSelect(exercise)
+    }
+  }
+
+  const handleAddSuperset = () => {
+    if (selectedExercises.length >= 2 && onSelectSuperset) {
+      onSelectSuperset(selectedExercises)
+    }
+  }
+
+  const isSelected = (exerciseId: string) => {
+    return selectedExercises.some(e => e.id === exerciseId)
+  }
+
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div 
@@ -70,7 +97,9 @@ export default function ExerciseSelector({ onSelect, onClose }: ExerciseSelector
         {/* Header */}
         <div className="p-6 border-b border-zinc-800">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-white">Select Exercise</h2>
+            <h2 className="text-xl font-bold text-white">
+              {isSupersetMode ? 'Select Superset Exercises' : 'Select Exercise'}
+            </h2>
             <button
               onClick={onClose}
               className="p-2 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
@@ -78,6 +107,65 @@ export default function ExerciseSelector({ onSelect, onClose }: ExerciseSelector
               <X className="w-5 h-5" />
             </button>
           </div>
+
+          {/* Mode Toggle */}
+          {allowSuperset && (
+            <div className="flex items-center gap-2 mb-4 p-1 bg-zinc-800 rounded-xl">
+              <button
+                onClick={() => {
+                  setIsSupersetMode(false)
+                  setSelectedExercises([])
+                }}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                  !isSupersetMode 
+                    ? 'bg-zinc-700 text-white' 
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                <Dumbbell className="w-4 h-4" />
+                Individual
+              </button>
+              <button
+                onClick={() => setIsSupersetMode(true)}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                  isSupersetMode 
+                    ? 'bg-yellow-400 text-black' 
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                <Layers className="w-4 h-4" />
+                Superset
+              </button>
+            </div>
+          )}
+
+          {/* Superset selection indicator */}
+          {isSupersetMode && selectedExercises.length > 0 && (
+            <div className="mb-4 p-3 bg-yellow-400/10 border border-yellow-400/30 rounded-xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-sm text-yellow-400 font-medium">
+                    {selectedExercises.length} exercise{selectedExercises.length !== 1 ? 's' : ''} selected
+                  </span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {selectedExercises.map((ex, i) => (
+                      <span key={ex.id} className="text-xs text-zinc-400">
+                        {ex.name}{i < selectedExercises.length - 1 ? ' →' : ''}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                {selectedExercises.length >= 2 && (
+                  <button
+                    onClick={handleAddSuperset}
+                    className="px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-black font-medium rounded-lg transition-colors"
+                  >
+                    Add Superset
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Search */}
           <div className="relative mb-4">
@@ -128,31 +216,51 @@ export default function ExerciseSelector({ onSelect, onClose }: ExerciseSelector
         <div className="flex-1 overflow-y-auto p-4">
           {filteredExercises.length > 0 ? (
             <div className="space-y-2">
-              {filteredExercises.map((exercise) => (
-                <button
-                  key={exercise.id}
-                  onClick={() => onSelect(exercise)}
-                  className="w-full flex items-center gap-4 p-4 bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 rounded-xl transition-all text-left group"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-zinc-700 flex items-center justify-center flex-shrink-0">
-                    <Dumbbell className="w-6 h-6 text-zinc-400 group-hover:text-yellow-400 transition-colors" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-white group-hover:text-yellow-400 transition-colors">
-                      {exercise.name}
-                    </h3>
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      <span className={`text-xs px-2 py-0.5 rounded-full border ${categoryColors[exercise.category] || 'bg-zinc-700 text-zinc-400'}`}>
-                        {exercise.category}
-                      </span>
-                      <span className="text-xs text-zinc-500">
-                        {exercise.primaryMuscles.slice(0, 2).join(', ')}
-                      </span>
+              {filteredExercises.map((exercise) => {
+                const selected = isSelected(exercise.id)
+                return (
+                  <button
+                    key={exercise.id}
+                    onClick={() => handleExerciseClick(exercise)}
+                    className={`w-full flex items-center gap-4 p-4 border rounded-xl transition-all text-left group ${
+                      selected
+                        ? 'bg-yellow-400/10 border-yellow-400/50 hover:border-yellow-400'
+                        : 'bg-zinc-800/50 hover:bg-zinc-800 border-zinc-800 hover:border-zinc-700'
+                    }`}
+                  >
+                    {isSupersetMode && (
+                      <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                        selected 
+                          ? 'bg-yellow-400 border-yellow-400' 
+                          : 'border-zinc-600 group-hover:border-zinc-500'
+                      }`}>
+                        {selected && <Check className="w-4 h-4 text-black" />}
+                      </div>
+                    )}
+                    <div className="w-12 h-12 rounded-xl bg-zinc-700 flex items-center justify-center flex-shrink-0">
+                      <Dumbbell className={`w-6 h-6 transition-colors ${
+                        selected ? 'text-yellow-400' : 'text-zinc-400 group-hover:text-yellow-400'
+                      }`} />
                     </div>
-                  </div>
-                  <span className="text-xs text-zinc-600 capitalize">{exercise.difficulty}</span>
-                </button>
-              ))}
+                    <div className="flex-1 min-w-0">
+                      <h3 className={`font-semibold transition-colors ${
+                        selected ? 'text-yellow-400' : 'text-white group-hover:text-yellow-400'
+                      }`}>
+                        {exercise.name}
+                      </h3>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        <span className={`text-xs px-2 py-0.5 rounded-full border ${categoryColors[exercise.category] || 'bg-zinc-700 text-zinc-400'}`}>
+                          {exercise.category}
+                        </span>
+                        <span className="text-xs text-zinc-500">
+                          {exercise.primaryMuscles.slice(0, 2).join(', ')}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-xs text-zinc-600 capitalize">{exercise.difficulty}</span>
+                  </button>
+                )
+              })}
             </div>
           ) : (
             <div className="text-center py-12">
@@ -163,10 +271,15 @@ export default function ExerciseSelector({ onSelect, onClose }: ExerciseSelector
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-zinc-800 text-center">
+        <div className="p-4 border-t border-zinc-800 flex items-center justify-between">
           <span className="text-sm text-zinc-500">
             {filteredExercises.length} exercise{filteredExercises.length !== 1 ? 's' : ''} available
           </span>
+          {isSupersetMode && (
+            <span className="text-sm text-zinc-500">
+              Select 2+ exercises to create a superset
+            </span>
+          )}
         </div>
       </div>
     </div>
