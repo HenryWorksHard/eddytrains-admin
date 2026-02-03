@@ -1289,6 +1289,23 @@
       }
     },
     {
+      "id": "sit_ups",
+      "name": "Sit-Ups",
+      "category": "core",
+      "equipment": ["bodyweight"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["abs", "rectus_abdominis"],
+      "secondaryMuscles": ["hip_flexors"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Lie on back with knees bent, feet flat on floor or anchored. Hands across chest or behind head.",
+        "execution": "Curl torso all the way up until chest meets thighs. Lower with control back to floor.",
+        "cues": ["Lead with chest", "Control the descent", "Engage core throughout", "Don't pull on neck"],
+        "commonMistakes": ["Pulling on neck", "Using momentum", "Jerky movements", "Not full range of motion"],
+        "breathingPattern": "Exhale on the way up, inhale on the way down"
+      }
+    },
+    {
       "id": "dead_bug",
       "name": "Dead Bug",
       "category": "core",
