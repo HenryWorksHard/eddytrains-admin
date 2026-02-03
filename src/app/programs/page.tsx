@@ -18,10 +18,10 @@ interface Program {
 }
 
 const categories = [
-  { id: 'strength', label: 'Strength Training', icon: '💪', color: 'yellow' },
-  { id: 'cardio', label: 'Cardio', icon: '❤️', color: 'red' },
-  { id: 'hyrox', label: 'Hyrox', icon: '🏃', color: 'orange' },
-  { id: 'hybrid', label: 'Hybrid', icon: '⚡', color: 'purple' },
+  { id: 'strength', label: 'Strength Training', icon: 'S', color: 'yellow' },
+  { id: 'cardio', label: 'Cardio', icon: 'C', color: 'red' },
+  { id: 'hyrox', label: 'Hyrox', icon: 'H', color: 'orange' },
+  { id: 'hybrid', label: 'Hybrid', icon: 'HY', color: 'purple' },
 ]
 
 async function getPrograms(): Promise<Program[]> {

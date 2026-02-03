@@ -59,24 +59,24 @@ const restBrackets = [
 
 // Cardio-specific options
 const cardioTypes = [
-  { value: 'duration', label: 'Duration', icon: '⏱️' },
-  { value: 'distance', label: 'Distance', icon: '📏' },
-  { value: 'calories', label: 'Calories', icon: '🔥' },
-  { value: 'emom', label: 'EMOM', icon: '⚡' },
-  { value: 'intervals', label: 'Intervals', icon: '🔄' },
+  { value: 'duration', label: 'Duration', icon: 'D' },
+  { value: 'distance', label: 'Distance', icon: 'KM' },
+  { value: 'calories', label: 'Calories', icon: 'CAL' },
+  { value: 'emom', label: 'EMOM', icon: 'E' },
+  { value: 'intervals', label: 'Intervals', icon: 'INT' },
 ]
 
 // Hyrox-specific options
 const hyroxStations = [
-  { value: 'run', label: '1km Run', icon: '🏃', defaultDistance: '1000', defaultUnit: 'm' },
-  { value: 'skierg', label: 'SkiErg', icon: '⛷️', defaultDistance: '1000', defaultUnit: 'm' },
-  { value: 'sled_push', label: 'Sled Push', icon: '🛷', defaultDistance: '50', defaultUnit: 'm' },
-  { value: 'sled_pull', label: 'Sled Pull', icon: '🪢', defaultDistance: '50', defaultUnit: 'm' },
-  { value: 'burpee_broad_jump', label: 'Burpee Broad Jump', icon: '🦘', defaultDistance: '80', defaultUnit: 'm' },
-  { value: 'row', label: 'Rowing', icon: '🚣', defaultDistance: '1000', defaultUnit: 'm' },
-  { value: 'farmers_carry', label: 'Farmers Carry', icon: '🏋️', defaultDistance: '200', defaultUnit: 'm' },
-  { value: 'sandbag_lunges', label: 'Sandbag Lunges', icon: '🎒', defaultDistance: '100', defaultUnit: 'm' },
-  { value: 'wall_balls', label: 'Wall Balls', icon: '🎯', defaultDistance: '100', defaultUnit: 'reps' },
+  { value: 'run', label: '1km Run', icon: 'RUN', defaultDistance: '1000', defaultUnit: 'm' },
+  { value: 'skierg', label: 'SkiErg', icon: 'SKI', defaultDistance: '1000', defaultUnit: 'm' },
+  { value: 'sled_push', label: 'Sled Push', icon: 'PSH', defaultDistance: '50', defaultUnit: 'm' },
+  { value: 'sled_pull', label: 'Sled Pull', icon: 'PLL', defaultDistance: '50', defaultUnit: 'm' },
+  { value: 'burpee_broad_jump', label: 'Burpee Broad Jump', icon: 'BBJ', defaultDistance: '80', defaultUnit: 'm' },
+  { value: 'row', label: 'Rowing', icon: 'ROW', defaultDistance: '1000', defaultUnit: 'm' },
+  { value: 'farmers_carry', label: 'Farmers Carry', icon: 'FC', defaultDistance: '200', defaultUnit: 'm' },
+  { value: 'sandbag_lunges', label: 'Sandbag Lunges', icon: 'SBL', defaultDistance: '100', defaultUnit: 'm' },
+  { value: 'wall_balls', label: 'Wall Balls', icon: 'WB', defaultDistance: '100', defaultUnit: 'reps' },
 ]
 
 const hyroxWeightClasses = [
@@ -91,8 +91,8 @@ const hyroxWeightClasses = [
 
 // Hybrid workout modes
 const hybridModes = [
-  { value: 'strength', label: 'Strength', icon: '💪' },
-  { value: 'cardio', label: 'Cardio', icon: '❤️' },
+  { value: 'strength', label: 'Strength', icon: 'S' },
+  { value: 'cardio', label: 'Cardio', icon: 'C' },
 ]
 
 const heartRateZones = [
@@ -176,10 +176,10 @@ const daysOfWeek = [
 ]
 
 const finisherCategories = [
-  { value: 'strength', label: 'Strength', icon: '💪', color: 'blue' },
-  { value: 'cardio', label: 'Cardio', icon: '❤️', color: 'green' },
-  { value: 'hyrox', label: 'Hyrox', icon: '🏃', color: 'orange' },
-  { value: 'hybrid', label: 'Hybrid', icon: '⚡', color: 'purple' },
+  { value: 'strength', label: 'Strength', icon: 'S', color: 'blue' },
+  { value: 'cardio', label: 'Cardio', icon: 'C', color: 'green' },
+  { value: 'hyrox', label: 'Hyrox', icon: 'H', color: 'orange' },
+  { value: 'hybrid', label: 'Hybrid', icon: 'HY', color: 'purple' },
 ]
 
 const intensityTypes = exercisesData.intensityTypes
@@ -1163,9 +1163,9 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                           workout.finisher.category === 'hyrox' ? 'bg-orange-500/20 text-orange-400' :
                           'bg-purple-500/20 text-purple-400'
                         }`}>
-                          {workout.finisher.category === 'strength' ? '💪' :
-                           workout.finisher.category === 'cardio' ? '❤️' :
-                           workout.finisher.category === 'hyrox' ? '🏃' : '⚡'}
+                          {workout.finisher.category === 'strength' ? 'S' :
+                           workout.finisher.category === 'cardio' ? 'C' :
+                           workout.finisher.category === 'hyrox' ? 'H' : 'HY'}
                         </div>
                         <div>
                           <input

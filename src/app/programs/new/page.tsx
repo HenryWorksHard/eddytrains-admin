@@ -7,10 +7,10 @@ import { ArrowLeft, Save, Loader2, ChevronDown } from 'lucide-react'
 import WorkoutBuilder, { Workout } from '@/components/WorkoutBuilder'
 
 const categories = [
-  { value: 'strength', label: 'Strength Training', icon: '💪', description: 'Build muscle and increase strength' },
-  { value: 'cardio', label: 'Cardio', icon: '❤️', description: 'Improve cardiovascular fitness' },
-  { value: 'hyrox', label: 'Hyrox', icon: '🏃', description: 'Train for Hyrox competitions' },
-  { value: 'hybrid', label: 'Hybrid', icon: '⚡', description: 'Combine strength and cardio' },
+  { value: 'strength', label: 'Strength Training', icon: 'S', description: 'Build muscle and increase strength' },
+  { value: 'cardio', label: 'Cardio', icon: 'C', description: 'Improve cardiovascular fitness' },
+  { value: 'hyrox', label: 'Hyrox', icon: 'H', description: 'Train for Hyrox competitions' },
+  { value: 'hybrid', label: 'Hybrid', icon: 'HY', description: 'Combine strength and cardio' },
 ]
 
 const difficulties = [
