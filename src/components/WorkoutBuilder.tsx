@@ -413,12 +413,14 @@ export default function WorkoutBuilder({ workouts, onChange }: WorkoutBuilderPro
                 <option key={type.id} value={type.id}>{type.label}</option>
               ))}
             </select>
-            <input
-              type="text"
-              value={firstSet?.intensityValue || '2'}
-              onChange={(e) => updateAllSets(workout.id, exercise.id, { intensityValue: e.target.value })}
-              className="w-12 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-            />
+            {firstSet?.intensityType !== 'failure' && (
+              <input
+                type="text"
+                value={firstSet?.intensityValue || '2'}
+                onChange={(e) => updateAllSets(workout.id, exercise.id, { intensityValue: e.target.value })}
+                className="w-12 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+              />
+            )}
           </div>
 
           {/* Rest */}
@@ -520,12 +522,14 @@ export default function WorkoutBuilder({ workouts, onChange }: WorkoutBuilderPro
                             <option key={type.id} value={type.id}>{type.label}</option>
                           ))}
                         </select>
-                        <input
-                          type="text"
-                          value={set.intensityValue}
-                          onChange={(e) => updateSet(workout.id, exercise.id, set.id, { intensityValue: e.target.value })}
-                          className="w-14 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                        />
+                        {set.intensityType !== 'failure' && (
+                          <input
+                            type="text"
+                            value={set.intensityValue}
+                            onChange={(e) => updateSet(workout.id, exercise.id, set.id, { intensityValue: e.target.value })}
+                            className="w-14 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                          />
+                        )}
                       </div>
                     </td>
                     <td className="px-3 py-2">
