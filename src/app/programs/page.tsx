@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { Plus, Dumbbell, Search } from 'lucide-react'
+import { Plus, Dumbbell, Search, ChevronRight } from 'lucide-react'
 import ProgramCard from '@/components/ProgramCard'
 
 interface Program {
@@ -14,6 +14,13 @@ interface Program {
   created_at: string
 }
 
+const categories = [
+  { id: 'strength', label: 'Strength Training', icon: '💪', color: 'yellow' },
+  { id: 'cardio', label: 'Cardio', icon: '❤️', color: 'red' },
+  { id: 'hyrox', label: 'Hyrox', icon: '🏃', color: 'orange' },
+  { id: 'hybrid', label: 'Hybrid', icon: '⚡', color: 'purple' },
+]
+
 async function getPrograms(): Promise<Program[]> {
   const supabase = await createClient()
   const { data } = await supabase
@@ -24,16 +31,47 @@ async function getPrograms(): Promise<Program[]> {
   return (data as Program[]) || []
 }
 
+function groupByCategory(programs: Program[]) {
+  const grouped: Record<string, Program[]> = {}
+  
+  categories.forEach(cat => {
+    grouped[cat.id] = []
+  })
+  grouped['other'] = []
+  
+  programs.forEach(program => {
+    const cat = program.category?.toLowerCase() || 'other'
+    if (grouped[cat]) {
+      grouped[cat].push(program)
+    } else {
+      grouped['other'].push(program)
+    }
+  })
+  
+  return grouped
+}
+
 export default async function ProgramsPage() {
   const programs = await getPrograms()
+  const groupedPrograms = groupByCategory(programs)
+
+  const getCategoryColor = (catId: string) => {
+    switch (catId) {
+      case 'strength': return 'bg-yellow-400/10 border-yellow-400/30 text-yellow-400'
+      case 'cardio': return 'bg-red-400/10 border-red-400/30 text-red-400'
+      case 'hyrox': return 'bg-orange-400/10 border-orange-400/30 text-orange-400'
+      case 'hybrid': return 'bg-purple-400/10 border-purple-400/30 text-purple-400'
+      default: return 'bg-zinc-400/10 border-zinc-400/30 text-zinc-400'
+    }
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white">Programs</h1>
-          <p className="text-zinc-400 mt-1">Manage your fitness programs and workouts</p>
+          <p className="text-zinc-400 mt-1">Manage your fitness programs by category</p>
         </div>
         <Link
           href="/programs/new"
@@ -44,22 +82,70 @@ export default async function ProgramsPage() {
         </Link>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
-        <input
-          type="search"
-          placeholder="Search programs..."
-          className="w-full max-w-md pl-12 pr-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-        />
-      </div>
-
-      {/* Programs Grid */}
+      {/* Programs by Category */}
       {programs.length > 0 ? (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {programs.map((program) => (
-            <ProgramCard key={program.id} program={program} />
-          ))}
+        <div className="space-y-8">
+          {categories.map((category) => {
+            const categoryPrograms = groupedPrograms[category.id]
+            
+            return (
+              <div key={category.id} className="space-y-4">
+                {/* Category Header */}
+                <div className={`flex items-center gap-3 p-4 rounded-xl border ${getCategoryColor(category.id)}`}>
+                  <span className="text-2xl">{category.icon}</span>
+                  <div className="flex-1">
+                    <h2 className="text-lg font-semibold">{category.label}</h2>
+                    <p className="text-sm opacity-70">
+                      {categoryPrograms.length} program{categoryPrograms.length !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 opacity-50" />
+                </div>
+
+                {/* Category Programs */}
+                {categoryPrograms.length > 0 ? (
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 pl-4">
+                    {categoryPrograms.map((program) => (
+                      <ProgramCard key={program.id} program={program} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="pl-4">
+                    <div className="p-6 bg-zinc-900/50 border border-zinc-800 border-dashed rounded-xl text-center">
+                      <p className="text-zinc-500 text-sm">No {category.label.toLowerCase()} programs yet</p>
+                      <Link
+                        href="/programs/new"
+                        className="inline-flex items-center gap-1 text-yellow-400 text-sm mt-2 hover:underline"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Create one
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+
+          {/* Other/Uncategorized */}
+          {groupedPrograms['other'].length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-4 rounded-xl border bg-zinc-400/10 border-zinc-400/30 text-zinc-400">
+                <span className="text-2xl">📁</span>
+                <div className="flex-1">
+                  <h2 className="text-lg font-semibold">Other</h2>
+                  <p className="text-sm opacity-70">
+                    {groupedPrograms['other'].length} program{groupedPrograms['other'].length !== 1 ? 's' : ''}
+                  </p>
+                </div>
+              </div>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 pl-4">
+                {groupedPrograms['other'].map((program) => (
+                  <ProgramCard key={program.id} program={program} />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="card p-12 text-center">
