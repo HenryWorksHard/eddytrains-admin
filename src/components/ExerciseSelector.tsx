@@ -12,6 +12,7 @@ interface Exercise {
   movementPattern: string
   primaryMuscles: string[]
   difficulty: string
+  tags?: string[]
 }
 
 interface ExerciseSelectorProps {
@@ -19,6 +20,7 @@ interface ExerciseSelectorProps {
   onSelectSuperset?: (exercises: Exercise[]) => void
   onClose: () => void
   allowSuperset?: boolean
+  programType?: string // 'strength' | 'cardio' | 'hyrox' | 'hybrid'
 }
 
 const categoryColors: Record<string, string> = {
@@ -42,12 +44,13 @@ function formatMuscleName(muscle: string): string {
     .join(' ')
 }
 
-export default function ExerciseSelector({ onSelect, onSelectSuperset, onClose, allowSuperset = true }: ExerciseSelectorProps) {
+export default function ExerciseSelector({ onSelect, onSelectSuperset, onClose, allowSuperset = true, programType }: ExerciseSelectorProps) {
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [selectedEquipment, setSelectedEquipment] = useState<string | null>(null)
   const [isSupersetMode, setIsSupersetMode] = useState(false)
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([])
+  const [showAllExercises, setShowAllExercises] = useState(false)
   const modalRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
 
@@ -70,8 +73,22 @@ export default function ExerciseSelector({ onSelect, onSelectSuperset, onClose, 
       ex.primaryMuscles.some(m => m.toLowerCase().includes(search.toLowerCase()))
     const matchesCategory = !selectedCategory || ex.category === selectedCategory
     const matchesEquipment = !selectedEquipment || ex.equipment.includes(selectedEquipment)
-    return matchesSearch && matchesCategory && matchesEquipment
+    
+    // Filter by program type tags if specified and not showing all
+    const matchesProgramType = !programType || showAllExercises || 
+      (ex.tags && ex.tags.includes(programType))
+    
+    return matchesSearch && matchesCategory && matchesEquipment && matchesProgramType
   })
+  
+  // Count exercises that would show without the tag filter
+  const totalMatchingExercises = exercises.filter((ex) => {
+    const matchesSearch = ex.name.toLowerCase().includes(search.toLowerCase()) ||
+      ex.primaryMuscles.some(m => m.toLowerCase().includes(search.toLowerCase()))
+    const matchesCategory = !selectedCategory || ex.category === selectedCategory
+    const matchesEquipment = !selectedEquipment || ex.equipment.includes(selectedEquipment)
+    return matchesSearch && matchesCategory && matchesEquipment
+  }).length
 
   const handleExerciseClick = (exercise: Exercise) => {
     if (isSupersetMode) {
@@ -218,6 +235,26 @@ export default function ExerciseSelector({ onSelect, onSelectSuperset, onClose, 
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 pointer-events-none" />
             </div>
           </div>
+
+          {/* Show all exercises toggle - only if filtering by program type */}
+          {programType && !showAllExercises && filteredExercises.length < totalMatchingExercises && (
+            <button
+              type="button"
+              onClick={() => setShowAllExercises(true)}
+              className="mt-3 text-sm text-yellow-400 hover:text-yellow-300 transition-colors"
+            >
+              Showing {filteredExercises.length} {programType} exercises • Show all {totalMatchingExercises} exercises
+            </button>
+          )}
+          {showAllExercises && programType && (
+            <button
+              type="button"
+              onClick={() => setShowAllExercises(false)}
+              className="mt-3 text-sm text-zinc-400 hover:text-white transition-colors"
+            >
+              ← Back to {programType} exercises only
+            </button>
+          )}
         </div>
 
         {/* Exercise List */}

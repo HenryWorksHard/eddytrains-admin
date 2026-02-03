@@ -366,7 +366,7 @@ export default function EditProgramPage({ params }: PageProps) {
           </span>
         </div>
 
-        <WorkoutBuilder workouts={workouts} onChange={setWorkouts} />
+        <WorkoutBuilder workouts={workouts} onChange={setWorkouts} programType={category} />
       </div>
     </form>
   )

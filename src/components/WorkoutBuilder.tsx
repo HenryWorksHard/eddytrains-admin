@@ -82,6 +82,7 @@ export interface Workout {
 interface WorkoutBuilderProps {
   workouts: Workout[]
   onChange: (workouts: Workout[]) => void
+  programType?: string // 'strength' | 'cardio' | 'hyrox' | 'hybrid'
 }
 
 const daysOfWeek = [
@@ -114,7 +115,7 @@ function createDefaultSet(setNumber: number, weightType: string = 'freeweight'):
   }
 }
 
-export default function WorkoutBuilder({ workouts, onChange }: WorkoutBuilderProps) {
+export default function WorkoutBuilder({ workouts, onChange, programType }: WorkoutBuilderProps) {
   const [showExerciseSelector, setShowExerciseSelector] = useState<string | null>(null)
   const [expandedWorkouts, setExpandedWorkouts] = useState<Set<string>>(new Set(workouts.map(w => w.id)))
   const [expandedExercises, setExpandedExercises] = useState<Set<string>>(new Set())
@@ -717,6 +718,7 @@ export default function WorkoutBuilder({ workouts, onChange }: WorkoutBuilderPro
           onSelectSuperset={(exercises) => addSuperset(showExerciseSelector, exercises)}
           onClose={() => setShowExerciseSelector(null)}
           allowSuperset={true}
+          programType={programType}
         />
       )}
     </div>

@@ -247,7 +247,7 @@ export default function CreateProgramPage() {
           </span>
         </div>
 
-        <WorkoutBuilder workouts={workouts} onChange={setWorkouts} />
+        <WorkoutBuilder workouts={workouts} onChange={setWorkouts} programType={category || undefined} />
       </div>
     </form>
   )
