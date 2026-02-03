@@ -173,18 +173,21 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
               <div 
                 key={idx}
                 className={`rounded-xl border p-3 text-center transition-all ${
-                  isToday 
-                    ? 'bg-yellow-400/10 border-yellow-400/30' 
-                    : workout
-                      ? getStatusColor(status)
-                      : 'bg-zinc-900 border-zinc-800'
+                  workout
+                    ? getStatusColor(status)
+                    : 'bg-zinc-900 border-zinc-800'
                 }`}
               >
                 <div className="text-xs text-zinc-500 mb-1">{daysOfWeek[dayOfWeek]}</div>
-                <div className={`text-lg font-bold ${isToday ? 'text-yellow-400' : workout ? 'text-white' : 'text-zinc-600'}`}>
+                <div className={`text-lg font-bold ${workout ? 'text-white' : 'text-zinc-600'}`}>
                   {date.getDate()}
                 </div>
-                {workout && (
+                {/* Today indicator - white dot */}
+                {isToday && (
+                  <div className="w-2 h-2 rounded-full mx-auto mt-1 bg-white" />
+                )}
+                {/* Status dot for workout days (not today) */}
+                {workout && !isToday && (
                   <div className={`w-2 h-2 rounded-full mx-auto mt-1 ${getStatusDot(status)}`} />
                 )}
                 {workout && (
@@ -245,16 +248,15 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
                 <div
                   key={date.toISOString()}
                   className={`aspect-square rounded-lg flex flex-col items-center justify-center text-xs transition-all ${
-                    isToday 
-                      ? 'bg-yellow-400 text-black font-bold' 
-                      : hasWorkout
-                        ? getStatusColor(status)
-                        : 'text-zinc-600'
-                  } ${hasWorkout ? 'border' : ''}`}
+                    hasWorkout
+                      ? getStatusColor(status)
+                      : 'text-zinc-600'
+                  } ${hasWorkout ? 'border' : ''} ${isToday ? 'font-bold' : ''}`}
                 >
-                  <span>{date.getDate()}</span>
-                  {hasWorkout && !isToday && (
-                    <div className={`w-1 h-1 rounded-full mt-0.5 ${getStatusDot(status)}`} />
+                  <span className={isToday && !hasWorkout ? 'text-white' : ''}>{date.getDate()}</span>
+                  {/* Today indicator - white dot */}
+                  {isToday && (
+                    <div className="w-1 h-1 rounded-full mt-0.5 bg-white" />
                   )}
                 </div>
               )
@@ -274,6 +276,10 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 rounded-full bg-yellow-500" />
               <span className="text-zinc-400 text-xs">Upcoming</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-white" />
+              <span className="text-zinc-400 text-xs">Today</span>
             </div>
           </div>
         </div>
