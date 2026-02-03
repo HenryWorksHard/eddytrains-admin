@@ -24,6 +24,15 @@ interface ExerciseSet {
   intervals?: number // number of intervals for EMOM/HIIT
   workTime?: string // work period (e.g., "40s")
   restTime?: string // rest period (e.g., "20s")
+  // Hyrox-specific fields
+  hyroxStation?: string // station type (skierg, sled_push, etc.)
+  hyroxDistance?: string // distance or reps for the station
+  hyroxUnit?: string // m, reps
+  hyroxTargetTime?: string // target completion time (e.g., "4:30")
+  hyroxWeightClass?: string // pro_male, open_female, etc.
+  hyroxCustomWeight?: string // for custom weight class
+  // Hybrid-specific fields
+  hybridMode?: 'strength' | 'cardio' // which mode this exercise uses
 }
 
 const weightTypes = [
@@ -55,6 +64,35 @@ const cardioTypes = [
   { value: 'calories', label: 'Calories', icon: '🔥' },
   { value: 'emom', label: 'EMOM', icon: '⚡' },
   { value: 'intervals', label: 'Intervals', icon: '🔄' },
+]
+
+// Hyrox-specific options
+const hyroxStations = [
+  { value: 'run', label: '1km Run', icon: '🏃', defaultDistance: '1000', defaultUnit: 'm' },
+  { value: 'skierg', label: 'SkiErg', icon: '⛷️', defaultDistance: '1000', defaultUnit: 'm' },
+  { value: 'sled_push', label: 'Sled Push', icon: '🛷', defaultDistance: '50', defaultUnit: 'm' },
+  { value: 'sled_pull', label: 'Sled Pull', icon: '🪢', defaultDistance: '50', defaultUnit: 'm' },
+  { value: 'burpee_broad_jump', label: 'Burpee Broad Jump', icon: '🦘', defaultDistance: '80', defaultUnit: 'm' },
+  { value: 'row', label: 'Rowing', icon: '🚣', defaultDistance: '1000', defaultUnit: 'm' },
+  { value: 'farmers_carry', label: 'Farmers Carry', icon: '🏋️', defaultDistance: '200', defaultUnit: 'm' },
+  { value: 'sandbag_lunges', label: 'Sandbag Lunges', icon: '🎒', defaultDistance: '100', defaultUnit: 'm' },
+  { value: 'wall_balls', label: 'Wall Balls', icon: '🎯', defaultDistance: '100', defaultUnit: 'reps' },
+]
+
+const hyroxWeightClasses = [
+  { value: 'pro_male', label: 'Pro Male', weights: { sled: '152kg', sandbag: '30kg', wallball: '9kg', farmers: '2x32kg' } },
+  { value: 'pro_female', label: 'Pro Female', weights: { sled: '102kg', sandbag: '20kg', wallball: '6kg', farmers: '2x24kg' } },
+  { value: 'open_male', label: 'Open Male', weights: { sled: '152kg', sandbag: '20kg', wallball: '6kg', farmers: '2x24kg' } },
+  { value: 'open_female', label: 'Open Female', weights: { sled: '102kg', sandbag: '10kg', wallball: '4kg', farmers: '2x16kg' } },
+  { value: 'doubles_male', label: 'Doubles Male', weights: { sled: '152kg', sandbag: '20kg', wallball: '6kg', farmers: '2x24kg' } },
+  { value: 'doubles_female', label: 'Doubles Female', weights: { sled: '102kg', sandbag: '10kg', wallball: '4kg', farmers: '2x16kg' } },
+  { value: 'custom', label: 'Custom', weights: {} },
+]
+
+// Hybrid workout modes
+const hybridModes = [
+  { value: 'strength', label: 'Strength', icon: '💪' },
+  { value: 'cardio', label: 'Cardio', icon: '❤️' },
 ]
 
 const heartRateZones = [
@@ -134,8 +172,8 @@ function generateId() {
   return Math.random().toString(36).substring(2, 9)
 }
 
-function createDefaultSet(setNumber: number, weightType: string = 'freeweight', isCardio: boolean = false): ExerciseSet {
-  if (isCardio) {
+function createDefaultSet(setNumber: number, weightType: string = 'freeweight', programType: string = 'strength'): ExerciseSet {
+  if (programType === 'cardio') {
     return {
       id: generateId(),
       setNumber,
@@ -150,6 +188,40 @@ function createDefaultSet(setNumber: number, weightType: string = 'freeweight', 
       cardioValue: '20',
       cardioUnit: 'min',
       heartRateZone: 2,
+    }
+  }
+  
+  if (programType === 'hyrox') {
+    return {
+      id: generateId(),
+      setNumber,
+      reps: '1',
+      intensityType: 'rpe',
+      intensityValue: '',
+      restSeconds: 0,
+      restBracket: '30-60',
+      weightType: 'bodyweight',
+      notes: '',
+      hyroxStation: 'run',
+      hyroxDistance: '1000',
+      hyroxUnit: 'm',
+      hyroxTargetTime: '',
+      hyroxWeightClass: 'open_male',
+    }
+  }
+  
+  if (programType === 'hybrid') {
+    return {
+      id: generateId(),
+      setNumber,
+      reps: '8-12',
+      intensityType: 'rir',
+      intensityValue: '2',
+      restSeconds: 90,
+      restBracket: '90-120',
+      weightType,
+      notes: '',
+      hybridMode: 'strength', // default to strength, can toggle
     }
   }
   
@@ -220,6 +292,10 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
     if (!workout) return
 
     const defaultWeightType = getDefaultWeightType(exercise.id)
+    const pType = programType || 'strength'
+    
+    // For hyrox, only 1 set per station by default
+    const setCount = pType === 'hyrox' ? 1 : 3
 
     const newExercise: WorkoutExercise = {
       id: generateId(),
@@ -227,11 +303,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
       exerciseName: exercise.name,
       category: exercise.category,
       order: workout.exercises.length,
-      sets: [
-        createDefaultSet(1, defaultWeightType),
-        createDefaultSet(2, defaultWeightType),
-        createDefaultSet(3, defaultWeightType),
-      ],
+      sets: Array.from({ length: setCount }, (_, i) => createDefaultSet(i + 1, defaultWeightType, pType)),
       notes: '',
     }
 
@@ -246,6 +318,8 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
     if (!workout || exercises.length < 2) return
 
     const supersetGroupId = `superset_${generateId()}`
+    const pType = programType || 'strength'
+    const setCount = pType === 'hyrox' ? 1 : 3
     
     const newExercises: WorkoutExercise[] = exercises.map((exercise, index) => {
       const defaultWeightType = getDefaultWeightType(exercise.id)
@@ -255,11 +329,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
         exerciseName: exercise.name,
         category: exercise.category,
         order: workout.exercises.length + index,
-        sets: [
-          createDefaultSet(1, defaultWeightType),
-          createDefaultSet(2, defaultWeightType),
-          createDefaultSet(3, defaultWeightType),
-        ],
+        sets: Array.from({ length: setCount }, (_, i) => createDefaultSet(i + 1, defaultWeightType, pType)),
         notes: '',
         supersetGroup: supersetGroupId,
       }
@@ -397,6 +467,12 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
     const isExpanded = expandedExercises.has(exercise.id)
     const firstSet = exercise.sets[0]
     const isCardio = isCardioExercise(exercise.exerciseId) || programType === 'cardio'
+    const isHyrox = programType === 'hyrox'
+    const isHybrid = programType === 'hybrid'
+    // For hybrid, check the mode of the first set (or default to strength)
+    const hybridMode = firstSet?.hybridMode || 'strength'
+    const showStrengthFields = !isCardio && !isHyrox && (!isHybrid || hybridMode === 'strength')
+    const showCardioFields = isCardio || (isHybrid && hybridMode === 'cardio')
 
     return (
       <div key={exercise.id} className="p-3">
@@ -426,7 +502,128 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
 
         {/* Quick Edit Row */}
         <div className={`mt-3 flex flex-wrap items-center gap-3 ${isSuperset ? 'pl-10' : 'pl-[72px]'}`}>
-          {isCardio ? (
+          {/* Hybrid Mode Toggle */}
+          {isHybrid && (
+            <>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-zinc-500">Mode</span>
+                <div className="flex rounded-lg overflow-hidden border border-zinc-700">
+                  {hybridModes.map(mode => (
+                    <button
+                      key={mode.value}
+                      type="button"
+                      onClick={() => updateAllSets(workout.id, exercise.id, { hybridMode: mode.value as any })}
+                      className={`px-3 py-1 text-sm flex items-center gap-1 transition-colors ${
+                        hybridMode === mode.value
+                          ? 'bg-yellow-400 text-black'
+                          : 'bg-zinc-800 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <span>{mode.icon}</span>
+                      <span>{mode.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="w-px h-6 bg-zinc-700" />
+            </>
+          )}
+
+          {isHyrox ? (
+            /* === HYROX FIELDS === */
+            <>
+              {/* Station Type */}
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-zinc-500">Station</span>
+                <select
+                  value={firstSet?.hyroxStation || 'run'}
+                  onChange={(e) => {
+                    const station = hyroxStations.find(s => s.value === e.target.value)
+                    updateAllSets(workout.id, exercise.id, { 
+                      hyroxStation: e.target.value,
+                      hyroxDistance: station?.defaultDistance || '1000',
+                      hyroxUnit: station?.defaultUnit || 'm'
+                    })
+                  }}
+                  className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                >
+                  {hyroxStations.map(station => (
+                    <option key={station.value} value={station.value}>{station.icon} {station.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="w-px h-6 bg-zinc-700" />
+
+              {/* Distance/Reps */}
+              <div className="flex items-center gap-1">
+                <input
+                  type="text"
+                  value={firstSet?.hyroxDistance || '1000'}
+                  onChange={(e) => updateAllSets(workout.id, exercise.id, { hyroxDistance: e.target.value })}
+                  className="w-16 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                  placeholder="1000"
+                />
+                <select
+                  value={firstSet?.hyroxUnit || 'm'}
+                  onChange={(e) => updateAllSets(workout.id, exercise.id, { hyroxUnit: e.target.value })}
+                  className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                >
+                  <option value="m">meters</option>
+                  <option value="km">km</option>
+                  <option value="reps">reps</option>
+                  <option value="cal">calories</option>
+                </select>
+              </div>
+
+              <div className="w-px h-6 bg-zinc-700" />
+
+              {/* Target Time */}
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-zinc-500">Target</span>
+                <input
+                  type="text"
+                  value={firstSet?.hyroxTargetTime || ''}
+                  onChange={(e) => updateAllSets(workout.id, exercise.id, { hyroxTargetTime: e.target.value })}
+                  className="w-16 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                  placeholder="4:30"
+                />
+              </div>
+
+              <div className="w-px h-6 bg-zinc-700" />
+
+              {/* Weight Class */}
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-zinc-500">Class</span>
+                <select
+                  value={firstSet?.hyroxWeightClass || 'open_male'}
+                  onChange={(e) => updateAllSets(workout.id, exercise.id, { hyroxWeightClass: e.target.value })}
+                  className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                >
+                  {hyroxWeightClasses.map(wc => (
+                    <option key={wc.value} value={wc.value}>{wc.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Custom Weight (if custom class selected) */}
+              {firstSet?.hyroxWeightClass === 'custom' && (
+                <>
+                  <div className="w-px h-6 bg-zinc-700" />
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-zinc-500">Weight</span>
+                    <input
+                      type="text"
+                      value={firstSet?.hyroxCustomWeight || ''}
+                      onChange={(e) => updateAllSets(workout.id, exercise.id, { hyroxCustomWeight: e.target.value })}
+                      className="w-20 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                      placeholder="e.g. 30kg"
+                    />
+                  </div>
+                </>
+              )}
+            </>
+          ) : showCardioFields ? (
             /* === CARDIO FIELDS === */
             <>
               {/* Cardio Type */}
@@ -513,7 +710,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                 </>
               )}
             </>
-          ) : (
+          ) : showStrengthFields ? (
             /* === STRENGTH FIELDS === */
             <>
               {/* Set Count */}
@@ -603,7 +800,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                 </select>
               </div>
             </>
-          )}
+          ) : null}
 
           <div className="flex-1" />
 
