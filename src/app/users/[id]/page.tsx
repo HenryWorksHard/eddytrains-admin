@@ -1108,6 +1108,62 @@ export default function UserProfilePage() {
         </div>
       </div>
 
+      {/* Program Access */}
+      <div className="card p-6 mb-6">
+        <div className="flex items-center gap-3 mb-4">
+          <Shield className="w-5 h-5 text-purple-400" />
+          <h2 className="text-lg font-semibold text-white">Program Access</h2>
+        </div>
+        
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {permissionOptions.map((opt) => {
+            const Icon = opt.icon
+            const isEnabled = permissions[opt.key as keyof typeof permissions]
+            return (
+              <button
+                key={opt.key}
+                onClick={async () => {
+                  const newPermissions = { ...permissions, [opt.key]: !isEnabled }
+                  setPermissions(newPermissions)
+                  // Save immediately
+                  try {
+                    const response = await fetch(`/api/users/${user.id}`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ permissions: newPermissions })
+                    })
+                    if (!response.ok) throw new Error('Failed to update')
+                    setSuccess(true)
+                    setTimeout(() => setSuccess(false), 2000)
+                  } catch (err) {
+                    console.error('Failed to update permissions:', err)
+                    setPermissions(permissions) // Revert on error
+                    setError('Failed to update permissions')
+                  }
+                }}
+                className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                  isEnabled
+                    ? `${opt.bg} border-current ${opt.color}`
+                    : 'bg-zinc-800/30 border-zinc-800 text-zinc-500 hover:border-zinc-700'
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                <div className="text-left flex-1">
+                  <p className={`text-sm font-medium ${isEnabled ? 'text-white' : 'text-zinc-400'}`}>
+                    {opt.name}
+                  </p>
+                </div>
+                <div className={`w-10 h-6 rounded-full transition-colors flex items-center ${
+                  isEnabled ? 'bg-green-500 justify-end' : 'bg-zinc-700 justify-start'
+                }`}>
+                  <div className="w-5 h-5 bg-white rounded-full mx-0.5 shadow" />
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
       {/* Training Schedule */}
       <UserSchedule userId={user.id} />
 
