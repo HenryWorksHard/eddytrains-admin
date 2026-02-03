@@ -647,6 +647,265 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
     return groups
   }
 
+  // Set count for finisher exercises
+  const setFinisherSetCount = (workoutId: string, exerciseId: string, count: number) => {
+    const workout = workouts.find(w => w.id === workoutId)
+    const exercise = workout?.finisher?.exercises.find(ex => ex.id === exerciseId)
+    if (!exercise || !workout?.finisher || count < 1 || count > 10) return
+
+    const currentCount = exercise.sets.length
+    const weightType = exercise.sets[0]?.weightType || 'freeweight'
+    const finisherType = workout.finisher.category
+    
+    if (count > currentCount) {
+      const lastSet = exercise.sets[exercise.sets.length - 1]
+      const newSets = [...exercise.sets]
+      for (let i = currentCount; i < count; i++) {
+        newSets.push({
+          ...createDefaultSet(i + 1, weightType, finisherType),
+          reps: lastSet?.reps || '8-12',
+          intensityType: lastSet?.intensityType || 'rir',
+          intensityValue: lastSet?.intensityValue || '2',
+          restBracket: lastSet?.restBracket || '90-120',
+          weightType: lastSet?.weightType || weightType,
+        })
+      }
+      updateFinisherExercise(workoutId, exerciseId, { sets: newSets })
+    } else {
+      updateFinisherExercise(workoutId, exerciseId, {
+        sets: exercise.sets.slice(0, count).map((s, i) => ({ ...s, setNumber: i + 1 })),
+      })
+    }
+  }
+
+  const renderFinisherExerciseCard = (workout: Workout, exercise: WorkoutExercise, exerciseIndex: number) => {
+    const finisherType = workout.finisher?.category || 'strength'
+    const firstSet = exercise.sets[0]
+    const isCardio = finisherType === 'cardio'
+    const isHyrox = finisherType === 'hyrox'
+    const isHybrid = finisherType === 'hybrid'
+    const hybridMode = firstSet?.hybridMode || 'strength'
+    const showStrengthFields = !isCardio && !isHyrox && (!isHybrid || hybridMode === 'strength')
+    const showCardioFields = isCardio || (isHybrid && hybridMode === 'cardio')
+
+    return (
+      <div className="p-3">
+        <div className="flex items-center gap-3">
+          <span className="text-zinc-500 text-sm font-mono w-6">{exerciseIndex + 1}</span>
+          <div className="w-8 h-8 rounded-lg bg-zinc-700 flex items-center justify-center">
+            <Dumbbell className="w-4 h-4 text-zinc-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-medium text-white text-sm truncate">{exercise.exerciseName}</h4>
+            <span className="text-xs text-zinc-500 capitalize">{exercise.category}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => deleteExerciseFromFinisher(workout.id, exercise.id)}
+            className="p-1.5 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* Finisher Exercise Controls */}
+        <div className="mt-3 flex flex-wrap items-center gap-3 pl-10">
+          {/* Hybrid Mode Toggle */}
+          {isHybrid && (
+            <>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-zinc-500">Mode</span>
+                <div className="flex rounded-lg overflow-hidden border border-zinc-700">
+                  {[{ value: 'strength', label: 'Strength', icon: 'S' }, { value: 'cardio', label: 'Cardio', icon: 'C' }].map(mode => (
+                    <button
+                      key={mode.value}
+                      type="button"
+                      onClick={() => updateAllFinisherSets(workout.id, exercise.id, { hybridMode: mode.value as 'strength' | 'cardio' })}
+                      className={`px-2 py-1 text-xs flex items-center gap-1 transition-colors ${
+                        hybridMode === mode.value
+                          ? 'bg-yellow-400 text-black'
+                          : 'bg-zinc-800 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <span>{mode.icon}</span>
+                      <span>{mode.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="w-px h-5 bg-zinc-700" />
+            </>
+          )}
+
+          {isHyrox ? (
+            /* Hyrox Fields */
+            <>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-zinc-500">Station</span>
+                <select
+                  value={firstSet?.hyroxStation || 'run'}
+                  onChange={(e) => {
+                    const station = hyroxStations.find(s => s.value === e.target.value)
+                    updateAllFinisherSets(workout.id, exercise.id, { 
+                      hyroxStation: e.target.value,
+                      hyroxDistance: station?.defaultDistance || '1000',
+                      hyroxUnit: station?.defaultUnit || 'm'
+                    })
+                  }}
+                  className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                >
+                  {hyroxStations.map(station => (
+                    <option key={station.value} value={station.value}>{station.icon} {station.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-1">
+                <input
+                  type="text"
+                  value={firstSet?.hyroxDistance || '1000'}
+                  onChange={(e) => updateAllFinisherSets(workout.id, exercise.id, { hyroxDistance: e.target.value })}
+                  className="w-14 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                />
+                <select
+                  value={firstSet?.hyroxUnit || 'm'}
+                  onChange={(e) => updateAllFinisherSets(workout.id, exercise.id, { hyroxUnit: e.target.value })}
+                  className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                >
+                  <option value="m">m</option>
+                  <option value="km">km</option>
+                  <option value="reps">reps</option>
+                  <option value="cal">cal</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-zinc-500">Target</span>
+                <input
+                  type="text"
+                  value={firstSet?.hyroxTargetTime || ''}
+                  onChange={(e) => updateAllFinisherSets(workout.id, exercise.id, { hyroxTargetTime: e.target.value })}
+                  className="w-14 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                  placeholder="4:30"
+                />
+              </div>
+            </>
+          ) : showCardioFields ? (
+            /* Cardio Fields */
+            <>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-zinc-500">Type</span>
+                <select
+                  value={firstSet?.cardioType || 'duration'}
+                  onChange={(e) => updateAllFinisherSets(workout.id, exercise.id, { cardioType: e.target.value as ExerciseSet['cardioType'] })}
+                  className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                >
+                  {cardioTypes.map(type => (
+                    <option key={type.value} value={type.value}>{type.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-1">
+                <input
+                  type="text"
+                  value={firstSet?.cardioValue || '20'}
+                  onChange={(e) => updateAllFinisherSets(workout.id, exercise.id, { cardioValue: e.target.value })}
+                  className="w-14 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                />
+                <select
+                  value={firstSet?.cardioUnit || 'min'}
+                  onChange={(e) => updateAllFinisherSets(workout.id, exercise.id, { cardioUnit: e.target.value })}
+                  className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                >
+                  <option value="min">min</option>
+                  <option value="sec">sec</option>
+                  <option value="m">m</option>
+                  <option value="km">km</option>
+                  <option value="cal">cal</option>
+                  <option value="rounds">rounds</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-zinc-500">HR Zone</span>
+                <select
+                  value={firstSet?.heartRateZone || ''}
+                  onChange={(e) => updateAllFinisherSets(workout.id, exercise.id, { heartRateZone: e.target.value ? parseInt(e.target.value) as 1|2|3|4|5 : undefined })}
+                  className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                >
+                  <option value="">-</option>
+                  {heartRateZones.map(zone => (
+                    <option key={zone.value} value={zone.value}>Z{zone.value}</option>
+                  ))}
+                </select>
+              </div>
+            </>
+          ) : showStrengthFields ? (
+            /* Strength Fields */
+            <>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-zinc-500">Sets</span>
+                <button type="button"
+                  onClick={() => setFinisherSetCount(workout.id, exercise.id, exercise.sets.length - 1)}
+                  className="w-5 h-5 rounded bg-zinc-700 hover:bg-zinc-600 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+                  disabled={exercise.sets.length <= 1}
+                >
+                  <Minus className="w-3 h-3" />
+                </button>
+                <span className="w-5 text-center text-white text-sm font-medium">{exercise.sets.length}</span>
+                <button type="button"
+                  onClick={() => setFinisherSetCount(workout.id, exercise.id, exercise.sets.length + 1)}
+                  className="w-5 h-5 rounded bg-zinc-700 hover:bg-zinc-600 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+                  disabled={exercise.sets.length >= 10}
+                >
+                  <Plus className="w-3 h-3" />
+                </button>
+              </div>
+              <div className="w-px h-5 bg-zinc-700" />
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-zinc-500">Reps</span>
+                <input
+                  type="text"
+                  value={firstSet?.reps || '8-12'}
+                  onChange={(e) => updateAllFinisherSets(workout.id, exercise.id, { reps: e.target.value })}
+                  className="w-14 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <select
+                  value={firstSet?.intensityType || 'rir'}
+                  onChange={(e) => updateAllFinisherSets(workout.id, exercise.id, { intensityType: e.target.value as ExerciseSet['intensityType'] })}
+                  className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                >
+                  {intensityTypes.map(type => (
+                    <option key={type.id} value={type.id}>{type.label}</option>
+                  ))}
+                </select>
+                {firstSet?.intensityType !== 'failure' && (
+                  <input
+                    type="text"
+                    value={firstSet?.intensityValue || '2'}
+                    onChange={(e) => updateAllFinisherSets(workout.id, exercise.id, { intensityValue: e.target.value })}
+                    className="w-10 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                  />
+                )}
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-zinc-500">Rest</span>
+                <select
+                  value={firstSet?.restBracket || '90-120'}
+                  onChange={(e) => updateAllFinisherSets(workout.id, exercise.id, { restBracket: e.target.value })}
+                  className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                >
+                  {restBrackets.map(bracket => (
+                    <option key={bracket.value} value={bracket.value}>{bracket.label}</option>
+                  ))}
+                </select>
+              </div>
+            </>
+          ) : null}
+        </div>
+      </div>
+    )
+  }
+
   const renderExerciseCard = (workout: Workout, exercise: WorkoutExercise, exerciseIndex: number, isSuperset: boolean = false) => {
     const isExpanded = expandedExercises.has(exercise.id)
     const firstSet = exercise.sets[0]
@@ -1332,21 +1591,8 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                     {expandedFinishers.has(workout.id) && (
                       <div className="space-y-3 pl-4 border-l-2 border-zinc-700">
                         {workout.finisher.exercises.map((exercise, idx) => (
-                          <div key={exercise.id} className="bg-zinc-800/50 border border-zinc-700 rounded-xl p-3">
-                            <div className="flex items-center gap-3">
-                              <span className="text-zinc-500 text-sm font-mono w-6">{idx + 1}</span>
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-medium text-white text-sm">{exercise.exerciseName}</h4>
-                                <span className="text-xs text-zinc-500">{exercise.sets.length} sets</span>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => deleteExerciseFromFinisher(workout.id, exercise.id)}
-                                className="p-1.5 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-colors"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
+                          <div key={exercise.id} className="bg-zinc-800/50 border border-zinc-700 rounded-xl overflow-hidden">
+                            {renderFinisherExerciseCard(workout, exercise, idx)}
                           </div>
                         ))}
 
