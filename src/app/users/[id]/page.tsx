@@ -168,9 +168,7 @@ export default function UserProfilePage() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [permissions, setPermissions] = useState({
-    strength: false,
-    cardio: false,
-    hyrox: false,
+    programs: false,
     nutrition: false,
   })
 
@@ -199,9 +197,7 @@ export default function UserProfilePage() {
       setFullName(data.user.full_name || '')
       setEmail(data.user.email || '')
       setPermissions({
-        strength: data.user.user_permissions?.[0]?.can_access_strength || false,
-        cardio: data.user.user_permissions?.[0]?.can_access_cardio || false,
-        hyrox: data.user.user_permissions?.[0]?.can_access_hyrox || false,
+        programs: data.user.user_permissions?.[0]?.can_access_strength || data.user.can_access_strength || false,
         nutrition: data.user.can_access_nutrition || false,
       })
     } catch (err) {
@@ -600,9 +596,7 @@ export default function UserProfilePage() {
   }
 
   const permissionOptions = [
-    { key: 'strength', name: 'Strength Training', icon: Dumbbell, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-    { key: 'cardio', name: 'Cardio', icon: Heart, color: 'text-red-400', bg: 'bg-red-500/10' },
-    { key: 'hyrox', name: 'HYROX', icon: Zap, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
+    { key: 'programs', name: 'Programs', icon: Dumbbell, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
     { key: 'nutrition', name: 'Nutrition', icon: Apple, color: 'text-green-400', bg: 'bg-green-500/10' },
   ]
 

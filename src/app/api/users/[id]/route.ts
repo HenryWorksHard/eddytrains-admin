@@ -160,10 +160,12 @@ export async function PATCH(
     if (email !== undefined) updateData.email = email
     
     // Permissions are now embedded in profiles table
+    // "programs" controls access to all program types (strength/cardio/hyrox)
     if (permissions) {
-      updateData.can_access_strength = permissions.strength || false
-      updateData.can_access_cardio = permissions.cardio || false
-      updateData.can_access_hyrox = permissions.hyrox || false
+      const hasPrograms = permissions.programs || false
+      updateData.can_access_strength = hasPrograms
+      updateData.can_access_cardio = hasPrograms
+      updateData.can_access_hyrox = hasPrograms
       updateData.can_access_nutrition = permissions.nutrition || false
     }
     
