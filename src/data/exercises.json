@@ -116,8 +116,8 @@
       }
     },
     {
-      "id": "dumbbell_flyes",
-      "name": "Dumbbell Flyes",
+      "id": "dumbbell_flys",
+      "name": "Dumbbell Fly's",
       "category": "chest",
       "equipment": ["dumbbell", "bench"],
       "movementPattern": "isolation",
@@ -147,6 +147,57 @@
         "cues": ["Lead with pinkies", "Cross hands at bottom for peak contraction", "Stay stable through core"],
         "commonMistakes": ["Using too much momentum", "Standing too upright", "Not squeezing at contraction"],
         "breathingPattern": "Exhale as you bring cables together"
+      }
+    },
+    {
+      "id": "cable_flys",
+      "name": "Cable Fly's",
+      "category": "chest",
+      "equipment": ["cable"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["chest"],
+      "secondaryMuscles": ["front_delts"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Set cables to mid-height (shoulder level). Stand in center with staggered stance, arms extended wide with slight elbow bend.",
+        "execution": "Bring hands together in front of chest in a hugging arc motion. Squeeze chest, then control back to start.",
+        "cues": ["Maintain elbow bend throughout", "Squeeze chest at peak", "Control the stretch"],
+        "commonMistakes": ["Straightening arms", "Using too much weight", "Losing control on stretch"],
+        "breathingPattern": "Exhale on squeeze, inhale on stretch"
+      }
+    },
+    {
+      "id": "incline_cable_flys",
+      "name": "Incline Cable Fly's",
+      "category": "chest",
+      "equipment": ["cable", "bench"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["upper_chest"],
+      "secondaryMuscles": ["front_delts"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Set cables to low position. Place incline bench (30-45 degrees) between cables. Lie back, grab handles with arms extended wide.",
+        "execution": "Bring hands together above upper chest in arc motion. Squeeze at top, lower with control.",
+        "cues": ["Focus on upper chest squeeze", "Keep slight elbow bend", "Control the negative"],
+        "commonMistakes": ["Cables too high", "Pressing instead of flying", "Going too heavy"],
+        "breathingPattern": "Exhale on squeeze, inhale on stretch"
+      }
+    },
+    {
+      "id": "decline_cable_flys",
+      "name": "Decline Cable Fly's",
+      "category": "chest",
+      "equipment": ["cable", "bench"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["lower_chest"],
+      "secondaryMuscles": ["front_delts"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Set cables to high position. Place decline bench between cables. Lie back with head lower than hips, grab handles.",
+        "execution": "Bring hands together above lower chest in arc motion. Squeeze at bottom, control back to start.",
+        "cues": ["Focus on lower chest squeeze", "Keep slight elbow bend", "Stay stable on bench"],
+        "commonMistakes": ["Cables too low", "Pressing instead of flying", "Losing control"],
+        "breathingPattern": "Exhale on squeeze, inhale on stretch"
       }
     },
     {
@@ -524,7 +575,7 @@
       }
     },
     {
-      "id": "rear_delt_flyes",
+      "id": "rear_delt_flys",
       "name": "Rear Delt Fly's",
       "category": "shoulders",
       "equipment": ["dumbbell"],
