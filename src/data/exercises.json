@@ -286,6 +286,23 @@
       }
     },
     {
+      "id": "incline_dumbbell_row",
+      "name": "Incline Dumbbell Row",
+      "category": "back",
+      "equipment": ["dumbbell", "bench"],
+      "movementPattern": "pull_horizontal",
+      "primaryMuscles": ["lats", "rhomboids", "rear_delts"],
+      "secondaryMuscles": ["biceps", "traps"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Set bench to 30-45 degree incline. Lie face down with chest against pad, feet on floor for stability. Hold dumbbells with arms hanging straight down.",
+        "execution": "Row both dumbbells up toward hips, squeezing shoulder blades together. Lower with control.",
+        "cues": ["Chest stays on bench", "Squeeze shoulder blades at top", "Drive elbows back", "Control the negative"],
+        "commonMistakes": ["Lifting chest off bench", "Shrugging shoulders", "Using momentum", "Pulling too high"],
+        "breathingPattern": "Exhale on pull, inhale on lower"
+      }
+    },
+    {
       "id": "pull_ups",
       "name": "Pull-Ups",
       "category": "back",
