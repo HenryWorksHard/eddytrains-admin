@@ -4,6 +4,23 @@ import { useState } from 'react'
 import { Plus, Minus, Trash2, GripVertical, Dumbbell, ChevronDown, ChevronUp, Copy, Settings2, Layers } from 'lucide-react'
 import ExerciseSelector from './ExerciseSelector'
 import exercisesData from '@/data/exercises.json'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 interface ExerciseSet {
   id: string
@@ -268,6 +285,18 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
   const [expandedFinishers, setExpandedFinishers] = useState<Set<string>>(new Set())
   const [expandedExercises, setExpandedExercises] = useState<Set<string>>(new Set())
 
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px movement required before drag starts
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
   const addWorkout = () => {
     const newWorkout: Workout = {
       id: generateId(),
@@ -377,6 +406,21 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
     updateWorkout(workoutId, {
       exercises: workout.exercises.filter(ex => ex.id !== exerciseId),
     })
+  }
+
+  const reorderExercises = (workoutId: string, activeId: string, overId: string) => {
+    const workout = workouts.find(w => w.id === workoutId)
+    if (!workout) return
+
+    const oldIndex = workout.exercises.findIndex(ex => ex.id === activeId)
+    const newIndex = workout.exercises.findIndex(ex => ex.id === overId)
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const newExercises = arrayMove(workout.exercises, oldIndex, newIndex)
+      // Update order property for each exercise
+      const updatedExercises = newExercises.map((ex, index) => ({ ...ex, order: index }))
+      updateWorkout(workoutId, { exercises: updatedExercises })
+    }
   }
 
   const deleteSuperset = (workoutId: string, supersetGroup: string) => {
@@ -590,13 +634,8 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
     const showCardioFields = isCardio || (isHybrid && hybridMode === 'cardio')
 
     return (
-      <div key={exercise.id} className="p-3">
+      <div key={exercise.id} className={`p-3 ${!isSuperset ? 'pl-12' : ''}`}>
         <div className="flex items-center gap-3">
-          {!isSuperset && (
-            <div className="text-zinc-600 cursor-grab">
-              <GripVertical className="w-4 h-4" />
-            </div>
-          )}
           <span className="text-zinc-500 text-sm font-mono w-6">{exerciseIndex + 1}</span>
           <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isSuperset ? 'bg-yellow-400/20' : 'bg-zinc-700'}`}>
             <Dumbbell className={`w-5 h-5 ${isSuperset ? 'text-yellow-400' : 'text-zinc-400'}`} />
@@ -1029,6 +1068,50 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
     )
   }
 
+  // Sortable wrapper for exercise items
+  const SortableExerciseItem = ({ id, children }: { id: string; children: React.ReactNode }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id })
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+      zIndex: isDragging ? 1000 : 'auto',
+    }
+
+    return (
+      <div ref={setNodeRef} style={style} {...attributes}>
+        <div className={`bg-zinc-800/30 border border-zinc-800 rounded-xl overflow-hidden ${isDragging ? 'shadow-lg ring-2 ring-yellow-400' : ''}`}>
+          <div className="relative">
+            {/* Drag handle overlay */}
+            <div 
+              {...listeners}
+              className="absolute left-0 top-0 bottom-0 w-10 flex items-center justify-center cursor-grab active:cursor-grabbing hover:bg-zinc-700/50 transition-colors z-10"
+            >
+              <GripVertical className="w-4 h-4 text-zinc-500" />
+            </div>
+            {children}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Handle drag end for reordering
+  const handleDragEnd = (workoutId: string) => (event: DragEndEvent) => {
+    const { active, over } = event
+    if (over && active.id !== over.id) {
+      reorderExercises(workoutId, active.id as string, over.id as string)
+    }
+  }
+
   return (
     <div className="space-y-6">
       {workouts.map((workout) => (
@@ -1096,47 +1179,62 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
           {/* Workout Content */}
           {expandedWorkouts.has(workout.id) && (
             <div className="p-4 space-y-4">
-              {/* Exercises - grouped by superset */}
-              {groupExercises(workout.exercises).map((group, groupIndex) => {
-                if (group.type === 'superset') {
-                  return (
-                    <div 
-                      key={group.supersetGroup} 
-                      className="bg-yellow-400/5 border-2 border-yellow-400/30 rounded-xl overflow-hidden"
-                    >
-                      {/* Superset Header */}
-                      <div className="flex items-center justify-between px-4 py-2 bg-yellow-400/10 border-b border-yellow-400/20">
-                        <div className="flex items-center gap-2">
-                          <Layers className="w-4 h-4 text-yellow-400" />
-                          <span className="text-sm font-medium text-yellow-400">
-                            Superset ({group.exercises.length} exercises)
-                          </span>
-                        </div>
-                        <button type="button"
-                          onClick={() => deleteSuperset(workout.id, group.supersetGroup!)}
-                          className="p-1.5 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                      
-                      {/* Superset Exercises */}
-                      <div className="divide-y divide-yellow-400/10">
-                        {group.exercises.map((exercise, exIndex) => (
-                          renderExerciseCard(workout, exercise, workout.exercises.indexOf(exercise), true)
-                        ))}
-                      </div>
-                    </div>
-                  )
-                } else {
-                  const exercise = group.exercises[0]
-                  return (
-                    <div key={exercise.id} className="bg-zinc-800/30 border border-zinc-800 rounded-xl overflow-hidden">
-                      {renderExerciseCard(workout, exercise, workout.exercises.indexOf(exercise), false)}
-                    </div>
-                  )
-                }
-              })}
+              {/* Exercises - with drag and drop */}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd(workout.id)}
+              >
+                <SortableContext
+                  items={workout.exercises.map(ex => ex.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-4">
+                    {groupExercises(workout.exercises).map((group, groupIndex) => {
+                      if (group.type === 'superset') {
+                        return (
+                          <div 
+                            key={group.supersetGroup} 
+                            className="bg-yellow-400/5 border-2 border-yellow-400/30 rounded-xl overflow-hidden"
+                          >
+                            {/* Superset Header */}
+                            <div className="flex items-center justify-between px-4 py-2 bg-yellow-400/10 border-b border-yellow-400/20">
+                              <div className="flex items-center gap-2">
+                                <Layers className="w-4 h-4 text-yellow-400" />
+                                <span className="text-sm font-medium text-yellow-400">
+                                  Superset ({group.exercises.length} exercises)
+                                </span>
+                              </div>
+                              <button type="button"
+                                onClick={() => deleteSuperset(workout.id, group.supersetGroup!)}
+                                className="p-1.5 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                            
+                            {/* Superset Exercises */}
+                            <div className="divide-y divide-yellow-400/10">
+                              {group.exercises.map((exercise, exIndex) => (
+                                <div key={exercise.id}>
+                                  {renderExerciseCard(workout, exercise, workout.exercises.indexOf(exercise), true)}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )
+                      } else {
+                        const exercise = group.exercises[0]
+                        return (
+                          <SortableExerciseItem key={exercise.id} id={exercise.id}>
+                            {renderExerciseCard(workout, exercise, workout.exercises.indexOf(exercise), false)}
+                          </SortableExerciseItem>
+                        )
+                      }
+                    })}
+                  </div>
+                </SortableContext>
+              </DndContext>
 
               {/* Add Exercise Button */}
               <button type="button"
