@@ -1238,6 +1238,23 @@
       }
     },
     {
+      "id": "decline_sit_ups",
+      "name": "Decline Sit-Ups",
+      "category": "core",
+      "equipment": ["bench"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["abs", "rectus_abdominis"],
+      "secondaryMuscles": ["hip_flexors"],
+      "difficulty": "intermediate",
+      "tutorial": {
+        "setup": "Secure feet under pads on decline bench. Lie back with hands across chest or behind head.",
+        "execution": "Curl torso up toward thighs, squeezing abs. Lower with control back to starting position.",
+        "cues": ["Lead with chest, not head", "Squeeze abs at top", "Control the negative", "Don't use momentum"],
+        "commonMistakes": ["Pulling on neck", "Using momentum", "Not full range of motion", "Going too fast"],
+        "breathingPattern": "Exhale on the way up, inhale on the way down"
+      }
+    },
+    {
       "id": "dead_bug",
       "name": "Dead Bug",
       "category": "core",
