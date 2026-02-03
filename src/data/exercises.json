@@ -218,6 +218,23 @@
       }
     },
     {
+      "id": "incline_plate_loaded_chest_press",
+      "name": "Incline Plate Loaded Chest Press",
+      "category": "chest",
+      "equipment": ["machine"],
+      "movementPattern": "push_horizontal",
+      "primaryMuscles": ["upper_chest", "front_delts", "triceps"],
+      "secondaryMuscles": [],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Adjust seat so handles align with upper chest. Sit with back flat against pad, feet firmly on floor. Load plates evenly on both sides.",
+        "execution": "Press handles forward and slightly up until arms are extended. Control back to start position with a stretch in the upper chest.",
+        "cues": ["Keep back against pad", "Drive through upper chest", "Control the negative", "Squeeze at top"],
+        "commonMistakes": ["Seat too low (becomes flat press)", "Coming forward off the pad", "Uneven loading", "Locking elbows aggressively"],
+        "breathingPattern": "Exhale on press, inhale on return"
+      }
+    },
+    {
       "id": "barbell_row",
       "name": "Barbell Bent-Over Row",
       "category": "back",
