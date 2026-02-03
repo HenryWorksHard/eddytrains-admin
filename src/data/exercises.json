@@ -1000,19 +1000,36 @@
       }
     },
     {
-      "id": "calf_raises",
-      "name": "Calf Raises",
+      "id": "standing_calf_raise",
+      "name": "Standing Calf Raise",
       "category": "legs",
-      "equipment": ["machine", "dumbbell", "bodyweight"],
+      "equipment": ["machine"],
       "movementPattern": "isolation",
-      "primaryMuscles": ["calves"],
+      "primaryMuscles": ["calves", "gastrocnemius"],
       "secondaryMuscles": [],
       "difficulty": "beginner",
       "tutorial": {
-        "setup": "Stand on edge of step or calf raise machine, heels hanging off. Can hold weight or use machine resistance.",
-        "execution": "Lower heels for full stretch, then raise up onto balls of feet as high as possible.",
-        "cues": ["Full stretch at bottom", "Pause at top", "Control both directions", "Don't bounce"],
-        "commonMistakes": ["Bouncing", "Partial range of motion", "Going too fast"],
+        "setup": "Position shoulders under pads of standing calf raise machine. Balls of feet on platform, heels hanging off.",
+        "execution": "Lower heels for full stretch, then raise up onto balls of feet as high as possible. Squeeze at top.",
+        "cues": ["Full stretch at bottom", "Pause and squeeze at top", "Keep legs straight", "Control both directions"],
+        "commonMistakes": ["Bouncing", "Partial range of motion", "Bending knees", "Going too fast"],
+        "breathingPattern": "Exhale on raise, inhale on lower"
+      }
+    },
+    {
+      "id": "seated_calf_raise",
+      "name": "Seated Calf Raise",
+      "category": "legs",
+      "equipment": ["machine"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["calves", "soleus"],
+      "secondaryMuscles": [],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Sit on seated calf raise machine with knees under pad. Balls of feet on platform, heels hanging off.",
+        "execution": "Lower heels for full stretch, then raise up as high as possible. Squeeze at top.",
+        "cues": ["Full stretch at bottom", "Pause and squeeze at top", "Keep knees at 90 degrees", "Control both directions"],
+        "commonMistakes": ["Bouncing", "Partial range of motion", "Rushing reps", "Not going deep enough"],
         "breathingPattern": "Exhale on raise, inhale on lower"
       }
     },
