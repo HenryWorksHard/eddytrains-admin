@@ -269,31 +269,15 @@ export default function UserProfilePage() {
     setSaving1RM(true)
     
     try {
-      // Filter to only save non-zero values
-      const toSave = client1RMs.filter(rm => rm.weight_kg > 0)
+      const response = await fetch(`/api/users/${user.id}/1rms`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oneRMs: client1RMs })
+      })
       
-      for (const rm of toSave) {
-        const { error } = await supabase
-          .from('client_1rms')
-          .upsert({
-            client_id: user.id,
-            exercise_name: rm.exercise_name,
-            weight_kg: rm.weight_kg,
-            updated_at: new Date().toISOString()
-          }, {
-            onConflict: 'client_id,exercise_name'
-          })
-        
-        if (error) throw error
-      }
-      
-      // Delete any that are now zero
-      const toDelete = client1RMs.filter(rm => rm.weight_kg === 0 && rm.id)
-      for (const rm of toDelete) {
-        await supabase
-          .from('client_1rms')
-          .delete()
-          .eq('id', rm.id)
+      const result = await response.json()
+      if (!response.ok || result.error) {
+        throw new Error(result.error || 'Failed to save')
       }
       
       setEditing1RM(false)
