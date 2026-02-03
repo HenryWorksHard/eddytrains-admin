@@ -4,7 +4,8 @@
   "intensityTypes": [
     { "id": "percentage", "label": "% of 1RM", "unit": "%" },
     { "id": "rir", "label": "RIR (Reps in Reserve)", "unit": "RIR" },
-    { "id": "rpe", "label": "RPE (Rate of Perceived Exertion)", "unit": "RPE" }
+    { "id": "rpe", "label": "RPE (Rate of Perceived Exertion)", "unit": "RPE" },
+    { "id": "failure", "label": "Train to Failure", "unit": "" }
   ],
   "categories": [
     { "id": "chest", "label": "Chest", "icon": "💪" },

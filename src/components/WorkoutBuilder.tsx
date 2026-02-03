@@ -9,7 +9,7 @@ interface ExerciseSet {
   id: string
   setNumber: number
   reps: string
-  intensityType: 'percentage' | 'rir' | 'rpe'
+  intensityType: 'percentage' | 'rir' | 'rpe' | 'failure'
   intensityValue: string
   restSeconds: number
   restBracket: string
