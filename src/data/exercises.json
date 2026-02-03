@@ -439,6 +439,23 @@
       }
     },
     {
+      "id": "back_extensions",
+      "name": "Back Extensions",
+      "category": "back",
+      "equipment": ["machine"],
+      "movementPattern": "hinge",
+      "primaryMuscles": ["lower_back", "erector_spinae"],
+      "secondaryMuscles": ["glutes", "hamstrings"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Position yourself on the back extension bench with hips on pad, ankles secured under rollers. Cross arms over chest or behind head.",
+        "execution": "Lower torso toward floor by hinging at hips. Raise back up until body is in a straight line, squeezing lower back and glutes at top.",
+        "cues": ["Hinge at hips not spine", "Squeeze glutes at top", "Control the descent", "Don't hyperextend"],
+        "commonMistakes": ["Rounding the back", "Going too fast", "Hyperextending at top", "Using momentum"],
+        "breathingPattern": "Inhale on descent, exhale on extension"
+      }
+    },
+    {
       "id": "overhead_press",
       "name": "Overhead Press (OHP)",
       "category": "shoulders",
