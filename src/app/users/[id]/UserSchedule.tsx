@@ -182,13 +182,9 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
                 <div className={`text-lg font-bold ${workout ? 'text-white' : 'text-zinc-600'}`}>
                   {date.getDate()}
                 </div>
-                {/* Today indicator - white dot */}
+                {/* Today indicator - white dot only on today */}
                 {isToday && (
                   <div className="w-2 h-2 rounded-full mx-auto mt-1 bg-white" />
-                )}
-                {/* Status dot for workout days (not today) */}
-                {workout && !isToday && (
-                  <div className={`w-2 h-2 rounded-full mx-auto mt-1 ${getStatusDot(status)}`} />
                 )}
                 {workout && (
                   <div className="text-[10px] text-zinc-400 mt-1 truncate" title={workout.workoutName}>
