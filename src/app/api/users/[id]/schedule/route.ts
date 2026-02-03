@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { COMPLETION_LOOKBACK_DAYS } from '@/lib/constants'
 
 function getAdminClient() {
   return createClient(
@@ -41,15 +42,15 @@ export async function GET(
       .eq('client_id', userId)
       .eq('is_active', true)
 
-    // Get workout completions for the last 60 days
-    const sixtyDaysAgo = new Date()
-    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60)
+    // Get workout completions for the lookback period
+    const lookbackDate = new Date()
+    lookbackDate.setDate(lookbackDate.getDate() - COMPLETION_LOOKBACK_DAYS)
     
     const { data: completions } = await adminClient
       .from('workout_completions')
       .select('workout_id, scheduled_date')
       .eq('client_id', userId)
-      .gte('scheduled_date', sixtyDaysAgo.toISOString().split('T')[0])
+      .gte('scheduled_date', lookbackDate.toISOString().split('T')[0])
 
     // Build schedule data
     interface WorkoutSchedule {
