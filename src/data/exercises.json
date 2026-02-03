@@ -371,6 +371,23 @@
       }
     },
     {
+      "id": "pull_up_negatives",
+      "name": "Pull-Up Negatives",
+      "category": "back",
+      "equipment": ["pullupbar"],
+      "movementPattern": "pull_vertical",
+      "primaryMuscles": ["lats", "biceps"],
+      "secondaryMuscles": ["rear_delts", "rhomboids", "core"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Use a box or jump to get chin above bar with overhand grip. Start at the top position.",
+        "execution": "Lower yourself as slowly as possible (3-5 seconds) until arms are fully extended. Step back up and repeat.",
+        "cues": ["Control the descent", "Fight gravity the whole way", "Keep core tight", "Aim for 3-5 second lowering"],
+        "commonMistakes": ["Dropping too fast", "Not starting from full top position", "Losing lat tension"],
+        "breathingPattern": "Inhale at top, slow exhale during descent"
+      }
+    },
+    {
       "id": "chin_ups",
       "name": "Chin-Ups",
       "category": "back",
