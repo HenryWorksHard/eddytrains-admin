@@ -355,7 +355,7 @@ export default function WorkoutBuilder({ workouts, onChange }: WorkoutBuilderPro
             <span className="text-xs text-zinc-500 capitalize">{exercise.category}</span>
           </div>
           {!isSuperset && (
-            <button
+            <button type="button"
               onClick={() => deleteExercise(workout.id, exercise.id)}
               className="p-1.5 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-colors"
             >
@@ -369,7 +369,7 @@ export default function WorkoutBuilder({ workouts, onChange }: WorkoutBuilderPro
           {/* Set Count */}
           <div className="flex items-center gap-1">
             <span className="text-xs text-zinc-500 mr-1">Sets</span>
-            <button
+            <button type="button"
               onClick={() => setSetCount(workout.id, exercise.id, exercise.sets.length - 1)}
               className="w-6 h-6 rounded bg-zinc-700 hover:bg-zinc-600 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
               disabled={exercise.sets.length <= 1}
@@ -377,7 +377,7 @@ export default function WorkoutBuilder({ workouts, onChange }: WorkoutBuilderPro
               <Minus className="w-3 h-3" />
             </button>
             <span className="w-6 text-center text-white font-medium">{exercise.sets.length}</span>
-            <button
+            <button type="button"
               onClick={() => setSetCount(workout.id, exercise.id, exercise.sets.length + 1)}
               className="w-6 h-6 rounded bg-zinc-700 hover:bg-zinc-600 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
               disabled={exercise.sets.length >= 10}
@@ -456,7 +456,7 @@ export default function WorkoutBuilder({ workouts, onChange }: WorkoutBuilderPro
           <div className="flex-1" />
 
           {/* Expand for individual editing */}
-          <button
+          <button type="button"
             onClick={() => toggleExerciseExpanded(exercise.id)}
             className="flex items-center gap-1 text-xs text-zinc-500 hover:text-yellow-400 transition-colors"
           >
@@ -608,14 +608,14 @@ export default function WorkoutBuilder({ workouts, onChange }: WorkoutBuilderPro
             </div>
 
             <div className="flex items-center gap-2">
-              <button
+              <button type="button"
                 onClick={(e) => { e.stopPropagation(); duplicateWorkout(workout) }}
                 className="p-2 rounded-lg hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors"
                 title="Duplicate workout"
               >
                 <Copy className="w-4 h-4" />
               </button>
-              <button
+              <button type="button"
                 onClick={(e) => { e.stopPropagation(); deleteWorkout(workout.id) }}
                 className="p-2 rounded-lg hover:bg-red-500/20 text-zinc-400 hover:text-red-400 transition-colors"
               >
@@ -648,7 +648,7 @@ export default function WorkoutBuilder({ workouts, onChange }: WorkoutBuilderPro
                             Superset ({group.exercises.length} exercises)
                           </span>
                         </div>
-                        <button
+                        <button type="button"
                           onClick={() => deleteSuperset(workout.id, group.supersetGroup!)}
                           className="p-1.5 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-colors"
                         >
@@ -675,7 +675,7 @@ export default function WorkoutBuilder({ workouts, onChange }: WorkoutBuilderPro
               })}
 
               {/* Add Exercise Button */}
-              <button
+              <button type="button"
                 onClick={() => setShowExerciseSelector(workout.id)}
                 className="w-full flex items-center justify-center gap-2 py-4 border-2 border-dashed border-zinc-700 hover:border-yellow-400/50 rounded-xl text-zinc-400 hover:text-yellow-400 transition-all"
               >
@@ -700,7 +700,7 @@ export default function WorkoutBuilder({ workouts, onChange }: WorkoutBuilderPro
       ))}
 
       {/* Add Workout Button */}
-      <button
+      <button type="button"
         onClick={addWorkout}
         className="w-full flex items-center justify-center gap-2 py-6 border-2 border-dashed border-zinc-700 hover:border-yellow-400 rounded-xl text-zinc-400 hover:text-yellow-400 transition-all group"
       >
