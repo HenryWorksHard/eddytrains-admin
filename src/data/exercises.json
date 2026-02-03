@@ -524,6 +524,23 @@
       }
     },
     {
+      "id": "machine_lateral_raise",
+      "name": "Side Deltoid Machine Raise",
+      "category": "shoulders",
+      "equipment": ["machine"],
+      "movementPattern": "isolation",
+      "primaryMuscles": ["medial_delts"],
+      "secondaryMuscles": ["traps"],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Adjust seat height so pads rest on outer arms just above elbows. Sit with back against pad, grip handles lightly.",
+        "execution": "Raise arms out to sides by pushing against pads until arms are parallel to floor. Lower with control.",
+        "cues": ["Push through the elbows not hands", "Control the negative", "Don't shrug up", "Pause at top"],
+        "commonMistakes": ["Using too much weight", "Raising too high (trap takeover)", "Rushing reps", "Lifting shoulders"],
+        "breathingPattern": "Exhale on raise, inhale on lower"
+      }
+    },
+    {
       "id": "arnold_press",
       "name": "Arnold Press",
       "category": "shoulders",
