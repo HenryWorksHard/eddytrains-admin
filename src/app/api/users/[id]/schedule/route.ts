@@ -42,15 +42,25 @@ export async function GET(
       .eq('client_id', userId)
       .eq('is_active', true)
 
-    // Get workout completions for the lookback period
+    // Get active client program IDs
+    const activeClientProgramIds = clientPrograms?.map(cp => cp.id) || []
+
+    // Get workout completions for the lookback period, filtered by active programs
     const lookbackDate = new Date()
     lookbackDate.setDate(lookbackDate.getDate() - COMPLETION_LOOKBACK_DAYS)
     
-    const { data: completions } = await adminClient
+    let completionsQuery = adminClient
       .from('workout_completions')
-      .select('workout_id, scheduled_date')
+      .select('workout_id, scheduled_date, client_program_id')
       .eq('client_id', userId)
       .gte('scheduled_date', lookbackDate.toISOString().split('T')[0])
+    
+    // Only show completions for current active program assignments
+    if (activeClientProgramIds.length > 0) {
+      completionsQuery = completionsQuery.in('client_program_id', activeClientProgramIds)
+    }
+    
+    const { data: completions } = await completionsQuery
 
     // Build schedule data
     interface WorkoutSchedule {
