@@ -3,6 +3,9 @@ import Link from 'next/link'
 import { Plus, Dumbbell, Search, ChevronRight } from 'lucide-react'
 import ProgramCard from '@/components/ProgramCard'
 
+// Force dynamic rendering - no caching
+export const dynamic = 'force-dynamic'
+
 interface Program {
   id: string
   name: string

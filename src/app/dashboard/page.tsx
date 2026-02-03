@@ -2,6 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { Users, Dumbbell, Calendar, Activity, TrendingUp, UserPlus } from 'lucide-react'
 
+// Force dynamic rendering - no caching
+export const dynamic = 'force-dynamic'
+
 async function getStats() {
   const supabase = await createClient()
   
