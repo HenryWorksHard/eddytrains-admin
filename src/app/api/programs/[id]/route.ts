@@ -47,7 +47,7 @@ export async function GET(
       throw programError
     }
 
-    // Fetch workouts
+    // Fetch parent workouts (where parent_workout_id is null)
     const { data: workouts, error: workoutsError } = await getAdminClient()
       .from('program_workouts')
       .select(`
@@ -58,6 +58,7 @@ export async function GET(
         )
       `)
       .eq('program_id', id)
+      .is('parent_workout_id', null)
       .order('order_index')
 
     if (workoutsError) {
@@ -65,9 +66,36 @@ export async function GET(
       throw workoutsError
     }
 
+    // Fetch finishers (child workouts) and attach to parents
+    const { data: finishers, error: finishersError } = await getAdminClient()
+      .from('program_workouts')
+      .select(`
+        *,
+        workout_exercises (
+          *,
+          exercise_sets (*)
+        )
+      `)
+      .eq('program_id', id)
+      .not('parent_workout_id', 'is', null)
+
+    if (finishersError) {
+      console.error('Error fetching finishers:', finishersError)
+      // Don't throw - finishers are optional
+    }
+
+    // Attach finishers to their parent workouts
+    const workoutsWithFinishers = (workouts || []).map(workout => {
+      const finisher = finishers?.find(f => f.parent_workout_id === workout.id)
+      return {
+        ...workout,
+        finisher: finisher || null
+      }
+    })
+
     return NextResponse.json({ 
       program,
-      workouts: workouts || []
+      workouts: workoutsWithFinishers
     })
 
   } catch (error) {

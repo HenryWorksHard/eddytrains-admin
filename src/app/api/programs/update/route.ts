@@ -127,6 +127,73 @@ export async function POST(request: NextRequest) {
             }
           }
         }
+
+        // 6. Create finisher (sub-workout) if exists
+        if (workout.finisher && workoutData) {
+          const { data: finisherData, error: finisherError } = await supabaseAdmin
+            .from('program_workouts')
+            .insert({
+              program_id: id,
+              parent_workout_id: workoutData.id,
+              name: workout.finisher.name,
+              category: workout.finisher.category,
+              order_index: 0,
+              notes: workout.finisher.notes || null,
+            })
+            .select()
+            .single()
+
+          if (finisherError) {
+            console.error('Finisher insert error:', finisherError)
+            throw finisherError
+          }
+
+          // Create finisher exercises
+          if (workout.finisher.exercises?.length > 0 && finisherData) {
+            for (const exercise of workout.finisher.exercises) {
+              const { data: exerciseData, error: exerciseError } = await supabaseAdmin
+                .from('workout_exercises')
+                .insert({
+                  workout_id: finisherData.id,
+                  exercise_id: exercise.exerciseId,
+                  exercise_name: exercise.exerciseName,
+                  order_index: exercise.order,
+                  notes: exercise.notes || null,
+                })
+                .select()
+                .single()
+
+              if (exerciseError) {
+                console.error('Finisher exercise insert error:', exerciseError)
+                throw exerciseError
+              }
+
+              // Create finisher exercise sets
+              if (exercise.sets?.length > 0 && exerciseData) {
+                const setsToInsert = exercise.sets.map((set: any) => ({
+                  exercise_id: exerciseData.id,
+                  set_number: set.setNumber,
+                  reps: set.reps,
+                  intensity_type: set.intensityType,
+                  intensity_value: set.intensityValue,
+                  rest_seconds: set.restSeconds,
+                  rest_bracket: set.restBracket || '90-120',
+                  weight_type: set.weightType || 'freeweight',
+                  notes: set.notes || null,
+                }))
+
+                const { error: setsError } = await supabaseAdmin
+                  .from('exercise_sets')
+                  .insert(setsToInsert)
+
+                if (setsError) {
+                  console.error('Finisher sets insert error:', setsError)
+                  throw setsError
+                }
+              }
+            }
+          }
+        }
       }
     }
 

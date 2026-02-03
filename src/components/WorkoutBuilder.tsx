@@ -141,6 +141,14 @@ interface WorkoutExercise {
   supersetGroup?: string
 }
 
+export interface WorkoutFinisher {
+  id: string
+  name: string
+  category: 'strength' | 'cardio' | 'hyrox' | 'hybrid'
+  exercises: WorkoutExercise[]
+  notes: string
+}
+
 export interface Workout {
   id: string
   name: string
@@ -148,6 +156,7 @@ export interface Workout {
   order: number
   exercises: WorkoutExercise[]
   notes: string
+  finisher?: WorkoutFinisher
 }
 
 interface WorkoutBuilderProps {
@@ -164,6 +173,13 @@ const daysOfWeek = [
   { value: 4, label: 'Thursday' },
   { value: 5, label: 'Friday' },
   { value: 6, label: 'Saturday' },
+]
+
+const finisherCategories = [
+  { value: 'strength', label: 'Strength', icon: '💪', color: 'blue' },
+  { value: 'cardio', label: 'Cardio', icon: '❤️', color: 'green' },
+  { value: 'hyrox', label: 'Hyrox', icon: '🏃', color: 'orange' },
+  { value: 'hybrid', label: 'Hybrid', icon: '⚡', color: 'purple' },
 ]
 
 const intensityTypes = exercisesData.intensityTypes
@@ -247,7 +263,9 @@ function isCardioExercise(exerciseId: string): boolean {
 
 export default function WorkoutBuilder({ workouts, onChange, programType }: WorkoutBuilderProps) {
   const [showExerciseSelector, setShowExerciseSelector] = useState<string | null>(null)
+  const [showFinisherExerciseSelector, setShowFinisherExerciseSelector] = useState<string | null>(null)
   const [expandedWorkouts, setExpandedWorkouts] = useState<Set<string>>(new Set(workouts.map(w => w.id)))
+  const [expandedFinishers, setExpandedFinishers] = useState<Set<string>>(new Set())
   const [expandedExercises, setExpandedExercises] = useState<Set<string>>(new Set())
 
   const addWorkout = () => {
@@ -440,6 +458,103 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
         newSet.add(exerciseId)
       }
       return newSet
+    })
+  }
+
+  const toggleFinisherExpanded = (workoutId: string) => {
+    setExpandedFinishers(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(workoutId)) {
+        newSet.delete(workoutId)
+      } else {
+        newSet.add(workoutId)
+      }
+      return newSet
+    })
+  }
+
+  // Finisher management functions
+  const addFinisher = (workoutId: string, category: 'strength' | 'cardio' | 'hyrox' | 'hybrid') => {
+    const workout = workouts.find(w => w.id === workoutId)
+    if (!workout) return
+
+    const finisher: WorkoutFinisher = {
+      id: generateId(),
+      name: `${category.charAt(0).toUpperCase() + category.slice(1)} Finisher`,
+      category,
+      exercises: [],
+      notes: '',
+    }
+
+    updateWorkout(workoutId, { finisher })
+    setExpandedFinishers(prev => new Set([...prev, workoutId]))
+  }
+
+  const updateFinisher = (workoutId: string, updates: Partial<WorkoutFinisher>) => {
+    const workout = workouts.find(w => w.id === workoutId)
+    if (!workout?.finisher) return
+
+    updateWorkout(workoutId, {
+      finisher: { ...workout.finisher, ...updates }
+    })
+  }
+
+  const removeFinisher = (workoutId: string) => {
+    updateWorkout(workoutId, { finisher: undefined })
+  }
+
+  const addExerciseToFinisher = (workoutId: string, exercise: { id: string; name: string; category: string }) => {
+    const workout = workouts.find(w => w.id === workoutId)
+    if (!workout?.finisher) return
+
+    const defaultWeightType = getDefaultWeightType(exercise.id)
+    const finisherCategory = workout.finisher.category
+
+    const newExercise: WorkoutExercise = {
+      id: generateId(),
+      exerciseId: exercise.id,
+      exerciseName: exercise.name,
+      category: exercise.category,
+      order: workout.finisher.exercises.length,
+      sets: Array.from({ length: finisherCategory === 'hyrox' ? 1 : 3 }, (_, i) => 
+        createDefaultSet(i + 1, defaultWeightType, finisherCategory)
+      ),
+      notes: '',
+    }
+
+    updateFinisher(workoutId, {
+      exercises: [...workout.finisher.exercises, newExercise]
+    })
+    setShowFinisherExerciseSelector(null)
+  }
+
+  const deleteExerciseFromFinisher = (workoutId: string, exerciseId: string) => {
+    const workout = workouts.find(w => w.id === workoutId)
+    if (!workout?.finisher) return
+
+    updateFinisher(workoutId, {
+      exercises: workout.finisher.exercises.filter(ex => ex.id !== exerciseId)
+    })
+  }
+
+  const updateFinisherExercise = (workoutId: string, exerciseId: string, updates: Partial<WorkoutExercise>) => {
+    const workout = workouts.find(w => w.id === workoutId)
+    if (!workout?.finisher) return
+
+    updateFinisher(workoutId, {
+      exercises: workout.finisher.exercises.map(ex =>
+        ex.id === exerciseId ? { ...ex, ...updates } : ex
+      )
+    })
+  }
+
+  const updateAllFinisherSets = (workoutId: string, exerciseId: string, updates: Partial<ExerciseSet>) => {
+    const workout = workouts.find(w => w.id === workoutId)
+    const exercise = workout?.finisher?.exercises.find(ex => ex.id === exerciseId)
+    if (!exercise) return
+
+    updateFinisherExercise(workoutId, exerciseId, {
+      sets: exercise.sets.map(s => ({ ...s, ...updates }))
     })
   }
 
@@ -1032,6 +1147,116 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                 <span>Add Exercise</span>
               </button>
 
+              {/* Finisher Section */}
+              <div className="mt-6 pt-6 border-t border-zinc-700">
+                {workout.finisher ? (
+                  <div className="space-y-4">
+                    {/* Finisher Header */}
+                    <div 
+                      className="flex items-center justify-between cursor-pointer"
+                      onClick={() => toggleFinisherExpanded(workout.id)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                          workout.finisher.category === 'strength' ? 'bg-blue-500/20 text-blue-400' :
+                          workout.finisher.category === 'cardio' ? 'bg-green-500/20 text-green-400' :
+                          workout.finisher.category === 'hyrox' ? 'bg-orange-500/20 text-orange-400' :
+                          'bg-purple-500/20 text-purple-400'
+                        }`}>
+                          {workout.finisher.category === 'strength' ? '💪' :
+                           workout.finisher.category === 'cardio' ? '❤️' :
+                           workout.finisher.category === 'hyrox' ? '🏃' : '⚡'}
+                        </div>
+                        <div>
+                          <input
+                            type="text"
+                            value={workout.finisher.name}
+                            onChange={(e) => updateFinisher(workout.id, { name: e.target.value })}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-transparent text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 rounded px-1"
+                            placeholder="Finisher Name"
+                          />
+                          <p className="text-xs text-zinc-500 capitalize">{workout.finisher.category} • {workout.finisher.exercises.length} exercises</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); removeFinisher(workout.id) }}
+                          className="p-1.5 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        {expandedFinishers.has(workout.id) ? (
+                          <ChevronUp className="w-5 h-5 text-zinc-500" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-zinc-500" />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Finisher Exercises */}
+                    {expandedFinishers.has(workout.id) && (
+                      <div className="space-y-3 pl-4 border-l-2 border-zinc-700">
+                        {workout.finisher.exercises.map((exercise, idx) => (
+                          <div key={exercise.id} className="bg-zinc-800/50 border border-zinc-700 rounded-xl p-3">
+                            <div className="flex items-center gap-3">
+                              <span className="text-zinc-500 text-sm font-mono w-6">{idx + 1}</span>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-medium text-white text-sm">{exercise.exerciseName}</h4>
+                                <span className="text-xs text-zinc-500">{exercise.sets.length} sets</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => deleteExerciseFromFinisher(workout.id, exercise.id)}
+                                className="p-1.5 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+
+                        {/* Add Exercise to Finisher */}
+                        <button
+                          type="button"
+                          onClick={() => setShowFinisherExerciseSelector(workout.id)}
+                          className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-zinc-600 hover:border-yellow-400/50 rounded-xl text-zinc-500 hover:text-yellow-400 text-sm transition-all"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>Add Exercise to Finisher</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  /* Add Finisher Button */
+                  <div>
+                    <p className="text-xs text-zinc-500 uppercase tracking-wider mb-3">Add Finisher (Optional)</p>
+                    <div className="flex flex-wrap gap-2">
+                      {finisherCategories
+                        .filter(cat => cat.value !== programType) // Exclude parent program's category
+                        .map(cat => (
+                          <button
+                            key={cat.value}
+                            type="button"
+                            onClick={() => addFinisher(workout.id, cat.value as any)}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all text-sm ${
+                              cat.value === 'strength' ? 'border-blue-500/30 hover:bg-blue-500/10 text-blue-400' :
+                              cat.value === 'cardio' ? 'border-green-500/30 hover:bg-green-500/10 text-green-400' :
+                              cat.value === 'hyrox' ? 'border-orange-500/30 hover:bg-orange-500/10 text-orange-400' :
+                              'border-purple-500/30 hover:bg-purple-500/10 text-purple-400'
+                            }`}
+                          >
+                            <span>{cat.icon}</span>
+                            <span>{cat.label}</span>
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Workout Notes */}
               <div>
                 <label className="text-xs text-zinc-500 uppercase tracking-wider mb-1 block">Workout Notes</label>
@@ -1067,6 +1292,16 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
           onClose={() => setShowExerciseSelector(null)}
           allowSuperset={true}
           programType={programType}
+        />
+      )}
+
+      {/* Finisher Exercise Selector Modal */}
+      {showFinisherExerciseSelector && (
+        <ExerciseSelector
+          onSelect={(exercise) => addExerciseToFinisher(showFinisherExerciseSelector, exercise)}
+          onClose={() => setShowFinisherExerciseSelector(null)}
+          allowSuperset={false}
+          programType={workouts.find(w => w.id === showFinisherExerciseSelector)?.finisher?.category}
         />
       )}
     </div>

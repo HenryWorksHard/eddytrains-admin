@@ -100,6 +100,35 @@ export default function EditProgramPage({ params }: PageProps) {
                   notes: s.notes || '',
                 })),
             })),
+          finisher: w.finisher ? {
+            id: w.finisher.id,
+            name: w.finisher.name,
+            category: w.finisher.category,
+            notes: w.finisher.notes || '',
+            exercises: (w.finisher.workout_exercises || [])
+              .sort((a: any, b: any) => a.order_index - b.order_index)
+              .map((ex: any) => ({
+                id: ex.id,
+                exerciseId: ex.exercise_id,
+                exerciseName: ex.exercise_name,
+                category: '',
+                order: ex.order_index,
+                notes: ex.notes || '',
+                sets: (ex.exercise_sets || [])
+                  .sort((a: any, b: any) => a.set_number - b.set_number)
+                  .map((s: any) => ({
+                    id: s.id,
+                    setNumber: s.set_number,
+                    reps: s.reps,
+                    intensityType: s.intensity_type,
+                    intensityValue: s.intensity_value,
+                    restSeconds: s.rest_seconds,
+                    restBracket: s.rest_bracket || '90-120',
+                    weightType: s.weight_type || 'freeweight',
+                    notes: s.notes || '',
+                  })),
+              })),
+          } : undefined,
         }))
 
         setWorkouts(transformedWorkouts)
