@@ -251,9 +251,9 @@ export default function UserProfilePage() {
       }
       
       // Merge with common lifts (show all, even if not set)
-      const existingMap = new Map((data || []).map((rm: Client1RM) => [rm.exercise_name, rm]))
-      const merged = COMMON_LIFTS.map(name => 
-        existingMap.get(name) || { exercise_name: name, weight_kg: 0 }
+      const existingMap = new Map<string, Client1RM>((data || []).map((rm: Client1RM) => [rm.exercise_name, rm]))
+      const merged: Client1RM[] = COMMON_LIFTS.map(name => 
+        existingMap.get(name) ?? { exercise_name: name, weight_kg: 0 }
       )
       // Add any custom lifts not in COMMON_LIFTS
       data?.forEach((rm: Client1RM) => {
