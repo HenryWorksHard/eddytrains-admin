@@ -150,6 +150,7 @@ export default function UserProfilePage() {
   const [availablePrograms, setAvailablePrograms] = useState<Program[]>([])
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null)
   const [assignDuration, setAssignDuration] = useState(4)
+  const [assignStartDate, setAssignStartDate] = useState(new Date().toISOString().split('T')[0])
   const [phaseName, setPhaseName] = useState('')
   const [assigning, setAssigning] = useState(false)
   
@@ -451,6 +452,7 @@ export default function UserProfilePage() {
     fetchAvailablePrograms()
     setSelectedProgram(null)
     setAssignDuration(4)
+    setAssignStartDate(new Date().toISOString().split('T')[0])
     setPhaseName('')
     setWizardStep('select')
     setProgramWorkouts([])
@@ -588,23 +590,10 @@ export default function UserProfilePage() {
     
     setAssigning(true)
     try {
-      // Calculate start date (today or after last program ends)
-      const today = new Date()
-      let startDate = today
+      // Use selected start date
+      const startDate = new Date(assignStartDate)
       
-      // Find the latest end date of existing active programs
-      const activeProgramEndDates = clientPrograms
-        .filter(cp => cp.is_active && cp.end_date)
-        .map(cp => new Date(cp.end_date!))
-      
-      if (activeProgramEndDates.length > 0) {
-        const latestEnd = new Date(Math.max(...activeProgramEndDates.map(d => d.getTime())))
-        if (latestEnd > today) {
-          startDate = new Date(latestEnd.getTime() + 24 * 60 * 60 * 1000) // Day after
-        }
-      }
-      
-      // Calculate end date
+      // Calculate end date based on start date and duration
       const endDate = new Date(startDate)
       endDate.setDate(endDate.getDate() + (assignDuration * 7))
       
@@ -884,6 +873,21 @@ export default function UserProfilePage() {
                           <span>1 week</span>
                           <span>24 weeks</span>
                         </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-zinc-400 mb-2">
+                          Start Date
+                        </label>
+                        <input
+                          type="date"
+                          value={assignStartDate}
+                          onChange={(e) => setAssignStartDate(e.target.value)}
+                          className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        />
+                        <p className="text-xs text-zinc-500 mt-1">
+                          Program will run from {new Date(assignStartDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })} to {new Date(new Date(assignStartDate).getTime() + assignDuration * 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </p>
                       </div>
                     </>
                   )}
