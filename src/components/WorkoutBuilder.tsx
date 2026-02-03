@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Minus, Trash2, GripVertical, Dumbbell, ChevronDown, ChevronUp, Copy, Settings2, Layers } from 'lucide-react'
+import { Plus, Minus, Trash2, GripVertical, Dumbbell, ChevronDown, ChevronUp, Copy, Settings2, Layers, RefreshCw } from 'lucide-react'
 import ExerciseSelector from './ExerciseSelector'
 import exercisesData from '@/data/exercises.json'
 import {
@@ -284,6 +284,8 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
   const [expandedWorkouts, setExpandedWorkouts] = useState<Set<string>>(new Set(workouts.map(w => w.id)))
   const [expandedFinishers, setExpandedFinishers] = useState<Set<string>>(new Set())
   const [expandedExercises, setExpandedExercises] = useState<Set<string>>(new Set())
+  // State for replacing an exercise: { workoutId, exerciseId }
+  const [replaceExercise, setReplaceExercise] = useState<{ workoutId: string; exerciseId: string } | null>(null)
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -406,6 +408,29 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
     updateWorkout(workoutId, {
       exercises: workout.exercises.filter(ex => ex.id !== exerciseId),
     })
+  }
+
+  const replaceExerciseWith = (workoutId: string, oldExerciseId: string, newExercise: { id: string; name: string; category: string }) => {
+    const workout = workouts.find(w => w.id === workoutId)
+    if (!workout) return
+
+    const oldExercise = workout.exercises.find(ex => ex.id === oldExerciseId)
+    if (!oldExercise) return
+
+    // Keep the same sets, order, and notes - just swap the exercise details
+    const updatedExercise: WorkoutExercise = {
+      ...oldExercise,
+      exerciseId: newExercise.id,
+      exerciseName: newExercise.name,
+      category: newExercise.category,
+    }
+
+    updateWorkout(workoutId, {
+      exercises: workout.exercises.map(ex => 
+        ex.id === oldExerciseId ? updatedExercise : ex
+      ),
+    })
+    setReplaceExercise(null)
   }
 
   const reorderExercises = (workoutId: string, activeId: string, overId: string) => {
@@ -645,12 +670,22 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
             <span className="text-xs text-zinc-500 capitalize">{exercise.category}</span>
           </div>
           {!isSuperset && (
-            <button type="button"
-              onClick={() => deleteExercise(workout.id, exercise.id)}
-              className="p-1.5 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button type="button"
+                onClick={() => setReplaceExercise({ workoutId: workout.id, exerciseId: exercise.id })}
+                className="p-1.5 rounded-lg hover:bg-yellow-500/20 text-zinc-500 hover:text-yellow-400 transition-colors"
+                title="Replace exercise"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </button>
+              <button type="button"
+                onClick={() => deleteExercise(workout.id, exercise.id)}
+                className="p-1.5 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-colors"
+                title="Delete exercise"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           )}
         </div>
 
@@ -1400,6 +1435,16 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
           onClose={() => setShowFinisherExerciseSelector(null)}
           allowSuperset={false}
           programType={workouts.find(w => w.id === showFinisherExerciseSelector)?.finisher?.category}
+        />
+      )}
+
+      {/* Replace Exercise Selector Modal */}
+      {replaceExercise && (
+        <ExerciseSelector
+          onSelect={(exercise) => replaceExerciseWith(replaceExercise.workoutId, replaceExercise.exerciseId, exercise)}
+          onClose={() => setReplaceExercise(null)}
+          allowSuperset={false}
+          programType={programType}
         />
       )}
     </div>
