@@ -218,6 +218,23 @@
       }
     },
     {
+      "id": "plate_loaded_chest_press",
+      "name": "Plate Loaded Chest Press",
+      "category": "chest",
+      "equipment": ["machine"],
+      "movementPattern": "push_horizontal",
+      "primaryMuscles": ["chest", "front_delts", "triceps"],
+      "secondaryMuscles": [],
+      "difficulty": "beginner",
+      "tutorial": {
+        "setup": "Adjust seat so handles align with mid-chest. Sit with back flat against pad, feet firmly on floor. Load plates evenly on both sides.",
+        "execution": "Press handles forward until arms are extended. Control back to start position with a stretch in the chest.",
+        "cues": ["Keep back against pad", "Drive through the chest", "Control the negative", "Squeeze at top"],
+        "commonMistakes": ["Coming forward off the pad", "Uneven loading", "Locking elbows aggressively", "Rushing reps"],
+        "breathingPattern": "Exhale on press, inhale on return"
+      }
+    },
+    {
       "id": "incline_plate_loaded_chest_press",
       "name": "Incline Plate Loaded Chest Press",
       "category": "chest",
