@@ -16,6 +16,7 @@ export default function NewUserPage() {
     strength: false,
     cardio: false,
     hyrox: false,
+    hybrid: false,
     nutrition: false,
   })
   const [loading, setLoading] = useState(false)
@@ -67,6 +68,7 @@ export default function NewUserPage() {
     { key: 'strength', name: 'Strength Training', icon: Dumbbell, desc: 'Access to strength workouts and programs' },
     { key: 'cardio', name: 'Cardio', icon: Heart, desc: 'Access to cardio and conditioning programs' },
     { key: 'hyrox', name: 'HYROX', icon: Zap, desc: 'Access to HYROX-specific training' },
+    { key: 'hybrid', name: 'Hybrid', icon: Zap, desc: 'Access to hybrid strength + cardio programs' },
     { key: 'nutrition', name: 'Nutrition', icon: Apple, desc: 'Access to nutrition plans and guides' },
   ]
 

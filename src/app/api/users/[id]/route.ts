@@ -122,7 +122,8 @@ export async function GET(
         user_permissions: [{
           can_access_strength: profile.can_access_strength,
           can_access_cardio: profile.can_access_cardio,
-          can_access_hyrox: profile.can_access_hyrox
+          can_access_hyrox: profile.can_access_hyrox,
+          can_access_hybrid: profile.can_access_hybrid
         }]
       }
     })
@@ -160,12 +161,13 @@ export async function PATCH(
     if (email !== undefined) updateData.email = email
     
     // Permissions are now embedded in profiles table
-    // "programs" controls access to all program types (strength/cardio/hyrox)
+    // "programs" controls access to all program types (strength/cardio/hyrox/hybrid)
     if (permissions) {
       const hasPrograms = permissions.programs || false
       updateData.can_access_strength = hasPrograms
       updateData.can_access_cardio = hasPrograms
       updateData.can_access_hyrox = hasPrograms
+      updateData.can_access_hybrid = hasPrograms
       updateData.can_access_nutrition = permissions.nutrition || false
     }
     

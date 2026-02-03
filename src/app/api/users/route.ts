@@ -220,6 +220,7 @@ export async function POST(request: NextRequest) {
         can_access_strength: permissions?.strength || false,
         can_access_cardio: permissions?.cardio || false,
         can_access_hyrox: permissions?.hyrox || false,
+        can_access_hybrid: permissions?.hybrid || false,
         can_access_nutrition: permissions?.nutrition || false
       })
     

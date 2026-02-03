@@ -20,7 +20,8 @@ const categoryColors: Record<string, string> = {
   strength: 'from-blue-500 to-blue-600',
   cardio: 'from-green-500 to-green-600',
   hyrox: 'from-yellow-400 to-yellow-500',
-  nutrition: 'from-purple-500 to-purple-600',
+  hybrid: 'from-purple-500 to-purple-600',
+  nutrition: 'from-teal-500 to-teal-600',
   recovery: 'from-pink-500 to-pink-600',
 }
 

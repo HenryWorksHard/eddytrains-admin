@@ -17,6 +17,7 @@ interface User {
   can_access_strength: boolean
   can_access_cardio: boolean
   can_access_hyrox: boolean
+  can_access_hybrid: boolean
 }
 
 function CopyButton({ text }: { text: string }) {
