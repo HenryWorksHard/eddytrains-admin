@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Save, Loader2, ChevronDown } from 'lucide-react'
 import WorkoutBuilder, { Workout } from '@/components/WorkoutBuilder'
-import { createClient } from '@/lib/supabase/client'
 
 const categories = [
   { value: 'strength', label: 'Strength Training' },
@@ -22,7 +21,6 @@ const difficulties = [
 
 export default function CreateProgramPage() {
   const router = useRouter()
-  const supabase = createClient()
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -49,79 +47,23 @@ export default function CreateProgramPage() {
     setError(null)
 
     try {
-      // 1. Create the program (duration is set per-assignment, not on program)
-      const { data: program, error: programError } = await supabase
-        .from('programs')
-        .insert({
-          name: name.trim(),
-          description: description.trim() || null,
+      const response = await fetch('/api/programs/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          description,
           category,
           difficulty,
-          is_active: isActive,
-        })
-        .select()
-        .single()
+          isActive,
+          workouts,
+        }),
+      })
 
-      if (programError) throw programError
+      const data = await response.json()
 
-      // 2. Create workouts
-      if (workouts.length > 0 && program) {
-        for (const workout of workouts) {
-          const { data: workoutData, error: workoutError } = await supabase
-            .from('program_workouts')
-            .insert({
-              program_id: program.id,
-              name: workout.name,
-              day_of_week: workout.dayOfWeek,
-              order_index: workout.order,
-              notes: workout.notes || null,
-            })
-            .select()
-            .single()
-
-          if (workoutError) throw workoutError
-
-          // 3. Create workout exercises
-          if (workout.exercises.length > 0 && workoutData) {
-            for (const exercise of workout.exercises) {
-              const { data: exerciseData, error: exerciseError } = await supabase
-                .from('workout_exercises')
-                .insert({
-                  workout_id: workoutData.id,
-                  exercise_id: exercise.exerciseId,
-                  exercise_name: exercise.exerciseName,
-                  order_index: exercise.order,
-                  notes: exercise.notes || null,
-                  superset_group: exercise.supersetGroup || null,
-                })
-                .select()
-                .single()
-
-              if (exerciseError) throw exerciseError
-
-              // 4. Create exercise sets
-              if (exercise.sets.length > 0 && exerciseData) {
-                const setsToInsert = exercise.sets.map(set => ({
-                  exercise_id: exerciseData.id,
-                  set_number: set.setNumber,
-                  reps: set.reps,
-                  intensity_type: set.intensityType,
-                  intensity_value: set.intensityValue,
-                  rest_seconds: set.restSeconds,
-                  rest_bracket: set.restBracket || '90-120',
-                  weight_type: set.weightType || 'freeweight',
-                  notes: set.notes || null,
-                }))
-
-                const { error: setsError } = await supabase
-                  .from('exercise_sets')
-                  .insert(setsToInsert)
-
-                if (setsError) throw setsError
-              }
-            }
-          }
-        }
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create program')
       }
 
       // Success - redirect to programs list

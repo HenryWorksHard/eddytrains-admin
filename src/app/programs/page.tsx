@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import Link from 'next/link'
 import { Plus, Dumbbell, Search, ChevronRight } from 'lucide-react'
 import ProgramCard from '@/components/ProgramCard'
@@ -22,8 +22,7 @@ const categories = [
 ]
 
 async function getPrograms(): Promise<Program[]> {
-  const supabase = await createClient()
-  const { data } = await supabase
+  const { data } = await supabaseAdmin
     .from('programs')
     .select('*')
     .order('created_at', { ascending: false })

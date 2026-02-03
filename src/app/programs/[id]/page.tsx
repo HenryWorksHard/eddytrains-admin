@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Save, Loader2, ChevronDown, Trash2 } from 'lucide-react'
 import WorkoutBuilder, { Workout } from '@/components/WorkoutBuilder'
-import { createClient } from '@/lib/supabase/client'
 
 const categories = [
   { value: 'strength', label: 'Strength Training' },
@@ -33,7 +32,6 @@ interface PageProps {
 export default function EditProgramPage({ params }: PageProps) {
   const { id } = use(params)
   const router = useRouter()
-  const supabase = createClient()
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -55,14 +53,14 @@ export default function EditProgramPage({ params }: PageProps) {
   useEffect(() => {
     async function loadProgram() {
       try {
-        // Get program
-        const { data: program, error: programError } = await supabase
-          .from('programs')
-          .select('*')
-          .eq('id', id)
-          .single()
+        const response = await fetch(`/api/programs/${id}`)
+        const data = await response.json()
 
-        if (programError) throw programError
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to load program')
+        }
+
+        const { program, workouts: workoutsData } = data
 
         setName(program.name)
         setDescription(program.description || '')
@@ -71,23 +69,8 @@ export default function EditProgramPage({ params }: PageProps) {
         setDurationWeeks(program.duration_weeks)
         setIsActive(program.is_active)
 
-        // Get workouts with exercises and sets
-        const { data: workoutsData, error: workoutsError } = await supabase
-          .from('program_workouts')
-          .select(`
-            *,
-            workout_exercises (
-              *,
-              exercise_sets (*)
-            )
-          `)
-          .eq('program_id', id)
-          .order('order_index')
-
-        if (workoutsError) throw workoutsError
-
         // Transform to our format
-        const transformedWorkouts: Workout[] = (workoutsData || []).map(w => ({
+        const transformedWorkouts: Workout[] = (workoutsData || []).map((w: any) => ({
           id: w.id,
           name: w.name,
           dayOfWeek: w.day_of_week,
@@ -129,7 +112,7 @@ export default function EditProgramPage({ params }: PageProps) {
     }
 
     loadProgram()
-  }, [id, supabase])
+  }, [id])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -185,12 +168,15 @@ export default function EditProgramPage({ params }: PageProps) {
     setError(null)
 
     try {
-      const { error } = await supabase
-        .from('programs')
-        .delete()
-        .eq('id', id)
+      const response = await fetch(`/api/programs/${id}`, {
+        method: 'DELETE',
+      })
 
-      if (error) throw error
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete program')
+      }
 
       router.push('/programs')
       router.refresh()
