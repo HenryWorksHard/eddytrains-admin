@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Camera, Loader2, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Camera, Loader2, X, ChevronLeft, ChevronRight, Columns2 } from 'lucide-react'
 import Image from 'next/image'
 
 interface ProgressImage {
@@ -19,6 +19,10 @@ export default function UserProgressGallery({ userId }: UserProgressGalleryProps
   const [images, setImages] = useState<ProgressImage[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
+  
+  // Comparison mode
+  const [compareMode, setCompareMode] = useState(false)
+  const [compareImages, setCompareImages] = useState<[number | null, number | null]>([null, null])
 
   useEffect(() => {
     fetchImages()
@@ -57,16 +61,71 @@ export default function UserProgressGallery({ userId }: UserProgressGalleryProps
     }
   }
 
+  const handleImageClick = (idx: number) => {
+    if (compareMode) {
+      // In compare mode, select images for comparison
+      if (compareImages[0] === null) {
+        setCompareImages([idx, null])
+      } else if (compareImages[1] === null && compareImages[0] !== idx) {
+        setCompareImages([compareImages[0], idx])
+      } else {
+        // Reset and start new selection
+        setCompareImages([idx, null])
+      }
+    } else {
+      setSelectedIndex(idx)
+    }
+  }
+
+  const exitCompareMode = () => {
+    setCompareMode(false)
+    setCompareImages([null, null])
+  }
+
+  const isSelectedForCompare = (idx: number) => {
+    return compareImages[0] === idx || compareImages[1] === idx
+  }
+
   return (
     <>
       <div className="card p-6 mt-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Camera className="w-5 h-5 text-purple-400" />
-          <h2 className="text-lg font-semibold text-white">Progress Pictures</h2>
-          {images.length > 0 && (
-            <span className="text-sm text-zinc-500">({images.length} photos)</span>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <Camera className="w-5 h-5 text-purple-400" />
+            <h2 className="text-lg font-semibold text-white">Progress Pictures</h2>
+            {images.length > 0 && (
+              <span className="text-sm text-zinc-500">({images.length} photos)</span>
+            )}
+          </div>
+          
+          {images.length >= 2 && (
+            <button
+              onClick={() => compareMode ? exitCompareMode() : setCompareMode(true)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
+                compareMode 
+                  ? 'bg-purple-500 text-white' 
+                  : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
+              }`}
+            >
+              <Columns2 className="w-4 h-4" />
+              <span className="text-sm font-medium">{compareMode ? 'Exit Compare' : 'Compare'}</span>
+            </button>
           )}
         </div>
+        
+        {/* Compare Mode Instructions */}
+        {compareMode && (
+          <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3 mb-4">
+            <p className="text-purple-300 text-sm">
+              {compareImages[0] === null 
+                ? '👆 Select the BEFORE image (first photo)'
+                : compareImages[1] === null 
+                  ? '👆 Now select the AFTER image (second photo)'
+                  : '✅ Click images to change selection'
+              }
+            </p>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex items-center justify-center py-8">
@@ -98,8 +157,12 @@ export default function UserProgressGallery({ userId }: UserProgressGalleryProps
               {images.map((img, idx) => (
                 <button
                   key={img.id}
-                  onClick={() => setSelectedIndex(idx)}
-                  className="aspect-square relative rounded-lg overflow-hidden bg-zinc-800 hover:ring-2 hover:ring-purple-400 transition-all"
+                  onClick={() => handleImageClick(idx)}
+                  className={`aspect-square relative rounded-lg overflow-hidden bg-zinc-800 transition-all ${
+                    compareMode && isSelectedForCompare(idx)
+                      ? 'ring-2 ring-purple-400'
+                      : 'hover:ring-2 hover:ring-purple-400'
+                  }`}
                 >
                   <Image
                     src={img.image_url}
@@ -108,6 +171,14 @@ export default function UserProgressGallery({ userId }: UserProgressGalleryProps
                     className="object-cover"
                     sizes="(max-width: 768px) 25vw, 12vw"
                   />
+                  {/* Compare selection indicator */}
+                  {compareMode && isSelectedForCompare(idx) && (
+                    <div className="absolute inset-0 bg-purple-500/30 flex items-center justify-center">
+                      <span className="bg-purple-500 text-white text-xs font-bold px-2 py-1 rounded">
+                        {compareImages[0] === idx ? 'BEFORE' : 'AFTER'}
+                      </span>
+                    </div>
+                  )}
                 </button>
               ))}
             </div>
@@ -163,6 +234,80 @@ export default function UserProgressGallery({ userId }: UserProgressGalleryProps
             <p className="text-zinc-500 text-xs text-center mt-1">
               {selectedIndex + 1} of {images.length}
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Comparison View */}
+      {compareMode && compareImages[0] !== null && compareImages[1] !== null && (
+        <div 
+          className="fixed inset-0 bg-black/95 z-[60] flex flex-col"
+          onClick={() => exitCompareMode()}
+        >
+          <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <Columns2 className="w-5 h-5 text-purple-400" />
+              Before / After Comparison
+            </h3>
+            <button
+              onClick={() => exitCompareMode()}
+              className="p-2 bg-zinc-800/50 hover:bg-zinc-800 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5 text-white" />
+            </button>
+          </div>
+          
+          <div className="flex-1 flex items-center justify-center p-4 gap-4" onClick={e => e.stopPropagation()}>
+            {/* Before Image */}
+            <div className="flex-1 flex flex-col items-center max-w-[45vw]">
+              <div className="relative w-full aspect-[3/4] rounded-lg overflow-hidden bg-zinc-800">
+                <Image
+                  src={images[compareImages[0]].image_url}
+                  alt="Before"
+                  fill
+                  className="object-contain"
+                  sizes="45vw"
+                />
+              </div>
+              <div className="mt-3 text-center">
+                <span className="inline-block px-3 py-1 bg-zinc-800 text-white text-sm font-medium rounded-full mb-1">
+                  BEFORE
+                </span>
+                <p className="text-zinc-400 text-sm">{formatDate(images[compareImages[0]].created_at)}</p>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="h-[60vh] w-px bg-zinc-700" />
+
+            {/* After Image */}
+            <div className="flex-1 flex flex-col items-center max-w-[45vw]">
+              <div className="relative w-full aspect-[3/4] rounded-lg overflow-hidden bg-zinc-800">
+                <Image
+                  src={images[compareImages[1]].image_url}
+                  alt="After"
+                  fill
+                  className="object-contain"
+                  sizes="45vw"
+                />
+              </div>
+              <div className="mt-3 text-center">
+                <span className="inline-block px-3 py-1 bg-purple-500 text-white text-sm font-medium rounded-full mb-1">
+                  AFTER
+                </span>
+                <p className="text-zinc-400 text-sm">{formatDate(images[compareImages[1]].created_at)}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Time difference */}
+          <div className="p-4 border-t border-zinc-800 flex justify-center">
+            <div className="bg-zinc-900/90 backdrop-blur-sm px-6 py-3 rounded-xl text-center">
+              <p className="text-zinc-400 text-sm">Time between photos</p>
+              <p className="text-white font-bold text-lg">
+                {Math.abs(Math.round((new Date(images[compareImages[1]].created_at).getTime() - new Date(images[compareImages[0]].created_at).getTime()) / (1000 * 60 * 60 * 24)))} days
+              </p>
+            </div>
           </div>
         </div>
       )}
