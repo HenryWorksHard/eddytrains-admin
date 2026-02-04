@@ -107,6 +107,9 @@ export default function EditProgramPage({ params }: PageProps) {
             name: w.finisher.name,
             category: w.finisher.category,
             notes: w.finisher.notes || '',
+            isEmom: w.finisher.is_emom || false,
+            emomInterval: w.finisher.emom_interval || 60,
+            isSuperset: w.finisher.is_superset || false,
             exercises: (w.finisher.workout_exercises || [])
               .sort((a: any, b: any) => a.order_index - b.order_index)
               .map((ex: any) => ({

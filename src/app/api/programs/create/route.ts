@@ -141,6 +141,9 @@ export async function POST(request: NextRequest) {
               category: workout.finisher.category,
               order_index: 0,
               notes: workout.finisher.notes || null,
+              is_emom: workout.finisher.isEmom || false,
+              emom_interval: workout.finisher.emomInterval || null,
+              is_superset: workout.finisher.isSuperset || false,
             })
             .select()
             .single()
