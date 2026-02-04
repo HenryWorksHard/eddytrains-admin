@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Plus, Minus, Trash2, GripVertical, Dumbbell, ChevronDown, ChevronUp, Copy, Settings2, Layers, RefreshCw } from 'lucide-react'
 import ExerciseSelector from './ExerciseSelector'
 import exercisesData from '@/data/exercises.json'
@@ -1462,18 +1462,69 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
     }
   }
 
+  // Reorder workouts via drag and drop
+  const reorderWorkouts = (activeId: string, overId: string) => {
+    const oldIndex = workouts.findIndex(w => w.id === activeId)
+    const newIndex = workouts.findIndex(w => w.id === overId)
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const newWorkouts = arrayMove(workouts, oldIndex, newIndex)
+      // Update order property for each workout
+      const updatedWorkouts = newWorkouts.map((w, index) => ({ ...w, order: index }))
+      onChange(updatedWorkouts)
+    }
+  }
+
+  const handleWorkoutDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (over && active.id !== over.id) {
+      reorderWorkouts(active.id as string, over.id as string)
+    }
+  }
+
   return (
     <div className="space-y-6">
-      {workouts.map((workout) => (
-        <div key={workout.id} className="card overflow-hidden">
-          {/* Workout Header */}
-          <div 
-            className="flex items-center gap-4 p-4 bg-zinc-800/50 cursor-pointer"
-            onClick={() => toggleWorkoutExpanded(workout.id)}
-          >
-            <div className="text-zinc-600 cursor-grab">
-              <GripVertical className="w-5 h-5" />
-            </div>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleWorkoutDragEnd}
+      >
+        <SortableContext
+          items={workouts.map(w => w.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          {workouts.map((workout) => {
+            const {
+              attributes,
+              listeners,
+              setNodeRef,
+              transform,
+              transition,
+              isDragging,
+            } = useSortable({ id: workout.id })
+
+            const style = {
+              transform: CSS.Transform.toString(transform),
+              transition,
+              opacity: isDragging ? 0.5 : 1,
+              zIndex: isDragging ? 1000 : 'auto' as any,
+            }
+
+            return (
+              <div key={workout.id} ref={setNodeRef} style={style} {...attributes}>
+                <div className={`card overflow-hidden ${isDragging ? 'shadow-lg ring-2 ring-yellow-400' : ''}`}>
+                  {/* Workout Header */}
+                  <div 
+                    className="flex items-center gap-4 p-4 bg-zinc-800/50 cursor-pointer"
+                    onClick={() => toggleWorkoutExpanded(workout.id)}
+                  >
+                    <div 
+                      {...listeners}
+                      className="text-zinc-600 cursor-grab active:cursor-grabbing hover:text-zinc-400 transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <GripVertical className="w-5 h-5" />
+                    </div>
 
             <div className="flex-1">
               <input
@@ -1820,8 +1871,12 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
               </div>
             </div>
           )}
-        </div>
-      ))}
+                </div>
+              </div>
+            )
+          })}
+        </SortableContext>
+      </DndContext>
 
       {/* Add Workout Button */}
       <button type="button"
