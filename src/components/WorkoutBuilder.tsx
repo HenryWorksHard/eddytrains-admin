@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react'
 import { Plus, Minus, Trash2, GripVertical, Dumbbell, ChevronDown, ChevronUp, Copy, Settings2, Layers, RefreshCw } from 'lucide-react'
 import ExerciseSelector from './ExerciseSelector'
+import WorkoutTemplateModal from './WorkoutTemplateModal'
 import exercisesData from '@/data/exercises.json'
 import {
   DndContext,
@@ -357,6 +358,8 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
   const [expandedExercises, setExpandedExercises] = useState<Set<string>>(new Set())
   // State for replacing an exercise: { workoutId, exerciseId }
   const [replaceExercise, setReplaceExercise] = useState<{ workoutId: string; exerciseId: string } | null>(null)
+  // State for template modal: { mode: 'save' | 'load', workoutId: string }
+  const [templateModal, setTemplateModal] = useState<{ mode: 'save' | 'load'; workoutId: string } | null>(null)
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -397,6 +400,99 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
     }
     onChange([...workouts, newWorkout])
     setExpandedWorkouts(prev => new Set([...prev, newWorkout.id]))
+  }
+
+  // Load a template into a workout
+  const loadTemplateIntoWorkout = (workoutId: string, templateData: any) => {
+    const workout = workouts.find(w => w.id === workoutId)
+    if (!workout || !templateData) return
+
+    // Generate new IDs for exercises and sets from the template
+    const newExercises: WorkoutExercise[] = (templateData.exercises || []).map((ex: any, idx: number) => ({
+      ...ex,
+      id: generateId(),
+      order: idx,
+      sets: (ex.sets || []).map((s: any, sIdx: number) => ({
+        ...s,
+        id: generateId(),
+        setNumber: sIdx + 1,
+      })),
+    }))
+
+    updateWorkout(workoutId, {
+      exercises: [...workout.exercises, ...newExercises],
+      notes: workout.notes 
+        ? `${workout.notes}\n\n---\nLoaded from template: ${templateData.name || 'Unknown'}`
+        : templateData.notes || '',
+    })
+    setTemplateModal(null)
+  }
+
+  // Get workout data for saving as template
+  const getWorkoutDataForTemplate = (workoutId: string) => {
+    const workout = workouts.find(w => w.id === workoutId)
+    if (!workout) return null
+    
+    return {
+      name: workout.name,
+      dayOfWeek: workout.dayOfWeek,
+      exercises: workout.exercises.map(ex => ({
+        exerciseId: ex.exerciseId,
+        exerciseName: ex.exerciseName,
+        category: ex.category,
+        order: ex.order,
+        notes: ex.notes,
+        supersetGroup: ex.supersetGroup,
+        sets: ex.sets.map(s => ({
+          setNumber: s.setNumber,
+          reps: s.reps,
+          intensityType: s.intensityType,
+          intensityValue: s.intensityValue,
+          restSeconds: s.restSeconds,
+          restBracket: s.restBracket,
+          weightType: s.weightType,
+          notes: s.notes,
+          cardioType: s.cardioType,
+          cardioValue: s.cardioValue,
+          cardioUnit: s.cardioUnit,
+          heartRateZone: s.heartRateZone,
+          workTime: s.workTime,
+          restTime: s.restTime,
+          hyroxStation: s.hyroxStation,
+          hyroxDistance: s.hyroxDistance,
+          hyroxUnit: s.hyroxUnit,
+          hyroxTargetTime: s.hyroxTargetTime,
+          hyroxWeightClass: s.hyroxWeightClass,
+          hybridMode: s.hybridMode,
+        })),
+      })),
+      notes: workout.notes,
+      isEmom: workout.isEmom,
+      emomInterval: workout.emomInterval,
+      finisher: workout.finisher ? {
+        name: workout.finisher.name,
+        category: workout.finisher.category,
+        exercises: workout.finisher.exercises.map(ex => ({
+          exerciseId: ex.exerciseId,
+          exerciseName: ex.exerciseName,
+          category: ex.category,
+          order: ex.order,
+          notes: ex.notes,
+          sets: ex.sets.map(s => ({
+            setNumber: s.setNumber,
+            reps: s.reps,
+            intensityType: s.intensityType,
+            intensityValue: s.intensityValue,
+            restBracket: s.restBracket,
+            weightType: s.weightType,
+          })),
+        })),
+        notes: workout.finisher.notes,
+        isEmom: workout.finisher.isEmom,
+        emomInterval: workout.finisher.emomInterval,
+        isSuperset: workout.finisher.isSuperset,
+      } : undefined,
+    }
   }
 
   const updateWorkout = (workoutId: string, updates: Partial<Workout>) => {
@@ -1712,7 +1808,22 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <button type="button"
+                onClick={(e) => { e.stopPropagation(); setTemplateModal({ mode: 'load', workoutId: workout.id }) }}
+                className="p-2 rounded-lg hover:bg-blue-500/20 text-zinc-400 hover:text-blue-400 transition-colors"
+                title="Load from template"
+              >
+                <Layers className="w-4 h-4" />
+              </button>
+              <button type="button"
+                onClick={(e) => { e.stopPropagation(); setTemplateModal({ mode: 'save', workoutId: workout.id }) }}
+                className="p-2 rounded-lg hover:bg-green-500/20 text-zinc-400 hover:text-green-400 transition-colors"
+                title="Save as template"
+                disabled={workout.exercises.length === 0}
+              >
+                <Dumbbell className="w-4 h-4" />
+              </button>
               <button type="button"
                 onClick={(e) => { e.stopPropagation(); duplicateWorkout(workout) }}
                 className="p-2 rounded-lg hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors"
@@ -1723,6 +1834,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
               <button type="button"
                 onClick={(e) => { e.stopPropagation(); deleteWorkout(workout.id) }}
                 className="p-2 rounded-lg hover:bg-red-500/20 text-zinc-400 hover:text-red-400 transition-colors"
+                title="Delete workout"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -2074,6 +2186,21 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
           onClose={() => setReplaceExercise(null)}
           allowSuperset={false}
           programType={programType}
+        />
+      )}
+
+      {/* Workout Template Modal */}
+      {templateModal && (
+        <WorkoutTemplateModal
+          mode={templateModal.mode}
+          workoutData={templateModal.mode === 'save' ? getWorkoutDataForTemplate(templateModal.workoutId) : undefined}
+          category={programType || 'strength'}
+          onClose={() => setTemplateModal(null)}
+          onLoad={(template) => loadTemplateIntoWorkout(templateModal.workoutId, template.workout_data)}
+          onSave={async () => {
+            // Save was already handled by the modal component via the API
+            setTemplateModal(null)
+          }}
         />
       )}
     </div>
