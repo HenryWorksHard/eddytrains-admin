@@ -33,7 +33,7 @@ interface ExerciseSet {
   weightType: string
   notes: string
   // Cardio-specific fields
-  cardioType?: 'duration' | 'distance' | 'calories' | 'emom' | 'intervals'
+  cardioType?: 'duration' | 'distance' | 'calories' | 'intervals'
   cardioValue?: string // e.g., "20:00", "5km", "300cal", "10 rounds"
   cardioUnit?: string // e.g., "min", "km", "m", "cal", "rounds"
   heartRateZone?: 1 | 2 | 3 | 4 | 5
@@ -79,7 +79,6 @@ const cardioTypes = [
   { value: 'duration', label: 'Duration', icon: 'D' },
   { value: 'distance', label: 'Distance', icon: 'KM' },
   { value: 'calories', label: 'Calories', icon: 'CAL' },
-  { value: 'emom', label: 'EMOM', icon: 'E' },
   { value: 'intervals', label: 'Intervals', icon: 'INT' },
 ]
 
@@ -1137,7 +1136,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
               </div>
 
               {/* EMOM/Intervals fields */}
-              {(firstSet?.cardioType === 'emom' || firstSet?.cardioType === 'intervals') && (
+              {firstSet?.cardioType === 'intervals' && (
                 <>
                   <div className="w-px h-6 bg-zinc-700" />
                   <div className="flex items-center gap-1">
