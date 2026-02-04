@@ -28,11 +28,18 @@ const navItems = [
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
+import { useState, useEffect } from 'react'
+
 export default function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
   const { theme, toggleTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -79,22 +86,24 @@ export default function Sidebar() {
 
       {/* Theme Toggle & Sign Out */}
       <div className="p-4 border-t border-zinc-800 space-y-2">
-        <button
-          onClick={toggleTheme}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-400 hover:bg-zinc-800 hover:text-white transition-all"
-        >
-          {theme === 'dark' ? (
-            <>
-              <Sun className="w-5 h-5" />
-              <span className="font-medium">Light Mode</span>
-            </>
-          ) : (
-            <>
-              <Moon className="w-5 h-5" />
-              <span className="font-medium">Dark Mode</span>
-            </>
-          )}
-        </button>
+        {mounted && (
+          <button
+            onClick={toggleTheme}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-400 hover:bg-zinc-800 hover:text-white transition-all"
+          >
+            {theme === 'dark' ? (
+              <>
+                <Sun className="w-5 h-5" />
+                <span className="font-medium">Light Mode</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-5 h-5" />
+                <span className="font-medium">Dark Mode</span>
+              </>
+            )}
+          </button>
+        )}
         <button
           onClick={handleSignOut}
           className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-400 hover:bg-red-500/10 hover:text-red-400 transition-all"
