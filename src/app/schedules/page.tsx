@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { 
@@ -81,7 +81,7 @@ const categoryColors: Record<string, string> = {
   recovery: 'bg-cyan-500',
 }
 
-export default function SchedulesPage() {
+function SchedulesPageContent() {
   const supabase = createClient()
   const searchParams = useSearchParams()
   const clientIdFromUrl = searchParams.get('client')
@@ -1004,5 +1004,15 @@ export default function SchedulesPage() {
         </div>
       )}
     </div>
+  )
+}
+
+
+// Wrap in Suspense for useSearchParams
+export default function SchedulesPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="w-8 h-8 animate-spin text-yellow-400" /></div>}>
+      <SchedulesPageContent />
+    </Suspense>
   )
 }
