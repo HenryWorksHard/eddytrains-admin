@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useTheme } from './ThemeProvider'
 import {
   LayoutDashboard,
   Users,
@@ -13,6 +14,8 @@ import {
   ChevronRight,
   Apple,
   Bell,
+  Sun,
+  Moon,
 } from 'lucide-react'
 
 const navItems = [
@@ -29,6 +32,7 @@ export default function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+  const { theme, toggleTheme } = useTheme()
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -73,8 +77,24 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Sign Out */}
-      <div className="p-4 border-t border-zinc-800">
+      {/* Theme Toggle & Sign Out */}
+      <div className="p-4 border-t border-zinc-800 space-y-2">
+        <button
+          onClick={toggleTheme}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-400 hover:bg-zinc-800 hover:text-white transition-all"
+        >
+          {theme === 'dark' ? (
+            <>
+              <Sun className="w-5 h-5" />
+              <span className="font-medium">Light Mode</span>
+            </>
+          ) : (
+            <>
+              <Moon className="w-5 h-5" />
+              <span className="font-medium">Dark Mode</span>
+            </>
+          )}
+        </button>
         <button
           onClick={handleSignOut}
           className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-400 hover:bg-red-500/10 hover:text-red-400 transition-all"
