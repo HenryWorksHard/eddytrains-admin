@@ -99,6 +99,7 @@ export default function SchedulesPage() {
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null)
   const [assignDuration, setAssignDuration] = useState(4)
   const [phaseName, setPhaseName] = useState('')
+  const [customStartDate, setCustomStartDate] = useState<string>('')
   const [programWorkouts, setProgramWorkouts] = useState<ProgramWorkout[]>([])
   const [exerciseCustomizations, setExerciseCustomizations] = useState<Map<string, ExerciseCustomization>>(new Map())
   const [expandedWorkouts, setExpandedWorkouts] = useState<Set<string>>(new Set())
@@ -179,6 +180,7 @@ export default function SchedulesPage() {
     setSelectedProgram(null)
     setAssignDuration(4)
     setPhaseName('')
+    setCustomStartDate(getNextStartDate())
     setWizardStep('select')
     setProgramWorkouts([])
     setExerciseCustomizations(new Map())
@@ -288,7 +290,7 @@ export default function SchedulesPage() {
 
     setSaving(true)
     try {
-      const startDate = getNextStartDate()
+      const startDate = customStartDate || getNextStartDate()
       const endDate = calculateEndDate(startDate, assignDuration)
 
       const { data: clientProgram, error } = await supabase
@@ -721,7 +723,7 @@ export default function SchedulesPage() {
                   </h3>
                   <p className="text-sm text-zinc-500">
                     {wizardStep === 'select' 
-                      ? `Starting ${new Date(getNextStartDate()).toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' })}`
+                      ? `Starting ${new Date(customStartDate || getNextStartDate()).toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' })}`
                       : selectedProgram?.name
                     }
                   </p>
@@ -783,6 +785,16 @@ export default function SchedulesPage() {
                           onChange={(e) => setPhaseName(e.target.value)}
                           placeholder="e.g., Phase 1: Hypertrophy"
                           className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-zinc-400 mb-2">Start Date</label>
+                        <input
+                          type="date"
+                          value={customStartDate}
+                          onChange={(e) => setCustomStartDate(e.target.value)}
+                          className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
                         />
                       </div>
                       
