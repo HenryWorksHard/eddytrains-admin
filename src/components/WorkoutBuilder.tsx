@@ -1204,9 +1204,10 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                   })}
                   className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
                 >
-                  {intensityTypes.map(type => (
-                    <option key={type.id} value={type.id}>{type.label}</option>
-                  ))}
+                  <option value="rir">RIR</option>
+                  <option value="rpe">RPE</option>
+                  <option value="percentage">% 1RM</option>
+                  <option value="failure">Failure</option>
                 </select>
                 {firstSet?.intensityType !== 'failure' && (
                   <input
@@ -1242,9 +1243,14 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                   onChange={(e) => updateAllSets(workout.id, exercise.id, { weightType: e.target.value })}
                   className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
                 >
-                  {weightTypes.map(type => (
-                    <option key={type.id} value={type.id}>{type.label}</option>
-                  ))}
+                  <option value="bodyweight">BW</option>
+                  <option value="freeweight">DB/BB</option>
+                  <option value="machine">Machine</option>
+                  <option value="cable">Cable</option>
+                  <option value="kettlebell">KB</option>
+                  <option value="smith_machine">Smith</option>
+                  <option value="plate_loaded">Plate</option>
+                  <option value="resistance_band">Band</option>
                 </select>
               </div>
             </>
