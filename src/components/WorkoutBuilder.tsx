@@ -364,6 +364,41 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
     setShowExerciseSelector(null)
   }
 
+  // Add Hyrox station directly (no exercise selector needed)
+  const addHyroxStation = (workoutId: string, station: typeof hyroxStations[0]) => {
+    const workout = workouts.find(w => w.id === workoutId)
+    if (!workout) return
+
+    const newExercise: WorkoutExercise = {
+      id: generateId(),
+      exerciseId: `hyrox_${station.value}`,
+      exerciseName: station.label,
+      category: 'hyrox',
+      order: workout.exercises.length,
+      sets: [{
+        id: generateId(),
+        setNumber: 1,
+        reps: '1',
+        intensityType: 'rpe',
+        intensityValue: '',
+        restSeconds: 0,
+        restBracket: '30-60',
+        weightType: 'bodyweight',
+        notes: '',
+        hyroxStation: station.value,
+        hyroxDistance: station.defaultDistance,
+        hyroxUnit: station.defaultUnit,
+        hyroxTargetTime: '',
+        hyroxWeightClass: 'open_male',
+      }],
+      notes: '',
+    }
+
+    updateWorkout(workoutId, {
+      exercises: [...workout.exercises, newExercise],
+    })
+  }
+
   const addSuperset = (workoutId: string, exercises: { id: string; name: string; category: string }[]) => {
     const workout = workouts.find(w => w.id === workoutId)
     if (!workout || exercises.length < 2) return
@@ -984,29 +1019,6 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
           {isHyrox ? (
             /* === HYROX FIELDS === */
             <>
-              {/* Station Type */}
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-zinc-500">Station</span>
-                <select
-                  value={firstSet?.hyroxStation || 'run'}
-                  onChange={(e) => {
-                    const station = hyroxStations.find(s => s.value === e.target.value)
-                    updateAllSets(workout.id, exercise.id, { 
-                      hyroxStation: e.target.value,
-                      hyroxDistance: station?.defaultDistance || '1000',
-                      hyroxUnit: station?.defaultUnit || 'm'
-                    })
-                  }}
-                  className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                >
-                  {hyroxStations.map(station => (
-                    <option key={station.value} value={station.value}>{station.icon} {station.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="w-px h-6 bg-zinc-700" />
-
               {/* Distance/Reps */}
               <div className="flex items-center gap-1">
                 <input
@@ -1578,14 +1590,35 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                 </SortableContext>
               </DndContext>
 
-              {/* Add Exercise Button */}
-              <button type="button"
-                onClick={() => setShowExerciseSelector(workout.id)}
-                className="w-full flex items-center justify-center gap-2 py-4 border-2 border-dashed border-zinc-700 hover:border-yellow-400/50 rounded-xl text-zinc-400 hover:text-yellow-400 transition-all"
-              >
-                <Plus className="w-5 h-5" />
-                <span>Add Exercise</span>
-              </button>
+              {/* Add Exercise/Station Button */}
+              {programType === 'hyrox' ? (
+                /* Hyrox: Show station picker directly */
+                <div className="space-y-3">
+                  <p className="text-xs text-zinc-500 uppercase tracking-wider">Add Station</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {hyroxStations.map(station => (
+                      <button
+                        key={station.value}
+                        type="button"
+                        onClick={() => addHyroxStation(workout.id, station)}
+                        className="flex flex-col items-center gap-1 p-3 bg-zinc-800/50 border border-zinc-700 hover:border-orange-400/50 hover:bg-orange-500/10 rounded-xl text-zinc-400 hover:text-orange-400 transition-all"
+                      >
+                        <span className="text-lg font-bold">{station.icon}</span>
+                        <span className="text-xs">{station.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                /* Other types: Show exercise selector */
+                <button type="button"
+                  onClick={() => setShowExerciseSelector(workout.id)}
+                  className="w-full flex items-center justify-center gap-2 py-4 border-2 border-dashed border-zinc-700 hover:border-yellow-400/50 rounded-xl text-zinc-400 hover:text-yellow-400 transition-all"
+                >
+                  <Plus className="w-5 h-5" />
+                  <span>Add Exercise</span>
+                </button>
+              )}
 
               {/* Finisher Section */}
               <div className="mt-6 pt-6 border-t border-zinc-700">
