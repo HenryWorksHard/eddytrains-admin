@@ -76,6 +76,8 @@ export default function EditProgramPage({ params }: PageProps) {
           dayOfWeek: w.day_of_week,
           order: w.order_index,
           notes: w.notes || '',
+          isEmom: w.is_emom || false,
+          emomInterval: w.emom_interval || null,
           exercises: (w.workout_exercises || [])
             .sort((a: any, b: any) => a.order_index - b.order_index)
             .map((ex: any) => ({

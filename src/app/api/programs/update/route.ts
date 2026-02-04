@@ -72,6 +72,8 @@ export async function POST(request: NextRequest) {
             day_of_week: workout.dayOfWeek,
             order_index: workout.order,
             notes: workout.notes || null,
+            is_emom: workout.isEmom || false,
+            emom_interval: workout.emomInterval || null,
           })
           .select()
           .single()

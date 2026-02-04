@@ -174,6 +174,9 @@ export interface Workout {
   exercises: WorkoutExercise[]
   notes: string
   finisher?: WorkoutFinisher
+  // EMOM settings (for cardio/hyrox/hybrid)
+  isEmom?: boolean
+  emomInterval?: number // interval in seconds (e.g., 60 = every minute)
 }
 
 interface WorkoutBuilderProps {
@@ -1453,6 +1456,44 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                 <span className="text-sm text-zinc-500">
                   {workout.exercises.length} exercise{workout.exercises.length !== 1 ? 's' : ''}
                 </span>
+                
+                {/* EMOM Toggle - only for cardio/hyrox/hybrid */}
+                {(programType === 'cardio' || programType === 'hyrox' || programType === 'hybrid') && (
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <span className="text-zinc-600">|</span>
+                    <button
+                      type="button"
+                      onClick={() => updateWorkout(workout.id, { 
+                        isEmom: !workout.isEmom,
+                        emomInterval: workout.isEmom ? undefined : 60
+                      })}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                        workout.isEmom 
+                          ? 'bg-yellow-400 text-black' 
+                          : 'bg-zinc-700 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      EMOM
+                    </button>
+                    {workout.isEmom && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-zinc-500">every</span>
+                        <select
+                          value={workout.emomInterval || 60}
+                          onChange={(e) => updateWorkout(workout.id, { emomInterval: parseInt(e.target.value) })}
+                          className="px-2 py-1 bg-zinc-700 border border-zinc-600 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                        >
+                          <option value={30}>30s</option>
+                          <option value={45}>45s</option>
+                          <option value={60}>1 min</option>
+                          <option value={90}>90s</option>
+                          <option value={120}>2 min</option>
+                          <option value={180}>3 min</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
