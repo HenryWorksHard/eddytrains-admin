@@ -1515,10 +1515,10 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
       }
     })
 
-    // Sort by day of week (null/unassigned first, then Sunday=0 through Saturday=6)
+    // Sort by day of week (Sunday=0 through Saturday=6, then null/unassigned at bottom)
     const sortedDays = Array.from(dayMap.keys()).sort((a, b) => {
-      if (a === null) return -1
-      if (b === null) return 1
+      if (a === null) return 1
+      if (b === null) return -1
       return a - b
     })
 
