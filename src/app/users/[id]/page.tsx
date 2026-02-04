@@ -108,6 +108,19 @@ interface CustomizedSet {
   rest_bracket: string
   weight_type: string
   notes: string
+  // Cardio fields
+  cardio_type?: string
+  cardio_value?: string
+  cardio_unit?: string
+  heart_rate_zone?: number
+  work_time?: string
+  rest_time?: string
+  // Hyrox fields
+  hyrox_station?: string
+  hyrox_distance?: string
+  hyrox_unit?: string
+  hyrox_target_time?: string
+  hyrox_weight_class?: string
 }
 
 interface Client1RM {
@@ -625,7 +638,20 @@ export default function UserProfilePage() {
           intensity_value: set.intensity_value,
           rest_bracket: set.rest_bracket,
           weight_type: set.weight_type,
-          notes: set.notes || null
+          notes: set.notes || null,
+          // Cardio fields
+          cardio_type: set.cardio_type || null,
+          cardio_value: set.cardio_value || null,
+          cardio_unit: set.cardio_unit || null,
+          heart_rate_zone: set.heart_rate_zone ? parseInt(String(set.heart_rate_zone)) : null,
+          work_time: set.work_time || null,
+          rest_time: set.rest_time || null,
+          // Hyrox fields
+          hyrox_station: set.hyrox_station || null,
+          hyrox_distance: set.hyrox_distance || null,
+          hyrox_unit: set.hyrox_unit || null,
+          hyrox_target_time: set.hyrox_target_time || null,
+          hyrox_weight_class: set.hyrox_weight_class || null
         }))
         
         const { error: setsError } = await supabase
@@ -960,75 +986,246 @@ export default function UserProfilePage() {
                           
                           {expandedWorkouts.has(workout.id) && (
                             <div className="border-t border-zinc-800">
-                              <table className="w-full text-sm">
-                                <thead>
-                                  <tr className="text-xs text-zinc-500 uppercase bg-zinc-800/20">
-                                    <th className="px-4 py-2 text-left">Exercise</th>
-                                    <th className="px-4 py-2 text-left w-16">Sets</th>
-                                    <th className="px-4 py-2 text-left">Reps</th>
-                                    <th className="px-4 py-2 text-left">Intensity</th>
-                                    <th className="px-4 py-2 text-left">Rest</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                              {workout.workout_exercises.map((exercise: WorkoutExercise, exIdx: number) => {
-                                const setValues = getExerciseSetValues(exercise.id)
-                                const firstSet = exercise.exercise_sets[0]
-                                return (
-                                  <tr key={exercise.id} className="border-t border-zinc-800/30">
-                                    <td className="px-4 py-3">
-                                      <span className="text-zinc-500 font-mono text-xs mr-2">{exIdx + 1}.</span>
-                                      <span className="text-white font-medium">{exercise.exercise_name}</span>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                      <span className="text-zinc-400 font-mono">{exercise.exercise_sets.length}</span>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                      <input
-                                        type="text"
-                                        value={setValues?.reps || firstSet?.reps || ''}
-                                        onChange={(e) => updateAllExerciseSets(exercise.id, 'reps', e.target.value)}
-                                        className="w-20 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                                        placeholder="8-12"
-                                      />
-                                    </td>
-                                    <td className="px-4 py-3">
-                                      <div className="flex gap-1">
-                                        <select
-                                          value={setValues?.intensity_type || firstSet?.intensity_type || 'rir'}
-                                          onChange={(e) => updateAllExerciseSets(exercise.id, 'intensity_type', e.target.value)}
-                                          className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                                        >
-                                          <option value="rir">RIR</option>
-                                          <option value="rpe">RPE</option>
-                                          <option value="percentage">%</option>
-                                        </select>
+                              {/* STRENGTH / HYBRID(strength mode) */}
+                              {(selectedProgram?.category === 'strength' || selectedProgram?.category === 'hybrid') && (
+                                <table className="w-full text-sm">
+                                  <thead>
+                                    <tr className="text-xs text-zinc-500 uppercase bg-zinc-800/20">
+                                      <th className="px-4 py-2 text-left">Exercise</th>
+                                      <th className="px-4 py-2 text-left w-16">Sets</th>
+                                      <th className="px-4 py-2 text-left">Reps</th>
+                                      <th className="px-4 py-2 text-left">Intensity</th>
+                                      <th className="px-4 py-2 text-left">Rest</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                {workout.workout_exercises.map((exercise: WorkoutExercise, exIdx: number) => {
+                                  const setValues = getExerciseSetValues(exercise.id)
+                                  const firstSet = exercise.exercise_sets[0]
+                                  return (
+                                    <tr key={exercise.id} className="border-t border-zinc-800/30">
+                                      <td className="px-4 py-3">
+                                        <span className="text-zinc-500 font-mono text-xs mr-2">{exIdx + 1}.</span>
+                                        <span className="text-white font-medium">{exercise.exercise_name}</span>
+                                      </td>
+                                      <td className="px-4 py-3">
+                                        <span className="text-zinc-400 font-mono">{exercise.exercise_sets.length}</span>
+                                      </td>
+                                      <td className="px-4 py-3">
                                         <input
                                           type="text"
-                                          value={setValues?.intensity_value || firstSet?.intensity_value || ''}
-                                          onChange={(e) => updateAllExerciseSets(exercise.id, 'intensity_value', e.target.value)}
-                                          className="w-14 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                                          placeholder="2"
+                                          value={setValues?.reps || firstSet?.reps || ''}
+                                          onChange={(e) => updateAllExerciseSets(exercise.id, 'reps', e.target.value)}
+                                          className="w-20 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                          placeholder="8-12"
                                         />
-                                      </div>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                      <div className="flex items-center gap-1">
-                                        <input
-                                          type="text"
+                                      </td>
+                                      <td className="px-4 py-3">
+                                        <div className="flex gap-1">
+                                          <select
+                                            value={setValues?.intensity_type || firstSet?.intensity_type || 'rir'}
+                                            onChange={(e) => updateAllExerciseSets(exercise.id, 'intensity_type', e.target.value)}
+                                            className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                          >
+                                            <option value="rir">RIR</option>
+                                            <option value="rpe">RPE</option>
+                                            <option value="percentage">%</option>
+                                            <option value="failure">Failure</option>
+                                          </select>
+                                          {(setValues?.intensity_type || firstSet?.intensity_type) !== 'failure' && (
+                                            <input
+                                              type="text"
+                                              value={setValues?.intensity_value || firstSet?.intensity_value || ''}
+                                              onChange={(e) => updateAllExerciseSets(exercise.id, 'intensity_value', e.target.value)}
+                                              className="w-14 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                              placeholder="2"
+                                            />
+                                          )}
+                                        </div>
+                                      </td>
+                                      <td className="px-4 py-3">
+                                        <select
                                           value={setValues?.rest_bracket || firstSet?.rest_bracket || '90-120'}
                                           onChange={(e) => updateAllExerciseSets(exercise.id, 'rest_bracket', e.target.value)}
-                                          className="w-20 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                                          placeholder="90-120"
+                                          className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                        >
+                                          <option value="30-60">30-60s</option>
+                                          <option value="60-90">60-90s</option>
+                                          <option value="90-120">90-120s</option>
+                                          <option value="120-180">2-3min</option>
+                                          <option value="180-300">3-5min</option>
+                                        </select>
+                                      </td>
+                                    </tr>
+                                  )
+                                })}
+                                  </tbody>
+                                </table>
+                              )}
+
+                              {/* CARDIO */}
+                              {selectedProgram?.category === 'cardio' && (
+                                <table className="w-full text-sm">
+                                  <thead>
+                                    <tr className="text-xs text-zinc-500 uppercase bg-zinc-800/20">
+                                      <th className="px-4 py-2 text-left">Exercise</th>
+                                      <th className="px-4 py-2 text-left">Type</th>
+                                      <th className="px-4 py-2 text-left">Value</th>
+                                      <th className="px-4 py-2 text-left">HR Zone</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                {workout.workout_exercises.map((exercise: WorkoutExercise, exIdx: number) => {
+                                  const setValues = getExerciseSetValues(exercise.id)
+                                  const firstSet = exercise.exercise_sets[0] as any
+                                  return (
+                                    <tr key={exercise.id} className="border-t border-zinc-800/30">
+                                      <td className="px-4 py-3">
+                                        <span className="text-zinc-500 font-mono text-xs mr-2">{exIdx + 1}.</span>
+                                        <span className="text-white font-medium">{exercise.exercise_name}</span>
+                                      </td>
+                                      <td className="px-4 py-3">
+                                        <select
+                                          value={setValues?.cardio_type || firstSet?.cardio_type || 'duration'}
+                                          onChange={(e) => updateAllExerciseSets(exercise.id, 'cardio_type', e.target.value)}
+                                          className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                        >
+                                          <option value="duration">Duration</option>
+                                          <option value="distance">Distance</option>
+                                          <option value="calories">Calories</option>
+                                          <option value="intervals">Intervals</option>
+                                        </select>
+                                      </td>
+                                      <td className="px-4 py-3">
+                                        <div className="flex gap-1">
+                                          <input
+                                            type="text"
+                                            value={setValues?.cardio_value || firstSet?.cardio_value || ''}
+                                            onChange={(e) => updateAllExerciseSets(exercise.id, 'cardio_value', e.target.value)}
+                                            className="w-16 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                            placeholder="20"
+                                          />
+                                          <select
+                                            value={setValues?.cardio_unit || firstSet?.cardio_unit || 'min'}
+                                            onChange={(e) => updateAllExerciseSets(exercise.id, 'cardio_unit', e.target.value)}
+                                            className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                          >
+                                            <option value="min">min</option>
+                                            <option value="km">km</option>
+                                            <option value="m">m</option>
+                                            <option value="cal">cal</option>
+                                          </select>
+                                        </div>
+                                      </td>
+                                      <td className="px-4 py-3">
+                                        <select
+                                          value={setValues?.heart_rate_zone || firstSet?.heart_rate_zone || ''}
+                                          onChange={(e) => updateAllExerciseSets(exercise.id, 'heart_rate_zone', e.target.value)}
+                                          className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                        >
+                                          <option value="">-</option>
+                                          <option value="1">Z1 (50-60%)</option>
+                                          <option value="2">Z2 (60-70%)</option>
+                                          <option value="3">Z3 (70-80%)</option>
+                                          <option value="4">Z4 (80-90%)</option>
+                                          <option value="5">Z5 (90-100%)</option>
+                                        </select>
+                                      </td>
+                                    </tr>
+                                  )
+                                })}
+                                  </tbody>
+                                </table>
+                              )}
+
+                              {/* HYROX */}
+                              {selectedProgram?.category === 'hyrox' && (
+                                <table className="w-full text-sm">
+                                  <thead>
+                                    <tr className="text-xs text-zinc-500 uppercase bg-zinc-800/20">
+                                      <th className="px-4 py-2 text-left">Exercise</th>
+                                      <th className="px-4 py-2 text-left">Station</th>
+                                      <th className="px-4 py-2 text-left">Distance</th>
+                                      <th className="px-4 py-2 text-left">Target</th>
+                                      <th className="px-4 py-2 text-left">Class</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                {workout.workout_exercises.map((exercise: WorkoutExercise, exIdx: number) => {
+                                  const setValues = getExerciseSetValues(exercise.id)
+                                  const firstSet = exercise.exercise_sets[0] as any
+                                  return (
+                                    <tr key={exercise.id} className="border-t border-zinc-800/30">
+                                      <td className="px-4 py-3">
+                                        <span className="text-zinc-500 font-mono text-xs mr-2">{exIdx + 1}.</span>
+                                        <span className="text-white font-medium">{exercise.exercise_name}</span>
+                                      </td>
+                                      <td className="px-4 py-3">
+                                        <select
+                                          value={setValues?.hyrox_station || firstSet?.hyrox_station || 'run'}
+                                          onChange={(e) => updateAllExerciseSets(exercise.id, 'hyrox_station', e.target.value)}
+                                          className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                        >
+                                          <option value="run">Run</option>
+                                          <option value="skierg">SkiErg</option>
+                                          <option value="sled_push">Sled Push</option>
+                                          <option value="sled_pull">Sled Pull</option>
+                                          <option value="burpee_broad_jump">Burpee BJ</option>
+                                          <option value="row">Row</option>
+                                          <option value="farmers_carry">Farmers</option>
+                                          <option value="sandbag_lunges">Sandbag</option>
+                                          <option value="wall_balls">Wall Balls</option>
+                                        </select>
+                                      </td>
+                                      <td className="px-4 py-3">
+                                        <div className="flex gap-1">
+                                          <input
+                                            type="text"
+                                            value={setValues?.hyrox_distance || firstSet?.hyrox_distance || ''}
+                                            onChange={(e) => updateAllExerciseSets(exercise.id, 'hyrox_distance', e.target.value)}
+                                            className="w-16 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                            placeholder="1000"
+                                          />
+                                          <select
+                                            value={setValues?.hyrox_unit || firstSet?.hyrox_unit || 'm'}
+                                            onChange={(e) => updateAllExerciseSets(exercise.id, 'hyrox_unit', e.target.value)}
+                                            className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                          >
+                                            <option value="m">m</option>
+                                            <option value="km">km</option>
+                                            <option value="reps">reps</option>
+                                          </select>
+                                        </div>
+                                      </td>
+                                      <td className="px-4 py-3">
+                                        <input
+                                          type="text"
+                                          value={setValues?.hyrox_target_time || firstSet?.hyrox_target_time || ''}
+                                          onChange={(e) => updateAllExerciseSets(exercise.id, 'hyrox_target_time', e.target.value)}
+                                          className="w-16 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                          placeholder="4:30"
                                         />
-                                        <span className="text-xs text-zinc-500">s</span>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                )
-                              })}
-                                </tbody>
-                              </table>
+                                      </td>
+                                      <td className="px-4 py-3">
+                                        <select
+                                          value={setValues?.hyrox_weight_class || firstSet?.hyrox_weight_class || 'open_male'}
+                                          onChange={(e) => updateAllExerciseSets(exercise.id, 'hyrox_weight_class', e.target.value)}
+                                          className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                        >
+                                          <option value="pro_male">Pro M</option>
+                                          <option value="pro_female">Pro F</option>
+                                          <option value="open_male">Open M</option>
+                                          <option value="open_female">Open F</option>
+                                          <option value="doubles_male">Dbl M</option>
+                                          <option value="doubles_female">Dbl F</option>
+                                        </select>
+                                      </td>
+                                    </tr>
+                                  )
+                                })}
+                                  </tbody>
+                                </table>
+                              )}
                             </div>
                           )}
                         </div>
