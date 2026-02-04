@@ -203,6 +203,14 @@ export default function UserProfilePage() {
   const [nutritionNotes, setNutritionNotes] = useState('')
   const [assigningNutrition, setAssigningNutrition] = useState(false)
 
+  // Clone User State
+  const [showCloneModal, setShowCloneModal] = useState(false)
+  const [availableUsers, setAvailableUsers] = useState<{ id: string; email: string; full_name: string | null }[]>([])
+  const [selectedCloneUser, setSelectedCloneUser] = useState<string | null>(null)
+  const [clonePrograms, setClonePrograms] = useState(true)
+  const [cloneNutrition, setCloneNutrition] = useState(true)
+  const [cloning, setCloning] = useState(false)
+
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [permissions, setPermissions] = useState({
@@ -474,6 +482,14 @@ export default function UserProfilePage() {
     setShowAssignModal(true)
   }
 
+  const openCloneModal = () => {
+    fetchAvailableUsers()
+    setSelectedCloneUser(null)
+    setClonePrograms(true)
+    setCloneNutrition(true)
+    setShowCloneModal(true)
+  }
+
   const fetchProgramWorkouts = async (programId: string) => {
     setLoadingWorkouts(true)
     try {
@@ -596,6 +612,64 @@ export default function UserProfilePage() {
       newExpanded.add(workoutId)
     }
     setExpandedWorkouts(newExpanded)
+  }
+
+  // Clone from another user
+  const fetchAvailableUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, email, full_name')
+        .eq('role', 'user')
+        .neq('id', user?.id || '')
+        .order('full_name')
+      
+      if (!error && data) {
+        setAvailableUsers(data)
+      }
+    } catch (err) {
+      console.error('Failed to fetch users:', err)
+    }
+  }
+
+  const handleClone = async () => {
+    if (!selectedCloneUser || !user) return
+    
+    setCloning(true)
+    try {
+      const response = await fetch(`/api/users/${user.id}/clone`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceUserId: selectedCloneUser,
+          includePrograms: clonePrograms,
+          includeNutrition: cloneNutrition
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (data.error) {
+        throw new Error(data.error)
+      }
+      
+      setShowCloneModal(false)
+      setSelectedCloneUser(null)
+      
+      // Refresh data
+      if (user) {
+        fetchClientPrograms(user.id)
+        fetchClientNutrition(user.id)
+      }
+      
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3000)
+    } catch (err) {
+      console.error('Clone failed:', err)
+      setError('Failed to clone user setup')
+    } finally {
+      setCloning(false)
+    }
   }
 
   const handleAssignProgram = async () => {
@@ -785,6 +859,105 @@ export default function UserProfilePage() {
 
   return (
     <div className="w-full">
+      {/* Clone from User Modal */}
+      {showCloneModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-md">
+            <div className="flex items-center justify-between p-6 border-b border-zinc-800">
+              <div>
+                <h3 className="text-xl font-semibold text-white">Clone from User</h3>
+                <p className="text-sm text-zinc-500">Copy programs and nutrition from another user</p>
+              </div>
+              <button onClick={() => setShowCloneModal(false)} className="p-2 hover:bg-zinc-800 rounded-lg transition-colors">
+                <X className="w-5 h-5 text-zinc-400" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              {/* User Selection */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-2">Select Source User</label>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {availableUsers.map(u => (
+                    <div
+                      key={u.id}
+                      onClick={() => setSelectedCloneUser(u.id)}
+                      className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                        selectedCloneUser === u.id
+                          ? 'border-yellow-400 bg-yellow-400/10'
+                          : 'border-zinc-700 hover:border-zinc-600 bg-zinc-800/50'
+                      }`}
+                    >
+                      <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-white font-medium text-sm">
+                        {u.full_name?.[0]?.toUpperCase() || u.email[0].toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-white truncate">{u.full_name || 'No name'}</p>
+                        <p className="text-xs text-zinc-500 truncate">{u.email}</p>
+                      </div>
+                      {selectedCloneUser === u.id && (
+                        <Check className="w-5 h-5 text-yellow-400" />
+                      )}
+                    </div>
+                  ))}
+                  {availableUsers.length === 0 && (
+                    <p className="text-zinc-500 text-center py-4">No other users available</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Clone Options */}
+              {selectedCloneUser && (
+                <div className="space-y-3">
+                  <p className="text-sm font-medium text-zinc-400">What to clone:</p>
+                  <label className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-xl cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={clonePrograms}
+                      onChange={(e) => setClonePrograms(e.target.checked)}
+                      className="w-5 h-5 rounded border-zinc-600 text-yellow-400 focus:ring-yellow-400 focus:ring-offset-0 bg-zinc-700"
+                    />
+                    <div>
+                      <p className="font-medium text-white">Programs & Custom Sets</p>
+                      <p className="text-xs text-zinc-500">Copy all active programs with their customizations</p>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-xl cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={cloneNutrition}
+                      onChange={(e) => setCloneNutrition(e.target.checked)}
+                      className="w-5 h-5 rounded border-zinc-600 text-yellow-400 focus:ring-yellow-400 focus:ring-offset-0 bg-zinc-700"
+                    />
+                    <div>
+                      <p className="font-medium text-white">Nutrition Plan</p>
+                      <p className="text-xs text-zinc-500">Copy their assigned nutrition plan</p>
+                    </div>
+                  </label>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 p-6 border-t border-zinc-800">
+              <button
+                onClick={() => setShowCloneModal(false)}
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleClone}
+                disabled={cloning || !selectedCloneUser || (!clonePrograms && !cloneNutrition)}
+                className="flex items-center gap-2 px-6 py-2 bg-yellow-400 hover:bg-yellow-500 disabled:bg-yellow-400/50 text-black font-medium rounded-xl transition-colors"
+              >
+                {cloning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                Clone Setup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Assign Program Modal - Wizard */}
       {showAssignModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
@@ -1563,13 +1736,22 @@ export default function UserProfilePage() {
             <Dumbbell className="w-5 h-5 text-yellow-400" />
             <h2 className="text-lg font-semibold text-white">Assigned Programs</h2>
           </div>
-          <button
-            onClick={openAssignModal}
-            className="flex items-center gap-2 px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-black font-medium rounded-xl transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Assign Program
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={openCloneModal}
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-colors"
+            >
+              <UserIcon className="w-4 h-4" />
+              Clone from User
+            </button>
+            <button
+              onClick={openAssignModal}
+              className="flex items-center gap-2 px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-black font-medium rounded-xl transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Assign Program
+            </button>
+          </div>
         </div>
         
         {clientPrograms.length > 0 ? (
