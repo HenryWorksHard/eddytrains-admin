@@ -352,7 +352,7 @@ function SortableExerciseItem({ id, children }: { id: string; children: React.Re
 export default function WorkoutBuilder({ workouts, onChange, programType }: WorkoutBuilderProps) {
   const [showExerciseSelector, setShowExerciseSelector] = useState<string | null>(null)
   const [showFinisherExerciseSelector, setShowFinisherExerciseSelector] = useState<string | null>(null)
-  const [expandedWorkouts, setExpandedWorkouts] = useState<Set<string>>(new Set(workouts.map(w => w.id)))
+  const [expandedWorkouts, setExpandedWorkouts] = useState<Set<string>>(new Set())
   const [expandedFinishers, setExpandedFinishers] = useState<Set<string>>(new Set())
   const [expandedExercises, setExpandedExercises] = useState<Set<string>>(new Set())
   // State for replacing an exercise: { workoutId, exerciseId }
