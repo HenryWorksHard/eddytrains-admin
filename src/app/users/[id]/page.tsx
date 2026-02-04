@@ -331,13 +331,13 @@ export default function UserProfilePage() {
         .from('client_nutrition')
         .select(`
           id,
-          nutrition_plan_id,
+          plan_id,
           notes,
           custom_calories,
           custom_protein,
           custom_carbs,
           custom_fats,
-          nutrition_plans (id, name, calories, protein, carbs, fats)
+          nutrition_plans:plan_id (id, name, calories, protein, carbs, fats)
         `)
         .eq('client_id', userUuid)
         .eq('is_active', true)
@@ -349,7 +349,7 @@ export default function UserProfilePage() {
         const plan = Array.isArray(data.nutrition_plans) ? data.nutrition_plans[0] : data.nutrition_plans
         setClientNutrition({
           id: data.id,
-          plan_id: data.nutrition_plan_id,
+          plan_id: data.plan_id,
           plan_name: plan?.name || 'Custom Plan',
           calories: data.custom_calories || plan?.calories || 0,
           protein: data.custom_protein || plan?.protein || 0,
@@ -390,15 +390,15 @@ export default function UserProfilePage() {
         .update({ is_active: false })
         .eq('client_id', user.id)
       
-      // Create new assignment
+      // Create new assignment (upsert to handle unique constraint on client_id)
       const { error } = await supabase
         .from('client_nutrition')
-        .insert({
+        .upsert({
           client_id: user.id,
-          nutrition_plan_id: selectedNutritionPlan,
+          plan_id: selectedNutritionPlan,
           notes: nutritionNotes || null,
           is_active: true
-        })
+        }, { onConflict: 'client_id' })
       
       if (error) throw error
       

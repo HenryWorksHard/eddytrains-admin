@@ -87,7 +87,7 @@ export default function EditNutritionPlanPage({ params }: PageProps) {
     const { data: assignments } = await supabase
       .from('client_nutrition')
       .select('id')
-      .eq('nutrition_plan_id', id)
+      .eq('plan_id', id)
       .eq('is_active', true)
       .limit(1)
 
