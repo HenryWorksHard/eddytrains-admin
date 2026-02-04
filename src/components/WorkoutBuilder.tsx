@@ -1794,7 +1794,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                       <button
                         key={station.value}
                         type="button"
-                        onClick={() => addHyroxStation(workout.id, station)}
+                        onClick={(e) => { e.stopPropagation(); addHyroxStation(workout.id, station) }}
                         className="flex flex-col items-center gap-1 p-3 bg-zinc-800/50 border border-zinc-700 hover:border-orange-400/50 hover:bg-orange-500/10 rounded-xl text-zinc-400 hover:text-orange-400 transition-all"
                       >
                         <span className="text-lg font-bold">{station.icon}</span>
@@ -1805,7 +1805,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                   {/* Custom Exercise Option */}
                   <button
                     type="button"
-                    onClick={() => setShowExerciseSelector(workout.id)}
+                    onClick={(e) => { e.stopPropagation(); setShowExerciseSelector(workout.id) }}
                     className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-zinc-600 hover:border-yellow-400/50 rounded-xl text-zinc-500 hover:text-yellow-400 text-sm transition-all"
                   >
                     <Plus className="w-4 h-4" />
@@ -1815,7 +1815,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
               ) : (
                 /* Other types: Show exercise selector */
                 <button type="button"
-                  onClick={() => setShowExerciseSelector(workout.id)}
+                  onClick={(e) => { e.stopPropagation(); setShowExerciseSelector(workout.id) }}
                   className="w-full flex items-center justify-center gap-2 py-4 border-2 border-dashed border-zinc-700 hover:border-yellow-400/50 rounded-xl text-zinc-400 hover:text-yellow-400 transition-all"
                 >
                   <Plus className="w-5 h-5" />
@@ -1940,7 +1940,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                                 <button
                                   key={station.value}
                                   type="button"
-                                  onClick={() => addHyroxStationToFinisher(workout.id, station)}
+                                  onClick={(e) => { e.stopPropagation(); addHyroxStationToFinisher(workout.id, station) }}
                                   className="flex flex-col items-center gap-0.5 p-2 bg-zinc-800/50 border border-zinc-700 hover:border-orange-400/50 hover:bg-orange-500/10 rounded-lg text-zinc-400 hover:text-orange-400 transition-all"
                                 >
                                   <span className="text-sm font-bold">{station.icon}</span>
@@ -1951,7 +1951,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                             {/* Custom Exercise Option */}
                             <button
                               type="button"
-                              onClick={() => setShowFinisherExerciseSelector(workout.id)}
+                              onClick={(e) => { e.stopPropagation(); setShowFinisherExerciseSelector(workout.id) }}
                               className="w-full flex items-center justify-center gap-2 py-2 border border-dashed border-zinc-600 hover:border-yellow-400/50 rounded-lg text-zinc-500 hover:text-yellow-400 text-xs transition-all"
                             >
                               <Plus className="w-3 h-3" />
@@ -1962,7 +1962,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                           /* Other Finisher Types: Show exercise selector */
                           <button
                             type="button"
-                            onClick={() => setShowFinisherExerciseSelector(workout.id)}
+                            onClick={(e) => { e.stopPropagation(); setShowFinisherExerciseSelector(workout.id) }}
                             className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-zinc-600 hover:border-yellow-400/50 rounded-xl text-zinc-500 hover:text-yellow-400 text-sm transition-all"
                           >
                             <Plus className="w-4 h-4" />
@@ -1983,7 +1983,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                           <button
                             key={cat.value}
                             type="button"
-                            onClick={() => addFinisher(workout.id, cat.value as any)}
+                            onClick={(e) => { e.stopPropagation(); addFinisher(workout.id, cat.value as any) }}
                             className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all text-sm ${
                               cat.value === 'strength' ? 'border-blue-500/30 hover:bg-blue-500/10 text-blue-400' :
                               cat.value === 'cardio' ? 'border-green-500/30 hover:bg-green-500/10 text-green-400' :
