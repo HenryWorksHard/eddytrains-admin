@@ -48,10 +48,8 @@ export default function NewUserPage() {
       
       setSuccess(true)
       
-      // If temp password returned (Klaviyo not configured), log it
-      if (data.tempPassword) {
-        console.log('Temp password for', email, ':', data.tempPassword)
-      }
+      // Temp password is returned if Klaviyo not configured
+      // In production, this would be sent via email
       
       setTimeout(() => {
         router.push('/users')
