@@ -285,6 +285,70 @@ function isCardioExercise(exerciseId: string): boolean {
   return exercise.category === 'cardio' || (exercise.tags && exercise.tags.includes('cardio'))
 }
 
+// Sortable wrapper for workout items - MUST be outside component to prevent remount
+function SortableWorkoutItem({ workoutId, children }: { 
+  workoutId: string
+  children: (props: { listeners: any; isDragging: boolean }) => React.ReactNode 
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: workoutId })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1000 : 'auto' as any,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes}>
+      {children({ listeners, isDragging })}
+    </div>
+  )
+}
+
+// Sortable wrapper for exercise items - MUST be outside component to prevent remount
+function SortableExerciseItem({ id, children }: { id: string; children: React.ReactNode }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1000 : 'auto',
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes}>
+      <div className={`bg-zinc-800/30 border border-zinc-800 rounded-xl overflow-hidden ${isDragging ? 'shadow-lg ring-2 ring-yellow-400' : ''}`}>
+        <div className="relative">
+          {/* Drag handle overlay */}
+          <div 
+            {...listeners}
+            className="absolute left-0 top-0 bottom-0 w-10 flex items-center justify-center cursor-grab active:cursor-grabbing hover:bg-zinc-700/50 transition-colors z-10"
+          >
+            <GripVertical className="w-4 h-4 text-zinc-500" />
+          </div>
+          {children}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function WorkoutBuilder({ workouts, onChange, programType }: WorkoutBuilderProps) {
   const [showExerciseSelector, setShowExerciseSelector] = useState<string | null>(null)
   const [showFinisherExerciseSelector, setShowFinisherExerciseSelector] = useState<string | null>(null)
@@ -1454,41 +1518,6 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
   }
 
   // Sortable wrapper for exercise items
-  const SortableExerciseItem = ({ id, children }: { id: string; children: React.ReactNode }) => {
-    const {
-      attributes,
-      listeners,
-      setNodeRef,
-      transform,
-      transition,
-      isDragging,
-    } = useSortable({ id })
-
-    const style = {
-      transform: CSS.Transform.toString(transform),
-      transition,
-      opacity: isDragging ? 0.5 : 1,
-      zIndex: isDragging ? 1000 : 'auto',
-    }
-
-    return (
-      <div ref={setNodeRef} style={style} {...attributes}>
-        <div className={`bg-zinc-800/30 border border-zinc-800 rounded-xl overflow-hidden ${isDragging ? 'shadow-lg ring-2 ring-yellow-400' : ''}`}>
-          <div className="relative">
-            {/* Drag handle overlay */}
-            <div 
-              {...listeners}
-              className="absolute left-0 top-0 bottom-0 w-10 flex items-center justify-center cursor-grab active:cursor-grabbing hover:bg-zinc-700/50 transition-colors z-10"
-            >
-              <GripVertical className="w-4 h-4 text-zinc-500" />
-            </div>
-            {children}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   // Handle drag end for reordering
   const handleDragEnd = (workoutId: string) => (event: DragEndEvent) => {
     const { active, over } = event
@@ -1564,30 +1593,6 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
   }
 
   // Sortable wrapper for workout items
-  const SortableWorkoutItem = ({ workout, children }: { workout: Workout; children: (props: { listeners: any; isDragging: boolean }) => React.ReactNode }) => {
-    const {
-      attributes,
-      listeners,
-      setNodeRef,
-      transform,
-      transition,
-      isDragging,
-    } = useSortable({ id: workout.id })
-
-    const style = {
-      transform: CSS.Transform.toString(transform),
-      transition,
-      opacity: isDragging ? 0.5 : 1,
-      zIndex: isDragging ? 1000 : 'auto' as any,
-    }
-
-    return (
-      <div ref={setNodeRef} style={style} {...attributes}>
-        {children({ listeners, isDragging })}
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-6">
       <DndContext
@@ -1624,7 +1629,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                   const workout = getWorkoutById(workoutId)
                   if (!workout) return null
                   return (
-                  <SortableWorkoutItem key={workout.id} workout={workout}>
+                  <SortableWorkoutItem key={workout.id} workoutId={workout.id}>
                     {({ listeners, isDragging }) => (
                       <div className={`card overflow-hidden ${isDragging ? 'shadow-lg ring-2 ring-yellow-400' : ''}`}>
                         {/* Workout Header */}
