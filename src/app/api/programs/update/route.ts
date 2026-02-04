@@ -116,6 +116,19 @@ export async function POST(request: NextRequest) {
                 rest_bracket: set.restBracket || '90-120',
                 weight_type: set.weightType || 'freeweight',
                 notes: set.notes || null,
+                // Cardio fields
+                cardio_type: set.cardioType || null,
+                cardio_value: set.cardioValue || null,
+                cardio_unit: set.cardioUnit || null,
+                heart_rate_zone: set.heartRateZone || null,
+                work_time: set.workTime || null,
+                rest_time: set.restTime || null,
+                // Hyrox fields
+                hyrox_station: set.hyroxStation || null,
+                hyrox_distance: set.hyroxDistance || null,
+                hyrox_unit: set.hyroxUnit || null,
+                hyrox_target_time: set.hyroxTargetTime || null,
+                hyrox_weight_class: set.hyroxWeightClass || null,
               }))
 
               const { error: setsError } = await supabaseAdmin
@@ -182,6 +195,19 @@ export async function POST(request: NextRequest) {
                   rest_bracket: set.restBracket || '90-120',
                   weight_type: set.weightType || 'freeweight',
                   notes: set.notes || null,
+                  // Cardio fields
+                  cardio_type: set.cardioType || null,
+                  cardio_value: set.cardioValue || null,
+                  cardio_unit: set.cardioUnit || null,
+                  heart_rate_zone: set.heartRateZone || null,
+                  work_time: set.workTime || null,
+                  rest_time: set.restTime || null,
+                  // Hyrox fields
+                  hyrox_station: set.hyroxStation || null,
+                  hyrox_distance: set.hyroxDistance || null,
+                  hyrox_unit: set.hyroxUnit || null,
+                  hyrox_target_time: set.hyroxTargetTime || null,
+                  hyrox_weight_class: set.hyroxWeightClass || null,
                 }))
 
                 const { error: setsError } = await supabaseAdmin
