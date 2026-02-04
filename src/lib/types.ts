@@ -148,3 +148,42 @@ export interface ClientNutrition {
   // Joined
   nutrition_plans?: NutritionPlan
 }
+
+export interface AdminNotification {
+  id: string
+  client_id: string
+  type: 'missed_workout' | 'new_pr' | 'streak_achieved' | 'streak_lost' | 'milestone'
+  title: string
+  message: string
+  metadata: Record<string, unknown>
+  is_read: boolean
+  is_dismissed: boolean
+  created_at: string
+  updated_at: string
+  // Joined
+  profiles?: Profile
+}
+
+export interface ClientStreak {
+  id: string
+  client_id: string
+  current_streak: number
+  longest_streak: number
+  last_workout_date: string | null
+  streak_start_date: string | null
+  updated_at: string
+  // Joined
+  profiles?: Profile
+}
+
+export interface PersonalRecord {
+  id: string
+  client_id: string
+  exercise_name: string
+  weight_kg: number
+  reps: number
+  estimated_1rm: number | null
+  achieved_at: string
+  // Joined
+  profiles?: Profile
+}

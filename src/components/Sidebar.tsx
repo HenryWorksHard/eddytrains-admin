@@ -12,10 +12,12 @@ import {
   LogOut,
   ChevronRight,
   Apple,
+  Bell,
 } from 'lucide-react'
 
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Alerts', href: '/alerts', icon: Bell },
   { name: 'Users', href: '/users', icon: Users },
   { name: 'Programs', href: '/programs', icon: Dumbbell },
   { name: 'Nutrition', href: '/nutrition', icon: Apple },
