@@ -163,6 +163,9 @@ export interface WorkoutFinisher {
   category: 'strength' | 'cardio' | 'hyrox' | 'hybrid'
   exercises: WorkoutExercise[]
   notes: string
+  // EMOM settings (for cardio/hyrox/hybrid finishers)
+  isEmom?: boolean
+  emomInterval?: number
 }
 
 export interface Workout {
@@ -1680,7 +1683,42 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                             className="bg-transparent text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 rounded px-1"
                             placeholder="Finisher Name"
                           />
-                          <p className="text-xs text-zinc-500 capitalize">{workout.finisher.category} • {workout.finisher.exercises.length} exercises</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs text-zinc-500 capitalize">{workout.finisher.category} • {workout.finisher.exercises.length} exercises</p>
+                            {/* EMOM Toggle for cardio/hyrox/hybrid finishers */}
+                            {(workout.finisher.category === 'cardio' || workout.finisher.category === 'hyrox' || workout.finisher.category === 'hybrid') && (
+                              <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                <span className="text-zinc-600">•</span>
+                                <button
+                                  type="button"
+                                  onClick={() => updateFinisher(workout.id, { 
+                                    isEmom: !workout.finisher?.isEmom,
+                                    emomInterval: workout.finisher?.isEmom ? undefined : 60
+                                  })}
+                                  className={`px-1.5 py-0.5 rounded text-[10px] font-semibold transition-all ${
+                                    workout.finisher.isEmom 
+                                      ? 'bg-yellow-400 text-black' 
+                                      : 'bg-zinc-700 text-zinc-400 hover:text-white'
+                                  }`}
+                                >
+                                  EMOM
+                                </button>
+                                {workout.finisher.isEmom && (
+                                  <select
+                                    value={workout.finisher.emomInterval || 60}
+                                    onChange={(e) => updateFinisher(workout.id, { emomInterval: parseInt(e.target.value) })}
+                                    className="px-1 py-0.5 bg-zinc-700 border border-zinc-600 rounded text-white text-[10px] focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                  >
+                                    <option value={30}>30s</option>
+                                    <option value={45}>45s</option>
+                                    <option value={60}>1m</option>
+                                    <option value={90}>90s</option>
+                                    <option value={120}>2m</option>
+                                  </select>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
