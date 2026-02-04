@@ -166,6 +166,8 @@ export interface WorkoutFinisher {
   // EMOM settings (for cardio/hyrox/hybrid finishers)
   isEmom?: boolean
   emomInterval?: number
+  // Superset mode (all exercises done as one superset)
+  isSuperset?: boolean
 }
 
 export interface Workout {
@@ -1807,6 +1809,21 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                                     <option value={120}>2m</option>
                                   </select>
                                 )}
+                                {/* Superset Toggle */}
+                                <span className="text-zinc-600">•</span>
+                                <button
+                                  type="button"
+                                  onClick={() => updateFinisher(workout.id, { 
+                                    isSuperset: !workout.finisher?.isSuperset
+                                  })}
+                                  className={`px-1.5 py-0.5 rounded text-[10px] font-semibold transition-all ${
+                                    workout.finisher.isSuperset 
+                                      ? 'bg-purple-500 text-white' 
+                                      : 'bg-zinc-700 text-zinc-400 hover:text-white'
+                                  }`}
+                                >
+                                  SUPERSET
+                                </button>
                               </div>
                             )}
                           </div>
