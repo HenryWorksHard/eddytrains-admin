@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { UserPlus, Search, Filter, Mail, Edit2, Trash2, Key, Clock, Copy, Check, RefreshCw } from 'lucide-react'
+import { UserPlus, Search, Filter, Mail, Edit2, Trash2, Clock, Copy, Check, RefreshCw, Dumbbell, Apple, X, Loader2 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 interface User {
   id: string
@@ -18,6 +19,17 @@ interface User {
   can_access_cardio: boolean
   can_access_hyrox: boolean
   can_access_hybrid: boolean
+}
+
+interface Program {
+  id: string
+  name: string
+  category: string
+}
+
+interface NutritionPlan {
+  id: string
+  name: string
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -43,6 +55,98 @@ function CopyButton({ text }: { text: string }) {
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
+  const supabase = createClient()
+  
+  // Bulk selection state
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set())
+  const [showBulkModal, setShowBulkModal] = useState(false)
+  const [bulkAction, setBulkAction] = useState<'program' | 'nutrition' | null>(null)
+  const [programs, setPrograms] = useState<Program[]>([])
+  const [nutritionPlans, setNutritionPlans] = useState<NutritionPlan[]>([])
+  const [selectedProgram, setSelectedProgram] = useState<string | null>(null)
+  const [selectedNutrition, setSelectedNutrition] = useState<string | null>(null)
+  const [bulkAssigning, setBulkAssigning] = useState(false)
+  const [bulkDuration, setBulkDuration] = useState(4)
+
+  const toggleUserSelection = (userId: string) => {
+    const newSelected = new Set(selectedUsers)
+    if (newSelected.has(userId)) {
+      newSelected.delete(userId)
+    } else {
+      newSelected.add(userId)
+    }
+    setSelectedUsers(newSelected)
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedUsers.size === users.length) {
+      setSelectedUsers(new Set())
+    } else {
+      setSelectedUsers(new Set(users.map(u => u.id)))
+    }
+  }
+
+  const openBulkModal = async (action: 'program' | 'nutrition') => {
+    setBulkAction(action)
+    setShowBulkModal(true)
+    
+    if (action === 'program' && programs.length === 0) {
+      const { data } = await supabase.from('programs').select('id, name, category').order('name')
+      setPrograms(data || [])
+    } else if (action === 'nutrition' && nutritionPlans.length === 0) {
+      const { data } = await supabase.from('nutrition_plans').select('id, name').order('name')
+      setNutritionPlans(data || [])
+    }
+  }
+
+  const handleBulkAssign = async () => {
+    if (selectedUsers.size === 0) return
+    
+    setBulkAssigning(true)
+    try {
+      const userIds = Array.from(selectedUsers)
+      
+      if (bulkAction === 'program' && selectedProgram) {
+        // Assign program to all selected users
+        const startDate = new Date()
+        const endDate = new Date()
+        endDate.setDate(endDate.getDate() + (bulkDuration * 7))
+        
+        const insertData = userIds.map(userId => ({
+          client_id: userId,
+          program_id: selectedProgram,
+          start_date: startDate.toISOString().split('T')[0],
+          end_date: endDate.toISOString().split('T')[0],
+          duration_weeks: bulkDuration,
+          is_active: true
+        }))
+        
+        const { error } = await supabase.from('client_programs').insert(insertData)
+        if (error) throw error
+      } else if (bulkAction === 'nutrition' && selectedNutrition) {
+        // First delete existing nutrition assignments
+        await supabase.from('client_nutrition').delete().in('client_id', userIds)
+        
+        // Assign nutrition to all selected users
+        const insertData = userIds.map(userId => ({
+          client_id: userId,
+          plan_id: selectedNutrition
+        }))
+        
+        const { error } = await supabase.from('client_nutrition').insert(insertData)
+        if (error) throw error
+      }
+      
+      setShowBulkModal(false)
+      setSelectedUsers(new Set())
+      setSelectedProgram(null)
+      setSelectedNutrition(null)
+    } catch (err) {
+      console.error('Bulk assign failed:', err)
+    } finally {
+      setBulkAssigning(false)
+    }
+  }
 
   const fetchUsers = async () => {
     setLoading(true)
@@ -103,6 +207,41 @@ export default function UsersPage() {
         </button>
       </div>
 
+      {/* Bulk Action Toolbar */}
+      {selectedUsers.size > 0 && (
+        <div className="flex items-center gap-4 bg-yellow-400/10 border border-yellow-400/30 rounded-xl p-4">
+          <div className="flex items-center gap-2">
+            <span className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center text-black font-bold text-sm">
+              {selectedUsers.size}
+            </span>
+            <span className="text-white font-medium">users selected</span>
+          </div>
+          
+          <div className="flex-1" />
+          
+          <button
+            onClick={() => openBulkModal('program')}
+            className="flex items-center gap-2 px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-black font-medium rounded-lg transition-colors"
+          >
+            <Dumbbell className="w-4 h-4" />
+            Assign Program
+          </button>
+          <button
+            onClick={() => openBulkModal('nutrition')}
+            className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-colors"
+          >
+            <Apple className="w-4 h-4" />
+            Assign Nutrition
+          </button>
+          <button
+            onClick={() => setSelectedUsers(new Set())}
+            className="p-2 text-zinc-400 hover:text-white transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+
       {/* Users Table */}
       <div className="card">
         {users.length > 0 ? (
@@ -110,6 +249,14 @@ export default function UsersPage() {
             <table>
               <thead>
                 <tr>
+                  <th className="w-12">
+                    <input
+                      type="checkbox"
+                      checked={selectedUsers.size === users.length && users.length > 0}
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 rounded border-zinc-600 text-yellow-400 focus:ring-yellow-400 focus:ring-offset-0 bg-zinc-700"
+                    />
+                  </th>
                   <th>User</th>
                   <th>Email</th>
                   <th>Status</th>
@@ -120,7 +267,15 @@ export default function UsersPage() {
               </thead>
               <tbody>
                 {users.map((user) => (
-                  <tr key={user.id}>
+                  <tr key={user.id} className={selectedUsers.has(user.id) ? 'bg-yellow-400/5' : ''}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selectedUsers.has(user.id)}
+                        onChange={() => toggleUserSelection(user.id)}
+                        className="w-4 h-4 rounded border-zinc-600 text-yellow-400 focus:ring-yellow-400 focus:ring-offset-0 bg-zinc-700"
+                      />
+                    </td>
                     <td>
                       <Link href={`/users/${user.slug || user.id}`} className="flex items-center gap-3 group">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center text-black font-medium group-hover:ring-2 group-hover:ring-yellow-400/50 transition-all">
@@ -218,6 +373,100 @@ export default function UsersPage() {
           <p className="text-zinc-400 text-sm">Inactive</p>
         </div>
       </div>
+
+      {/* Bulk Action Modal */}
+      {showBulkModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-md">
+            <div className="flex items-center justify-between p-6 border-b border-zinc-800">
+              <div className="flex items-center gap-3">
+                {bulkAction === 'program' ? (
+                  <Dumbbell className="w-5 h-5 text-yellow-400" />
+                ) : (
+                  <Apple className="w-5 h-5 text-green-400" />
+                )}
+                <div>
+                  <h3 className="text-lg font-semibold text-white">
+                    Bulk Assign {bulkAction === 'program' ? 'Program' : 'Nutrition'}
+                  </h3>
+                  <p className="text-sm text-zinc-500">
+                    Assigning to {selectedUsers.size} user{selectedUsers.size !== 1 ? 's' : ''}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setShowBulkModal(false)} className="p-2 hover:bg-zinc-800 rounded-lg transition-colors">
+                <X className="w-5 h-5 text-zinc-400" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              {bulkAction === 'program' ? (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-400 mb-2">Select Program</label>
+                    <select
+                      value={selectedProgram || ''}
+                      onChange={(e) => setSelectedProgram(e.target.value || null)}
+                      className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    >
+                      <option value="">Choose a program...</option>
+                      {programs.map(p => (
+                        <option key={p.id} value={p.id}>{p.name} ({p.category})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-400 mb-2">Duration (weeks)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="52"
+                      value={bulkDuration}
+                      onChange={(e) => setBulkDuration(parseInt(e.target.value) || 4)}
+                      className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    />
+                  </div>
+                </>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-zinc-400 mb-2">Select Nutrition Plan</label>
+                  <select
+                    value={selectedNutrition || ''}
+                    onChange={(e) => setSelectedNutrition(e.target.value || null)}
+                    className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-green-400"
+                  >
+                    <option value="">Choose a plan...</option>
+                    {nutritionPlans.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 p-6 border-t border-zinc-800">
+              <button
+                onClick={() => setShowBulkModal(false)}
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkAssign}
+                disabled={bulkAssigning || (bulkAction === 'program' ? !selectedProgram : !selectedNutrition)}
+                className={`flex items-center gap-2 px-6 py-2 font-medium rounded-xl transition-colors ${
+                  bulkAction === 'program'
+                    ? 'bg-yellow-400 hover:bg-yellow-500 disabled:bg-yellow-400/50 text-black'
+                    : 'bg-green-500 hover:bg-green-600 disabled:bg-green-500/50 text-white'
+                }`}
+              >
+                {bulkAssigning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                Assign to {selectedUsers.size} Users
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
