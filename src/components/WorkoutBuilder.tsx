@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { Plus, Minus, Trash2, GripVertical, Dumbbell, ChevronDown, ChevronUp, Copy, Settings2, Layers, RefreshCw } from 'lucide-react'
 import ExerciseSelector from './ExerciseSelector'
 import exercisesData from '@/data/exercises.json'
@@ -1501,16 +1501,17 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
   // Group workouts by day
-  const groupedByDay = (() => {
-    const groups: { day: number | null; dayName: string; workouts: Workout[] }[] = []
-    const dayMap = new Map<number | null, Workout[]>()
+  // Memoize the day grouping structure (only recalculate when workout IDs or days change)
+  const dayStructure = useMemo(() => {
+    const structure: { day: number | null; dayName: string; workoutIds: string[] }[] = []
+    const dayMap = new Map<number | null, string[]>()
 
     workouts.forEach(w => {
       const existing = dayMap.get(w.dayOfWeek)
       if (existing) {
-        existing.push(w)
+        existing.push(w.id)
       } else {
-        dayMap.set(w.dayOfWeek, [w])
+        dayMap.set(w.dayOfWeek, [w.id])
       }
     })
 
@@ -1522,18 +1523,19 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
     })
 
     sortedDays.forEach(day => {
-      const dayWorkouts = dayMap.get(day) || []
-      // Sort workouts within day by order
-      dayWorkouts.sort((a, b) => a.order - b.order)
-      groups.push({
+      const ids = dayMap.get(day) || []
+      structure.push({
         day,
         dayName: day === null ? 'Unassigned' : dayNames[day],
-        workouts: dayWorkouts
+        workoutIds: ids
       })
     })
 
-    return groups
-  })()
+    return structure
+  }, [workouts.map(w => `${w.id}:${w.dayOfWeek}:${w.order}`).join(',')])
+
+  // Get actual workout objects for rendering (always fresh)
+  const getWorkoutById = (id: string) => workouts.find(w => w.id === id)
 
   // Reorder workouts via drag and drop (within same day group)
   const reorderWorkouts = (activeId: string, overId: string) => {
@@ -1593,7 +1595,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
         collisionDetection={closestCenter}
         onDragEnd={handleWorkoutDragEnd}
       >
-        {groupedByDay.map((group) => (
+        {dayStructure.map((group) => (
           <div key={group.dayName} className="space-y-3">
             {/* Day Header */}
             <div className="flex items-center gap-3">
@@ -1608,17 +1610,20 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-white">{group.dayName}</h3>
-                <p className="text-xs text-zinc-500">{group.workouts.length} workout{group.workouts.length !== 1 ? 's' : ''}</p>
+                <p className="text-xs text-zinc-500">{group.workoutIds.length} workout{group.workoutIds.length !== 1 ? 's' : ''}</p>
               </div>
             </div>
 
             {/* Workouts for this day */}
             <SortableContext
-              items={group.workouts.map(w => w.id)}
+              items={group.workoutIds}
               strategy={verticalListSortingStrategy}
             >
               <div className="space-y-3 pl-4 border-l-2 border-zinc-700">
-                {group.workouts.map((workout) => (
+                {group.workoutIds.map((workoutId) => {
+                  const workout = getWorkoutById(workoutId)
+                  if (!workout) return null
+                  return (
                   <SortableWorkoutItem key={workout.id} workout={workout}>
                     {({ listeners, isDragging }) => (
                       <div className={`card overflow-hidden ${isDragging ? 'shadow-lg ring-2 ring-yellow-400' : ''}`}>
@@ -2016,7 +2021,8 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                 </div>
               )}
                   </SortableWorkoutItem>
-                ))}
+                  )
+                })}
               </div>
             </SortableContext>
           </div>
