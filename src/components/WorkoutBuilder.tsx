@@ -787,6 +787,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
   }
 
   const renderFinisherExerciseCard = (workout: Workout, exercise: WorkoutExercise, exerciseIndex: number) => {
+    if (!exercise || !exercise.sets) return null
     const finisherType = workout.finisher?.category || 'strength'
     const firstSet = exercise.sets[0]
     const isCardio = finisherType === 'cardio'
@@ -1013,6 +1014,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
   }
 
   const renderExerciseCard = (workout: Workout, exercise: WorkoutExercise, exerciseIndex: number, isSuperset: boolean = false) => {
+    if (!exercise || !exercise.sets) return null
     const isExpanded = expandedExercises.has(exercise.id)
     const firstSet = exercise.sets[0]
     const isCardio = isCardioExercise(exercise.exerciseId) || programType === 'cardio'
@@ -1515,6 +1517,31 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
     }
   }
 
+  // Sortable wrapper for workout items
+  const SortableWorkoutItem = ({ workout, children }: { workout: Workout; children: (props: { listeners: any; isDragging: boolean }) => React.ReactNode }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: workout.id })
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+      zIndex: isDragging ? 1000 : 'auto' as any,
+    }
+
+    return (
+      <div ref={setNodeRef} style={style} {...attributes}>
+        {children({ listeners, isDragging })}
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <DndContext
@@ -1526,25 +1553,9 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
           items={workouts.map(w => w.id)}
           strategy={verticalListSortingStrategy}
         >
-          {workouts.map((workout) => {
-            const {
-              attributes,
-              listeners,
-              setNodeRef,
-              transform,
-              transition,
-              isDragging,
-            } = useSortable({ id: workout.id })
-
-            const style = {
-              transform: CSS.Transform.toString(transform),
-              transition,
-              opacity: isDragging ? 0.5 : 1,
-              zIndex: isDragging ? 1000 : 'auto' as any,
-            }
-
-            return (
-              <div key={workout.id} ref={setNodeRef} style={style} {...attributes}>
+          {workouts.map((workout) => (
+            <SortableWorkoutItem key={workout.id} workout={workout}>
+              {({ listeners, isDragging }) => (
                 <div className={`card overflow-hidden ${isDragging ? 'shadow-lg ring-2 ring-yellow-400' : ''}`}>
                   {/* Workout Header */}
                   <div 
@@ -1938,9 +1949,9 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
             </div>
           )}
                 </div>
-              </div>
-            )
-          })}
+              )}
+            </SortableWorkoutItem>
+          ))}
         </SortableContext>
       </DndContext>
 
