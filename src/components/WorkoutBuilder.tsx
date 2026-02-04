@@ -634,6 +634,41 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
     setShowFinisherExerciseSelector(null)
   }
 
+  // Add Hyrox station to finisher directly
+  const addHyroxStationToFinisher = (workoutId: string, station: typeof hyroxStations[0]) => {
+    const workout = workouts.find(w => w.id === workoutId)
+    if (!workout?.finisher) return
+
+    const newExercise: WorkoutExercise = {
+      id: generateId(),
+      exerciseId: `hyrox_${station.value}`,
+      exerciseName: station.label,
+      category: 'hyrox',
+      order: workout.finisher.exercises.length,
+      sets: [{
+        id: generateId(),
+        setNumber: 1,
+        reps: '1',
+        intensityType: 'rpe',
+        intensityValue: '',
+        restSeconds: 0,
+        restBracket: '30-60',
+        weightType: 'bodyweight',
+        notes: '',
+        hyroxStation: station.value,
+        hyroxDistance: station.defaultDistance,
+        hyroxUnit: station.defaultUnit,
+        hyroxTargetTime: '',
+        hyroxWeightClass: 'open_male',
+      }],
+      notes: '',
+    }
+
+    updateFinisher(workoutId, {
+      exercises: [...workout.finisher.exercises, newExercise]
+    })
+  }
+
   const deleteExerciseFromFinisher = (workoutId: string, exerciseId: string) => {
     const workout = workouts.find(w => w.id === workoutId)
     if (!workout?.finisher) return
@@ -796,27 +831,8 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
           <div className="w-px h-5 bg-zinc-700" />
 
           {isHyrox ? (
-            /* Hyrox Fields */
+            /* Hyrox Fields - Station already selected via picker */
             <>
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-zinc-500">Station</span>
-                <select
-                  value={firstSet?.hyroxStation || 'run'}
-                  onChange={(e) => {
-                    const station = hyroxStations.find(s => s.value === e.target.value)
-                    updateAllFinisherSets(workout.id, exercise.id, { 
-                      hyroxStation: e.target.value,
-                      hyroxDistance: station?.defaultDistance || '1000',
-                      hyroxUnit: station?.defaultUnit || 'm'
-                    })
-                  }}
-                  className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                >
-                  {hyroxStations.map(station => (
-                    <option key={station.value} value={station.value}>{station.icon} {station.label}</option>
-                  ))}
-                </select>
-              </div>
               <div className="flex items-center gap-1">
                 <input
                   type="text"
@@ -844,6 +860,21 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                   className="w-14 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400"
                   placeholder="4:30"
                 />
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-zinc-500">Class</span>
+                <select
+                  value={firstSet?.hyroxWeightClass || 'open_male'}
+                  onChange={(e) => updateAllFinisherSets(workout.id, exercise.id, { hyroxWeightClass: e.target.value })}
+                  className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                >
+                  <option value="pro_male">Pro M</option>
+                  <option value="pro_female">Pro F</option>
+                  <option value="open_male">Open M</option>
+                  <option value="open_female">Open F</option>
+                  <option value="doubles_male">Dbl M</option>
+                  <option value="doubles_female">Dbl F</option>
+                </select>
               </div>
             </>
           ) : showCardioFields ? (
@@ -1677,15 +1708,36 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                           </div>
                         ))}
 
-                        {/* Add Exercise to Finisher */}
-                        <button
-                          type="button"
-                          onClick={() => setShowFinisherExerciseSelector(workout.id)}
-                          className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-zinc-600 hover:border-yellow-400/50 rounded-xl text-zinc-500 hover:text-yellow-400 text-sm transition-all"
-                        >
-                          <Plus className="w-4 h-4" />
-                          <span>Add Exercise to Finisher</span>
-                        </button>
+                        {/* Add Exercise/Station to Finisher */}
+                        {workout.finisher?.category === 'hyrox' ? (
+                          /* Hyrox Finisher: Show station picker */
+                          <div className="space-y-2">
+                            <p className="text-xs text-zinc-500">Add Station</p>
+                            <div className="grid grid-cols-3 gap-1.5">
+                              {hyroxStations.map(station => (
+                                <button
+                                  key={station.value}
+                                  type="button"
+                                  onClick={() => addHyroxStationToFinisher(workout.id, station)}
+                                  className="flex flex-col items-center gap-0.5 p-2 bg-zinc-800/50 border border-zinc-700 hover:border-orange-400/50 hover:bg-orange-500/10 rounded-lg text-zinc-400 hover:text-orange-400 transition-all"
+                                >
+                                  <span className="text-sm font-bold">{station.icon}</span>
+                                  <span className="text-[10px]">{station.label}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          /* Other Finisher Types: Show exercise selector */
+                          <button
+                            type="button"
+                            onClick={() => setShowFinisherExerciseSelector(workout.id)}
+                            className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-zinc-600 hover:border-yellow-400/50 rounded-xl text-zinc-500 hover:text-yellow-400 text-sm transition-all"
+                          >
+                            <Plus className="w-4 h-4" />
+                            <span>Add Exercise to Finisher</span>
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
