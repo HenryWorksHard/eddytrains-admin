@@ -1497,8 +1497,52 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
     }
   }
 
-  // Reorder workouts via drag and drop
+  // Day names for grouping
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+  // Group workouts by day
+  const groupedByDay = (() => {
+    const groups: { day: number | null; dayName: string; workouts: Workout[] }[] = []
+    const dayMap = new Map<number | null, Workout[]>()
+
+    workouts.forEach(w => {
+      const existing = dayMap.get(w.dayOfWeek)
+      if (existing) {
+        existing.push(w)
+      } else {
+        dayMap.set(w.dayOfWeek, [w])
+      }
+    })
+
+    // Sort by day of week (null/unassigned first, then Sunday=0 through Saturday=6)
+    const sortedDays = Array.from(dayMap.keys()).sort((a, b) => {
+      if (a === null) return -1
+      if (b === null) return 1
+      return a - b
+    })
+
+    sortedDays.forEach(day => {
+      const dayWorkouts = dayMap.get(day) || []
+      // Sort workouts within day by order
+      dayWorkouts.sort((a, b) => a.order - b.order)
+      groups.push({
+        day,
+        dayName: day === null ? 'Unassigned' : dayNames[day],
+        workouts: dayWorkouts
+      })
+    })
+
+    return groups
+  })()
+
+  // Reorder workouts via drag and drop (within same day group)
   const reorderWorkouts = (activeId: string, overId: string) => {
+    const activeWorkout = workouts.find(w => w.id === activeId)
+    const overWorkout = workouts.find(w => w.id === overId)
+    
+    // Only allow reordering within the same day
+    if (!activeWorkout || !overWorkout || activeWorkout.dayOfWeek !== overWorkout.dayOfWeek) return
+
     const oldIndex = workouts.findIndex(w => w.id === activeId)
     const newIndex = workouts.findIndex(w => w.id === overId)
 
@@ -1549,26 +1593,47 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
         collisionDetection={closestCenter}
         onDragEnd={handleWorkoutDragEnd}
       >
-        <SortableContext
-          items={workouts.map(w => w.id)}
-          strategy={verticalListSortingStrategy}
-        >
-          {workouts.map((workout) => (
-            <SortableWorkoutItem key={workout.id} workout={workout}>
-              {({ listeners, isDragging }) => (
-                <div className={`card overflow-hidden ${isDragging ? 'shadow-lg ring-2 ring-yellow-400' : ''}`}>
-                  {/* Workout Header */}
-                  <div 
-                    className="flex items-center gap-4 p-4 bg-zinc-800/50 cursor-pointer"
-                    onClick={() => toggleWorkoutExpanded(workout.id)}
-                  >
-                    <div 
-                      {...listeners}
-                      className="text-zinc-600 cursor-grab active:cursor-grabbing hover:text-zinc-400 transition-colors"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <GripVertical className="w-5 h-5" />
-                    </div>
+        {groupedByDay.map((group) => (
+          <div key={group.dayName} className="space-y-3">
+            {/* Day Header */}
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                group.day === null ? 'bg-zinc-700' : 'bg-yellow-400/20'
+              }`}>
+                <span className={`text-sm font-bold ${
+                  group.day === null ? 'text-zinc-400' : 'text-yellow-400'
+                }`}>
+                  {group.day === null ? '?' : group.dayName.slice(0, 2).toUpperCase()}
+                </span>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">{group.dayName}</h3>
+                <p className="text-xs text-zinc-500">{group.workouts.length} workout{group.workouts.length !== 1 ? 's' : ''}</p>
+              </div>
+            </div>
+
+            {/* Workouts for this day */}
+            <SortableContext
+              items={group.workouts.map(w => w.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-3 pl-4 border-l-2 border-zinc-700">
+                {group.workouts.map((workout) => (
+                  <SortableWorkoutItem key={workout.id} workout={workout}>
+                    {({ listeners, isDragging }) => (
+                      <div className={`card overflow-hidden ${isDragging ? 'shadow-lg ring-2 ring-yellow-400' : ''}`}>
+                        {/* Workout Header */}
+                        <div 
+                          className="flex items-center gap-4 p-4 bg-zinc-800/50 cursor-pointer"
+                          onClick={() => toggleWorkoutExpanded(workout.id)}
+                        >
+                          <div 
+                            {...listeners}
+                            className="text-zinc-600 cursor-grab active:cursor-grabbing hover:text-zinc-400 transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <GripVertical className="w-5 h-5" />
+                          </div>
 
             <div className="flex-1">
               <input
@@ -1950,9 +2015,12 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
           )}
                 </div>
               )}
-            </SortableWorkoutItem>
-          ))}
-        </SortableContext>
+                  </SortableWorkoutItem>
+                ))}
+              </div>
+            </SortableContext>
+          </div>
+        ))}
       </DndContext>
 
       {/* Add Workout Button */}
