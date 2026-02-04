@@ -637,6 +637,37 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
     setShowFinisherExerciseSelector(null)
   }
 
+  // Add superset to finisher
+  const addSupersetToFinisher = (workoutId: string, exercises: { id: string; name: string; category: string }[]) => {
+    const workout = workouts.find(w => w.id === workoutId)
+    if (!workout?.finisher || exercises.length < 2) return
+
+    const supersetGroupId = `superset_${generateId()}`
+    const finisherCategory = workout.finisher.category
+    const setCount = finisherCategory === 'hyrox' ? 1 : 3
+
+    const newExercises: WorkoutExercise[] = exercises.map((exercise, index) => {
+      const defaultWeightType = getDefaultWeightType(exercise.id)
+      return {
+        id: generateId(),
+        exerciseId: exercise.id,
+        exerciseName: exercise.name,
+        category: exercise.category,
+        order: workout.finisher!.exercises.length + index,
+        sets: Array.from({ length: setCount }, (_, i) => 
+          createDefaultSet(i + 1, defaultWeightType, finisherCategory)
+        ),
+        notes: '',
+        supersetGroup: supersetGroupId,
+      }
+    })
+
+    updateFinisher(workoutId, {
+      exercises: [...workout.finisher.exercises, ...newExercises]
+    })
+    setShowFinisherExerciseSelector(null)
+  }
+
   // Add Hyrox station to finisher directly
   const addHyroxStationToFinisher = (workoutId: string, station: typeof hyroxStations[0]) => {
     const workout = workouts.find(w => w.id === workoutId)
@@ -1922,8 +1953,9 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
       {showFinisherExerciseSelector && (
         <ExerciseSelector
           onSelect={(exercise) => addExerciseToFinisher(showFinisherExerciseSelector, exercise)}
+          onSelectSuperset={(exercises) => addSupersetToFinisher(showFinisherExerciseSelector, exercises)}
           onClose={() => setShowFinisherExerciseSelector(null)}
-          allowSuperset={false}
+          allowSuperset={true}
           programType={workouts.find(w => w.id === showFinisherExerciseSelector)?.finisher?.category}
         />
       )}
