@@ -737,6 +737,27 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
             </>
           )}
 
+          {/* Sets control - always show for all finisher types */}
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-zinc-500">Sets</span>
+            <button type="button"
+              onClick={() => setFinisherSetCount(workout.id, exercise.id, exercise.sets.length - 1)}
+              className="w-5 h-5 rounded bg-zinc-700 hover:bg-zinc-600 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+              disabled={exercise.sets.length <= 1}
+            >
+              <Minus className="w-3 h-3" />
+            </button>
+            <span className="w-5 text-center text-white text-sm font-medium">{exercise.sets.length}</span>
+            <button type="button"
+              onClick={() => setFinisherSetCount(workout.id, exercise.id, exercise.sets.length + 1)}
+              className="w-5 h-5 rounded bg-zinc-700 hover:bg-zinc-600 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+              disabled={exercise.sets.length >= 10}
+            >
+              <Plus className="w-3 h-3" />
+            </button>
+          </div>
+          <div className="w-px h-5 bg-zinc-700" />
+
           {isHyrox ? (
             /* Hyrox Fields */
             <>
@@ -838,27 +859,8 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
               </div>
             </>
           ) : showStrengthFields ? (
-            /* Strength Fields */
+            /* Strength Fields - Sets already shown above */
             <>
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-zinc-500">Sets</span>
-                <button type="button"
-                  onClick={() => setFinisherSetCount(workout.id, exercise.id, exercise.sets.length - 1)}
-                  className="w-5 h-5 rounded bg-zinc-700 hover:bg-zinc-600 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
-                  disabled={exercise.sets.length <= 1}
-                >
-                  <Minus className="w-3 h-3" />
-                </button>
-                <span className="w-5 text-center text-white text-sm font-medium">{exercise.sets.length}</span>
-                <button type="button"
-                  onClick={() => setFinisherSetCount(workout.id, exercise.id, exercise.sets.length + 1)}
-                  className="w-5 h-5 rounded bg-zinc-700 hover:bg-zinc-600 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
-                  disabled={exercise.sets.length >= 10}
-                >
-                  <Plus className="w-3 h-3" />
-                </button>
-              </div>
-              <div className="w-px h-5 bg-zinc-700" />
               <div className="flex items-center gap-1">
                 <span className="text-xs text-zinc-500">Reps</span>
                 <input

@@ -151,6 +151,13 @@ export default function EditProgramPage({ params }: PageProps) {
       return
     }
 
+    // Check that all workouts have a day assigned
+    const workoutsWithoutDay = workouts.filter(w => w.dayOfWeek === null)
+    if (workoutsWithoutDay.length > 0) {
+      setError(`Please assign a day to all workouts. Missing: ${workoutsWithoutDay.map(w => w.name).join(', ')}`)
+      return
+    }
+
     setSaving(true)
     setError(null)
 
