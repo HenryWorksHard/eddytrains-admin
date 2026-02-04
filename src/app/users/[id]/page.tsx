@@ -1418,6 +1418,28 @@ export default function UserProfilePage() {
                       </>
                     )}
                   </div>
+                  
+                  {/* Unassign button */}
+                  <button
+                    onClick={async () => {
+                      if (!confirm('Unassign this program from the user?')) return
+                      try {
+                        await supabase.from('client_programs').delete().eq('id', cp.id)
+                        // Also delete any custom sets
+                        await supabase.from('client_exercise_sets').delete().eq('client_program_id', cp.id)
+                        fetchClientPrograms(user.id)
+                        setSuccess(true)
+                        setTimeout(() => setSuccess(false), 3000)
+                      } catch (err) {
+                        console.error('Failed to unassign program:', err)
+                        setError('Failed to unassign program')
+                      }
+                    }}
+                    className="p-2 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-colors"
+                    title="Unassign program"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               )
             })}

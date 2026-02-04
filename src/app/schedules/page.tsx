@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { 
   Calendar, User, ChevronDown, Plus, GripVertical, Trash2, 
@@ -82,6 +83,8 @@ const categoryColors: Record<string, string> = {
 
 export default function SchedulesPage() {
   const supabase = createClient()
+  const searchParams = useSearchParams()
+  const clientIdFromUrl = searchParams.get('client')
 
   const [clients, setClients] = useState<Client[]>([])
   const [programs, setPrograms] = useState<Program[]>([])
@@ -107,7 +110,7 @@ export default function SchedulesPage() {
 
   useEffect(() => {
     loadInitialData()
-  }, [])
+  }, [clientIdFromUrl])
 
   useEffect(() => {
     if (selectedClient) {
@@ -124,8 +127,17 @@ export default function SchedulesPage() {
         supabase.from('programs').select('id, name, category, difficulty, duration_weeks').eq('is_active', true).order('name')
       ])
 
-      setClients(clientsRes.data || [])
+      const clientsList = clientsRes.data || []
+      setClients(clientsList)
       setPrograms(programsRes.data || [])
+      
+      // Auto-select client if passed in URL
+      if (clientIdFromUrl) {
+        const clientFromUrl = clientsList.find(c => c.id === clientIdFromUrl)
+        if (clientFromUrl) {
+          setSelectedClient(clientFromUrl)
+        }
+      }
     } catch (err) {
       console.error('Error loading data:', err)
     } finally {
