@@ -211,6 +211,18 @@ export default function UserProfilePage() {
   const [cloneNutrition, setCloneNutrition] = useState(true)
   const [cloning, setCloning] = useState(false)
 
+  // Workout History State
+  const [workoutHistory, setWorkoutHistory] = useState<{
+    id: string
+    date: string
+    workoutName: string
+    programName: string
+    totalSets: number
+    totalVolume: number
+    exercises: { name: string; sets: { set: number; weight: number; reps: number }[] }[]
+  }[]>([])
+  const [expandedWorkoutLog, setExpandedWorkoutLog] = useState<string | null>(null)
+
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [permissions, setPermissions] = useState({
@@ -227,6 +239,7 @@ export default function UserProfilePage() {
       fetchClientPrograms(user.id)
       fetchClient1RMs(user.id)
       fetchClientNutrition(user.id)
+      fetchWorkoutHistory(user.id)
     }
   }, [user?.id])
 
@@ -451,6 +464,93 @@ export default function UserProfilePage() {
       setTimeout(() => setSuccess(false), 3000)
     } catch (err) {
       console.error('Failed to remove nutrition plan:', err)
+    }
+  }
+
+  const fetchWorkoutHistory = async (userUuid: string) => {
+    try {
+      // Get workout logs
+      const { data: workoutLogs, error: logsError } = await supabase
+        .from('workout_logs')
+        .select(`
+          id,
+          workout_id,
+          completed_at,
+          program_workouts (
+            id,
+            name,
+            programs (
+              id,
+              name
+            )
+          )
+        `)
+        .eq('client_id', userUuid)
+        .order('completed_at', { ascending: false })
+        .limit(10)
+
+      if (logsError) throw logsError
+
+      // Get set logs
+      const workoutLogIds = workoutLogs?.map(log => log.id) || []
+      
+      const { data: setLogs } = await supabase
+        .from('set_logs')
+        .select('workout_log_id, exercise_id, set_number, weight_kg, reps_completed')
+        .in('workout_log_id', workoutLogIds)
+
+      // Get exercise names
+      const exerciseIds = [...new Set(setLogs?.map(log => log.exercise_id) || [])]
+      
+      const { data: exercises } = await supabase
+        .from('workout_exercises')
+        .select('id, exercise_name')
+        .in('id', exerciseIds)
+
+      const exerciseLookup = new Map(exercises?.map(e => [e.id, e.exercise_name]) || [])
+
+      // Transform data
+      const history = workoutLogs?.map(log => {
+        const workout = log.program_workouts as unknown as { id: string; name: string; programs: { id: string; name: string } | null } | null
+        const workoutSetLogs = setLogs?.filter(sl => sl.workout_log_id === log.id) || []
+        
+        // Group by exercise
+        const exerciseMap = new Map<string, { name: string; sets: { set: number; weight: number; reps: number }[] }>()
+        
+        workoutSetLogs.forEach(sl => {
+          const exerciseName = exerciseLookup.get(sl.exercise_id) || 'Unknown Exercise'
+          if (!exerciseMap.has(sl.exercise_id)) {
+            exerciseMap.set(sl.exercise_id, { name: exerciseName, sets: [] })
+          }
+          exerciseMap.get(sl.exercise_id)!.sets.push({
+            set: sl.set_number,
+            weight: sl.weight_kg || 0,
+            reps: sl.reps_completed || 0
+          })
+        })
+
+        // Sort sets
+        exerciseMap.forEach(ex => {
+          ex.sets.sort((a, b) => a.set - b.set)
+        })
+
+        const totalSets = workoutSetLogs.length
+        const totalVolume = workoutSetLogs.reduce((sum, sl) => sum + ((sl.weight_kg || 0) * (sl.reps_completed || 0)), 0)
+
+        return {
+          id: log.id,
+          date: log.completed_at,
+          workoutName: workout?.name || 'Workout',
+          programName: workout?.programs?.name || '',
+          totalSets,
+          totalVolume,
+          exercises: Array.from(exerciseMap.values())
+        }
+      }) || []
+
+      setWorkoutHistory(history)
+    } catch (err) {
+      console.error('Failed to fetch workout history:', err)
     }
   }
 
@@ -2005,6 +2105,84 @@ export default function UserProfilePage() {
           </div>
         </div>
       )}
+
+      {/* Workout History */}
+      <div className="card p-6 mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+            <Clock className="w-5 h-5 text-green-400" />
+            Workout History
+          </h2>
+          <span className="text-sm text-zinc-500">{workoutHistory.length} recent workouts</span>
+        </div>
+
+        {workoutHistory.length > 0 ? (
+          <div className="space-y-2">
+            {workoutHistory.map((workout) => (
+              <div key={workout.id} className="bg-zinc-800/50 rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setExpandedWorkoutLog(expandedWorkoutLog === workout.id ? null : workout.id)}
+                  className="w-full flex items-center justify-between p-3 hover:bg-zinc-800/70 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-green-500/20 flex items-center justify-center">
+                      <Check className="w-4 h-4 text-green-400" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium text-white text-sm">{workout.workoutName}</p>
+                      <p className="text-xs text-zinc-500">{workout.programName}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="text-white text-xs font-medium">{workout.totalSets} sets</p>
+                      <p className="text-zinc-500 text-[10px]">
+                        {new Date(workout.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    {expandedWorkoutLog === workout.id ? (
+                      <ChevronUp className="w-4 h-4 text-zinc-500" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-zinc-500" />
+                    )}
+                  </div>
+                </button>
+                
+                {expandedWorkoutLog === workout.id && workout.exercises.length > 0 && (
+                  <div className="border-t border-zinc-700/50 bg-zinc-900/50">
+                    {workout.exercises.map((exercise, idx) => (
+                      <div key={idx} className="px-4 py-2 border-t border-zinc-800/50 first:border-t-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-white text-xs font-medium">{exercise.name}</span>
+                          <span className="text-zinc-500 text-[10px]">{exercise.sets.length} sets</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {exercise.sets.map((set, setIdx) => (
+                            <span 
+                              key={setIdx}
+                              className="px-2 py-0.5 bg-zinc-800 rounded text-[10px] text-zinc-300"
+                            >
+                              {set.weight}kg × {set.reps}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <div className="w-14 h-14 rounded-xl bg-zinc-800 flex items-center justify-center mx-auto mb-3">
+              <Clock className="w-7 h-7 text-zinc-600" />
+            </div>
+            <p className="text-zinc-400">No workout history yet</p>
+            <p className="text-zinc-500 text-sm mt-1">Completed workouts will appear here</p>
+          </div>
+        )}
+      </div>
 
       {/* Danger Zone */}
       <div className="card p-6 border-red-500/20 mt-6">
