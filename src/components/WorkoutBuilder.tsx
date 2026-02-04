@@ -1630,7 +1630,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                         {/* Workout Header */}
                         <div 
                           className="flex items-center gap-4 p-4 bg-zinc-800/50 cursor-pointer"
-                          onClick={() => toggleWorkoutExpanded(workout.id)}
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWorkoutExpanded(workout.id) }}
                         >
                           <div 
                             {...listeners}
@@ -1835,7 +1835,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                     {/* Finisher Header */}
                     <div 
                       className="flex items-center justify-between cursor-pointer"
-                      onClick={() => toggleFinisherExpanded(workout.id)}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFinisherExpanded(workout.id) }}
                     >
                       <div className="flex items-center gap-3">
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
