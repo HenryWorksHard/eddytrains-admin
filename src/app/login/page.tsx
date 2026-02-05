@@ -45,7 +45,12 @@ export default function LoginPage() {
           return
         }
 
-        router.push('/dashboard')
+        // Redirect based on role
+        if (profile.role === 'super_admin') {
+          router.push('/platform')
+        } else {
+          router.push('/dashboard')
+        }
         router.refresh()
       }
     } catch {
