@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, Save } from 'lucide-react'
@@ -11,6 +11,7 @@ export default function NewNutritionPlanPage() {
   const router = useRouter()
   const supabase = createClient()
   const [saving, setSaving] = useState(false)
+  const [organizationId, setOrganizationId] = useState<string | null>(null)
   const [plan, setPlan] = useState({
     name: '',
     description: '',
@@ -21,16 +22,39 @@ export default function NewNutritionPlanPage() {
     is_template: true,
   })
 
+  // Fetch user's organization_id on mount
+  useEffect(() => {
+    const fetchOrgId = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('organization_id')
+          .eq('id', user.id)
+          .single()
+        if (profile?.organization_id) {
+          setOrganizationId(profile.organization_id)
+        }
+      }
+    }
+    fetchOrgId()
+  }, [supabase])
+
   const handleSave = async () => {
     if (!plan.name.trim()) {
       alert('Please enter a plan name')
       return
     }
 
+    if (!organizationId) {
+      alert('Unable to determine organization. Please try again.')
+      return
+    }
+
     setSaving(true)
     const { data, error } = await supabase
       .from('nutrition_plans')
-      .insert(plan)
+      .insert({ ...plan, organization_id: organizationId })
       .select()
       .single()
 

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Sidebar from '@/components/Sidebar';
-import { Users, Building2, DollarSign, TrendingUp, Eye, Search, Plus, X } from 'lucide-react';
+import { Users, Building2, DollarSign, TrendingUp, Eye, Search, Plus, X, Trash2 } from 'lucide-react';
 
 interface Organization {
   id: string;
@@ -55,6 +55,7 @@ export default function PlatformPage() {
     expiryDate: '',
     tier: 'starter' as 'starter' | 'pro' | 'studio' | 'gym',
   });
+  const [deletingOrgId, setDeletingOrgId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -129,6 +130,58 @@ export default function PlatformPage() {
     sessionStorage.setItem('impersonating_org', orgId);
     router.push('/dashboard');
     router.refresh();
+  };
+
+  const handleDeleteTrainer = async (org: Organization) => {
+    const confirmText = `Are you sure you want to delete "${org.name}"?\n\nThis will permanently remove:\n- The trainer account\n- All ${org.client_count || 0} clients\n- All programs and workouts\n- All nutrition plans\n\nThis action cannot be undone.`;
+    
+    if (!confirm(confirmText)) {
+      return;
+    }
+
+    // Double-check with org name
+    const typedName = prompt(`Type "${org.name}" to confirm deletion:`);
+    if (typedName !== org.name) {
+      alert('Organization name did not match. Deletion cancelled.');
+      return;
+    }
+
+    setDeletingOrgId(org.id);
+
+    try {
+      const response = await fetch(`/api/trainers/${org.id}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.error || 'Failed to delete trainer');
+        return;
+      }
+
+      // Remove from local state
+      setOrganizations(orgs => orgs.filter(o => o.id !== org.id));
+      
+      // Update stats
+      if (stats) {
+        setStats({
+          ...stats,
+          totalTrainers: stats.totalTrainers - 1,
+          totalClients: stats.totalClients - (org.client_count || 0),
+          activeSubscriptions: org.subscription_status === 'active' ? stats.activeSubscriptions - 1 : stats.activeSubscriptions,
+          trialingOrgs: org.subscription_status === 'trialing' ? stats.trialingOrgs - 1 : stats.trialingOrgs,
+          mrr: org.subscription_status === 'active' ? stats.mrr - (TIER_PRICES[org.subscription_tier] || 0) : stats.mrr,
+        });
+      }
+
+      alert(data.message || 'Trainer deleted successfully');
+    } catch (error) {
+      console.error('Error deleting trainer:', error);
+      alert('Failed to delete trainer');
+    } finally {
+      setDeletingOrgId(null);
+    }
   };
 
   const handleAddTrainer = async (e: React.FormEvent) => {
@@ -295,13 +348,24 @@ export default function PlatformPage() {
                       </span>
                     </td>
                     <td className="p-4">
-                      <button
-                        onClick={() => handleImpersonate(org.id)}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm transition-colors"
-                      >
-                        <Eye className="w-4 h-4" />
-                        View
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleImpersonate(org.id)}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm transition-colors"
+                        >
+                          <Eye className="w-4 h-4" />
+                          View
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTrainer(org)}
+                          disabled={deletingOrgId === org.id}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-sm transition-colors disabled:opacity-50"
+                          title="Delete trainer and all data"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          {deletingOrgId === org.id ? 'Deleting...' : 'Remove'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

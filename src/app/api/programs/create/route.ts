@@ -19,18 +19,22 @@ export async function POST(request: NextRequest) {
 
     const { data: profile } = await supabaseAdmin
       .from('profiles')
-      .select('role')
+      .select('role, organization_id')
       .eq('id', user.id)
       .single()
 
-    if (profile?.role !== 'admin') {
+    if (!profile?.role || !['admin', 'trainer', 'super_admin'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    if (!profile.organization_id) {
+      return NextResponse.json({ error: 'User has no organization' }, { status: 400 })
     }
 
     const body = await request.json()
     const { name, description, category, difficulty, isActive, workouts } = body
 
-    // 1. Create the program
+    // 1. Create the program with organization_id
     const { data: program, error: programError } = await supabaseAdmin
       .from('programs')
       .insert({
@@ -39,6 +43,7 @@ export async function POST(request: NextRequest) {
         category,
         difficulty,
         is_active: isActive,
+        organization_id: profile.organization_id,
       })
       .select()
       .single()

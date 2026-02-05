@@ -72,7 +72,7 @@ export default function ProgramCard({ program }: { program: Program }) {
 
       if (fetchError) throw fetchError
 
-      // 2. Create new program
+      // 2. Create new program (preserve organization_id from original)
       const { data: newProgram, error: programError } = await supabase
         .from('programs')
         .insert({
@@ -82,6 +82,7 @@ export default function ProgramCard({ program }: { program: Program }) {
           difficulty: fullProgram.difficulty,
           duration_weeks: fullProgram.duration_weeks,
           is_active: true,
+          organization_id: fullProgram.organization_id,
         })
         .select()
         .single()
