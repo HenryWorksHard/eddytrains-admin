@@ -49,6 +49,7 @@ export default function Sidebar() {
   const { theme, toggleTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
+  const [orgName, setOrgName] = useState<string>('CMPD')
 
   useEffect(() => {
     setMounted(true)
@@ -58,10 +59,22 @@ export default function Sidebar() {
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('role')
+          .select('role, organization_id')
           .eq('id', user.id)
           .single()
         setIsSuperAdmin(profile?.role === 'super_admin')
+        
+        // Fetch org name for trainers
+        if (profile?.organization_id && profile?.role !== 'super_admin') {
+          const { data: org } = await supabase
+            .from('organizations')
+            .select('name')
+            .eq('id', profile.organization_id)
+            .single()
+          if (org?.name) {
+            setOrgName(org.name)
+          }
+        }
       }
     }
     checkRole()
@@ -79,13 +92,13 @@ export default function Sidebar() {
     <aside className="fixed left-0 top-0 h-screen w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col">
       {/* Logo */}
       <div className="p-6 border-b border-zinc-800">
-        <Link href="/dashboard" className="flex items-center gap-3">
+        <Link href={isSuperAdmin ? "/platform" : "/dashboard"} className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center">
-            <span className="text-black font-bold">C</span>
+            <span className="text-black font-bold">{orgName.charAt(0).toUpperCase()}</span>
           </div>
           <div>
-            <h1 className="font-bold text-white">CMPD</h1>
-            <p className="text-xs text-zinc-500">Admin Portal</p>
+            <h1 className="font-bold text-white truncate max-w-[140px]">{isSuperAdmin ? 'CMPD' : orgName}</h1>
+            <p className="text-xs text-zinc-500">{isSuperAdmin ? 'Platform Admin' : 'Trainer Portal'}</p>
           </div>
         </Link>
       </div>
