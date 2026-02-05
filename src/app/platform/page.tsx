@@ -58,6 +58,8 @@ export default function PlatformPage() {
     customMonthlyPrice: '',
   });
   const [deletingOrgId, setDeletingOrgId] = useState<string | null>(null);
+  const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
+  const [editPrice, setEditPrice] = useState('');
 
   useEffect(() => {
     async function loadData() {
@@ -188,6 +190,48 @@ export default function PlatformPage() {
       alert('Failed to delete trainer');
     } finally {
       setDeletingOrgId(null);
+    }
+  };
+
+  const handleEditPrice = (org: Organization) => {
+    setEditingOrg(org);
+    setEditPrice(org.custom_monthly_price?.toString() || '');
+  };
+
+  const handleSavePrice = async () => {
+    if (!editingOrg) return;
+
+    const newPrice = editPrice === '' ? null : parseInt(editPrice);
+
+    try {
+      const { error } = await supabase
+        .from('organizations')
+        .update({ custom_monthly_price: newPrice })
+        .eq('id', editingOrg.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setOrganizations(orgs =>
+        orgs.map(o =>
+          o.id === editingOrg.id ? { ...o, custom_monthly_price: newPrice } : o
+        )
+      );
+
+      // Update MRR if org is active
+      if (stats && editingOrg.subscription_status === 'active') {
+        const oldPrice = editingOrg.custom_monthly_price ?? TIER_PRICES[editingOrg.subscription_tier] ?? 0;
+        const newPriceVal = newPrice ?? TIER_PRICES[editingOrg.subscription_tier] ?? 0;
+        setStats({
+          ...stats,
+          mrr: stats.mrr - oldPrice + newPriceVal,
+        });
+      }
+
+      setEditingOrg(null);
+    } catch (error) {
+      console.error('Error updating price:', error);
+      alert('Failed to update price');
     }
   };
 
@@ -338,12 +382,21 @@ export default function PlatformPage() {
                       </span>
                     </td>
                     <td className="p-4">
-                      <span className="text-white font-medium">
-                        ${org.custom_monthly_price ?? TIER_PRICES[org.subscription_tier] ?? 0}
-                      </span>
-                      {org.custom_monthly_price !== null && org.custom_monthly_price !== undefined && (
-                        <span className="text-xs text-zinc-500 ml-1">(custom)</span>
-                      )}
+                      <button
+                        onClick={() => handleEditPrice(org)}
+                        className="group flex items-center gap-1 hover:text-yellow-400 transition-colors"
+                        title="Click to edit price"
+                      >
+                        <span className="text-white font-medium group-hover:text-yellow-400">
+                          ${org.custom_monthly_price ?? TIER_PRICES[org.subscription_tier] ?? 0}
+                        </span>
+                        {org.custom_monthly_price !== null && org.custom_monthly_price !== undefined && (
+                          <span className="text-xs text-zinc-500 ml-1">(custom)</span>
+                        )}
+                        <svg className="w-3 h-3 text-zinc-600 group-hover:text-yellow-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
                     </td>
                     <td className="p-4">
                       <span
@@ -605,6 +658,62 @@ export default function PlatformPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Price Modal */}
+      {editingOrg && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-sm p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-white">Edit Monthly Price</h2>
+              <button
+                onClick={() => setEditingOrg(null)}
+                className="text-zinc-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-zinc-400 text-sm mb-4">
+                {editingOrg.name}
+              </p>
+              <label className="block text-sm font-medium text-zinc-300 mb-2">
+                Custom Monthly Price
+              </label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">$</span>
+                <input
+                  type="number"
+                  value={editPrice}
+                  onChange={(e) => setEditPrice(e.target.value)}
+                  className="w-full pl-8 pr-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  placeholder={`${TIER_PRICES[editingOrg.subscription_tier] || 0} (tier default)`}
+                  min="0"
+                  autoFocus
+                />
+              </div>
+              <p className="text-xs text-zinc-500 mt-2">
+                Leave empty to use tier price (${TIER_PRICES[editingOrg.subscription_tier] || 0}/mo for {editingOrg.subscription_tier})
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setEditingOrg(null)}
+                className="flex-1 px-4 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSavePrice}
+                className="flex-1 px-4 py-3 bg-yellow-400 hover:bg-yellow-500 text-black rounded-xl font-medium transition-colors"
+              >
+                Save
+              </button>
+            </div>
           </div>
         </div>
       )}
