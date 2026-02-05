@@ -112,15 +112,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update the profile with trainer role and org
+    // Create/update the profile with trainer role and org
+    // Using upsert because the profile trigger might not fire for admin-created users
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
-      .update({
+      .upsert({
+        id: userId,
+        email: email,
         role: 'trainer',
         full_name: fullName,
         organization_id: org.id,
-      })
-      .eq('id', userId);
+        is_active: true,
+      });
 
     if (profileError) {
       console.error('Profile error:', profileError);
