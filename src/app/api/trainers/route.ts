@@ -7,15 +7,30 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+const TIER_CLIENT_LIMITS: Record<string, number> = {
+  starter: 10,
+  pro: 30,
+  studio: 75,
+  gym: -1, // unlimited
+};
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password, fullName, orgName, orgSlug } = body;
+    const { email, password, fullName, orgName, orgSlug, accessType, expiryDate, tier } = body;
 
     // Validate required fields
     if (!email || !password || !fullName || !orgName || !orgSlug) {
       return NextResponse.json(
         { error: 'All fields are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate custom expiry date if selected
+    if (accessType === 'custom' && !expiryDate) {
+      return NextResponse.json(
+        { error: 'Expiry date is required for custom access' },
         { status: 400 }
       );
     }
@@ -51,6 +66,24 @@ export async function POST(request: NextRequest) {
 
     const userId = authData.user.id;
 
+    // Determine subscription status and expiry based on access type
+    let subscriptionStatus = 'trialing';
+    let subscriptionEndDate: string | null = null;
+
+    if (accessType === 'lifetime') {
+      subscriptionStatus = 'active';
+      subscriptionEndDate = null; // null means never expires
+    } else if (accessType === 'custom') {
+      subscriptionStatus = 'active';
+      subscriptionEndDate = expiryDate;
+    } else {
+      // Trial - 14 days from now
+      subscriptionStatus = 'trialing';
+      const trialEnd = new Date();
+      trialEnd.setDate(trialEnd.getDate() + 14);
+      subscriptionEndDate = trialEnd.toISOString().split('T')[0];
+    }
+
     // Create the organization
     const { data: org, error: orgError } = await supabaseAdmin
       .from('organizations')
@@ -58,9 +91,11 @@ export async function POST(request: NextRequest) {
         name: orgName,
         slug: orgSlug,
         owner_id: userId,
-        subscription_tier: 'starter',
-        subscription_status: 'trialing',
-        client_limit: 10,
+        subscription_tier: tier || 'starter',
+        subscription_status: subscriptionStatus,
+        subscription_end_date: subscriptionEndDate,
+        client_limit: TIER_CLIENT_LIMITS[tier || 'starter'],
+        is_lifetime: accessType === 'lifetime',
       })
       .select()
       .single();

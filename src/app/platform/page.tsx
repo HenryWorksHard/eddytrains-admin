@@ -51,6 +51,9 @@ export default function PlatformPage() {
     fullName: '',
     orgName: '',
     orgSlug: '',
+    accessType: 'trial' as 'trial' | 'lifetime' | 'custom',
+    expiryDate: '',
+    tier: 'starter' as 'starter' | 'pro' | 'studio' | 'gym',
   });
 
   useEffect(() => {
@@ -402,6 +405,88 @@ export default function PlatformPage() {
                   />
                 </div>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">
+                  Plan Tier
+                </label>
+                <select
+                  value={newTrainer.tier}
+                  onChange={(e) => setNewTrainer({ ...newTrainer, tier: e.target.value as 'starter' | 'pro' | 'studio' | 'gym' })}
+                  className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                >
+                  <option value="starter">Starter (10 clients)</option>
+                  <option value="pro">Pro (30 clients)</option>
+                  <option value="studio">Studio (75 clients)</option>
+                  <option value="gym">Gym (Unlimited)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">
+                  Access Type
+                </label>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-3 p-3 bg-zinc-800 border border-zinc-700 rounded-xl cursor-pointer hover:border-zinc-600">
+                    <input
+                      type="radio"
+                      name="accessType"
+                      value="trial"
+                      checked={newTrainer.accessType === 'trial'}
+                      onChange={() => setNewTrainer({ ...newTrainer, accessType: 'trial' })}
+                      className="text-yellow-400"
+                    />
+                    <div>
+                      <p className="text-white font-medium">Free Trial</p>
+                      <p className="text-zinc-500 text-sm">14 days, then requires payment</p>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-3 p-3 bg-zinc-800 border border-zinc-700 rounded-xl cursor-pointer hover:border-zinc-600">
+                    <input
+                      type="radio"
+                      name="accessType"
+                      value="lifetime"
+                      checked={newTrainer.accessType === 'lifetime'}
+                      onChange={() => setNewTrainer({ ...newTrainer, accessType: 'lifetime' })}
+                      className="text-yellow-400"
+                    />
+                    <div>
+                      <p className="text-white font-medium">Lifetime Access</p>
+                      <p className="text-zinc-500 text-sm">Never expires, no payment required</p>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-3 p-3 bg-zinc-800 border border-zinc-700 rounded-xl cursor-pointer hover:border-zinc-600">
+                    <input
+                      type="radio"
+                      name="accessType"
+                      value="custom"
+                      checked={newTrainer.accessType === 'custom'}
+                      onChange={() => setNewTrainer({ ...newTrainer, accessType: 'custom' })}
+                      className="text-yellow-400"
+                    />
+                    <div>
+                      <p className="text-white font-medium">Custom Expiry</p>
+                      <p className="text-zinc-500 text-sm">Set a specific end date</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {newTrainer.accessType === 'custom' && (
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-2">
+                    Expiry Date
+                  </label>
+                  <input
+                    type="date"
+                    value={newTrainer.expiryDate}
+                    onChange={(e) => setNewTrainer({ ...newTrainer, expiryDate: e.target.value })}
+                    className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    required={newTrainer.accessType === 'custom'}
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+              )}
 
               <div className="flex gap-3 pt-4">
                 <button
