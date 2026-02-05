@@ -38,7 +38,8 @@ export default function LoginPage() {
           .eq('id', data.user.id)
           .single()
 
-        if (profile?.role !== 'admin') {
+        const allowedRoles = ['admin', 'super_admin', 'trainer']
+        if (!profile?.role || !allowedRoles.includes(profile.role)) {
           await supabase.auth.signOut()
           setError('Access denied. Admin privileges required.')
           return
