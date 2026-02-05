@@ -17,7 +17,7 @@ const TIER_CLIENT_LIMITS: Record<string, number> = {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password, fullName, orgName, orgSlug, accessType, expiryDate, tier } = body;
+    const { email, password, fullName, orgName, orgSlug, accessType, expiryDate, tier, customMonthlyPrice } = body;
 
     // Validate required fields
     if (!email || !password || !fullName || !orgName || !orgSlug) {
@@ -98,6 +98,7 @@ export async function POST(request: NextRequest) {
         subscription_status: subscriptionStatus,
         trial_ends_at: trialEndsAt,
         client_limit: TIER_CLIENT_LIMITS[tier || 'starter'],
+        custom_monthly_price: customMonthlyPrice ? parseInt(customMonthlyPrice) : null,
       })
       .select()
       .single();

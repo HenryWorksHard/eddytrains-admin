@@ -15,6 +15,7 @@ interface Organization {
   subscription_status: string;
   client_limit: number;
   created_at: string;
+  custom_monthly_price?: number | null;
   profiles?: { email: string; full_name: string }[];
   client_count?: number;
 }
@@ -54,6 +55,7 @@ export default function PlatformPage() {
     accessType: 'trial' as 'trial' | 'lifetime' | 'custom',
     expiryDate: '',
     tier: 'starter' as 'starter' | 'pro' | 'studio' | 'gym',
+    customMonthlyPrice: '',
   });
   const [deletingOrgId, setDeletingOrgId] = useState<string | null>(null);
 
@@ -102,7 +104,11 @@ export default function PlatformPage() {
         const activeOrgs = orgsWithCounts.filter((o: Organization) => o.subscription_status === 'active');
         const trialingOrgs = orgsWithCounts.filter((o: Organization) => o.subscription_status === 'trialing');
         const totalClients = orgsWithCounts.reduce((sum: number, o: Organization) => sum + (o.client_count || 0), 0);
-        const mrr = activeOrgs.reduce((sum: number, o: Organization) => sum + (TIER_PRICES[o.subscription_tier] || 0), 0);
+        // Use custom_monthly_price if set, otherwise use tier price
+        const mrr = activeOrgs.reduce((sum: number, o: Organization) => {
+          const price = o.custom_monthly_price ?? TIER_PRICES[o.subscription_tier] ?? 0;
+          return sum + price;
+        }, 0);
 
         setStats({
           totalTrainers: orgsWithCounts.length,
@@ -165,13 +171,14 @@ export default function PlatformPage() {
       
       // Update stats
       if (stats) {
+        const orgPrice = org.custom_monthly_price ?? TIER_PRICES[org.subscription_tier] ?? 0;
         setStats({
           ...stats,
           totalTrainers: stats.totalTrainers - 1,
           totalClients: stats.totalClients - (org.client_count || 0),
           activeSubscriptions: org.subscription_status === 'active' ? stats.activeSubscriptions - 1 : stats.activeSubscriptions,
           trialingOrgs: org.subscription_status === 'trialing' ? stats.trialingOrgs - 1 : stats.trialingOrgs,
-          mrr: org.subscription_status === 'active' ? stats.mrr - (TIER_PRICES[org.subscription_tier] || 0) : stats.mrr,
+          mrr: org.subscription_status === 'active' ? stats.mrr - orgPrice : stats.mrr,
         });
       }
 
@@ -306,6 +313,7 @@ export default function PlatformPage() {
                   <th className="text-left p-4 text-zinc-400 font-medium">Organization</th>
                   <th className="text-left p-4 text-zinc-400 font-medium">Owner</th>
                   <th className="text-left p-4 text-zinc-400 font-medium">Plan</th>
+                  <th className="text-left p-4 text-zinc-400 font-medium">Price</th>
                   <th className="text-left p-4 text-zinc-400 font-medium">Status</th>
                   <th className="text-left p-4 text-zinc-400 font-medium">Clients</th>
                   <th className="text-left p-4 text-zinc-400 font-medium">Actions</th>
@@ -328,6 +336,14 @@ export default function PlatformPage() {
                       <span className="px-2 py-1 bg-yellow-400/10 text-yellow-400 rounded text-sm capitalize">
                         {org.subscription_tier}
                       </span>
+                    </td>
+                    <td className="p-4">
+                      <span className="text-white font-medium">
+                        ${org.custom_monthly_price ?? TIER_PRICES[org.subscription_tier] ?? 0}
+                      </span>
+                      {org.custom_monthly_price !== null && org.custom_monthly_price !== undefined && (
+                        <span className="text-xs text-zinc-500 ml-1">(custom)</span>
+                      )}
                     </td>
                     <td className="p-4">
                       <span
@@ -484,6 +500,26 @@ export default function PlatformPage() {
                   <option value="studio">Studio (75 clients)</option>
                   <option value="gym">Gym (Unlimited)</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">
+                  Monthly Price (Custom)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">$</span>
+                  <input
+                    type="number"
+                    value={newTrainer.customMonthlyPrice}
+                    onChange={(e) => setNewTrainer({ ...newTrainer, customMonthlyPrice: e.target.value })}
+                    className="w-full pl-8 pr-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    placeholder={`${TIER_PRICES[newTrainer.tier] || 0} (default)`}
+                    min="0"
+                  />
+                </div>
+                <p className="text-xs text-zinc-500 mt-1">
+                  Leave empty to use standard tier price (${TIER_PRICES[newTrainer.tier] || 0}/mo)
+                </p>
               </div>
 
               <div>
