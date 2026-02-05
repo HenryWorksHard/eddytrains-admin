@@ -131,15 +131,21 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Fetch owner profiles separately
+    // Fetch owner profiles separately (including role to filter out super_admins)
     const ownerIds = orgs?.map(o => o.owner_id).filter(Boolean) || [];
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('id, email, full_name')
+      .select('id, email, full_name, role')
       .in('id', ownerIds);
 
+    // Filter out organizations owned by super_admins (platform admin orgs)
+    const trainerOrgs = orgs?.filter(org => {
+      const ownerProfile = profiles?.find(p => p.id === org.owner_id);
+      return ownerProfile?.role !== 'super_admin';
+    });
+
     // Attach profiles to orgs
-    const orgsWithProfiles = orgs?.map(org => ({
+    const orgsWithProfiles = trainerOrgs?.map(org => ({
       ...org,
       profiles: profiles?.filter(p => p.id === org.owner_id) || []
     }));
