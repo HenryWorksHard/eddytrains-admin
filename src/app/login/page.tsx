@@ -132,9 +132,12 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 pt-6 border-t border-zinc-800">
-            <p className="text-center text-sm text-zinc-500">
-              Only authorized administrators can access this portal
+          <div className="mt-6 pt-6 border-t border-zinc-800 text-center">
+            <p className="text-zinc-400 text-sm">
+              New trainer?{' '}
+              <a href="/signup" className="text-yellow-400 hover:text-yellow-300">
+                Start your free trial
+              </a>
             </p>
           </div>
         </div>
