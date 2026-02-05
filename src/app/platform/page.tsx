@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Sidebar from '@/components/Sidebar';
-import { Users, Building2, DollarSign, TrendingUp, Eye, Search, Plus, X, Trash2 } from 'lucide-react';
+import { Users, Building2, DollarSign, TrendingUp, Eye, Search, Plus, X, Trash2, Activity, UserPlus, CreditCard, UserMinus } from 'lucide-react';
 
 interface Organization {
   id: string;
@@ -26,6 +26,17 @@ interface Stats {
   activeSubscriptions: number;
   trialingOrgs: number;
   mrr: number;
+}
+
+interface PlatformActivity {
+  id: string;
+  type: 'trainer_signup' | 'subscription_change' | 'subscription_started' | 'subscription_cancelled' | 'client_added';
+  title: string;
+  description: string;
+  organization_id: string | null;
+  user_id: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
 }
 
 const TIER_PRICES: Record<string, number> = {
@@ -60,6 +71,8 @@ export default function PlatformPage() {
   const [deletingOrgId, setDeletingOrgId] = useState<string | null>(null);
   const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
   const [editPrice, setEditPrice] = useState('');
+  const [activities, setActivities] = useState<PlatformActivity[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
@@ -121,6 +134,18 @@ export default function PlatformPage() {
         });
       }
 
+      // Fetch recent activity
+      try {
+        const activityRes = await fetch('/api/platform-activity?limit=10');
+        const activityData = await activityRes.json();
+        if (activityData.activities) {
+          setActivities(activityData.activities);
+        }
+      } catch (err) {
+        console.error('Error fetching activity:', err);
+      }
+      setActivitiesLoading(false);
+
       setLoading(false);
     }
 
@@ -132,6 +157,56 @@ export default function PlatformPage() {
       org.name.toLowerCase().includes(search.toLowerCase()) ||
       org.slug.toLowerCase().includes(search.toLowerCase())
   );
+
+  const getTimeAgo = (timestamp: string) => {
+    const now = new Date();
+    const then = new Date(timestamp);
+    const diffMs = now.getTime() - then.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return then.toLocaleDateString();
+  };
+
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'trainer_signup':
+        return <UserPlus className="w-4 h-4 text-green-400" />;
+      case 'subscription_started':
+        return <CreditCard className="w-4 h-4 text-yellow-400" />;
+      case 'subscription_change':
+        return <CreditCard className="w-4 h-4 text-blue-400" />;
+      case 'subscription_cancelled':
+        return <UserMinus className="w-4 h-4 text-red-400" />;
+      case 'client_added':
+        return <Users className="w-4 h-4 text-blue-400" />;
+      default:
+        return <Activity className="w-4 h-4 text-zinc-400" />;
+    }
+  };
+
+  const getActivityBg = (type: string) => {
+    switch (type) {
+      case 'trainer_signup':
+        return 'bg-green-500/10';
+      case 'subscription_started':
+        return 'bg-yellow-500/10';
+      case 'subscription_change':
+        return 'bg-blue-500/10';
+      case 'subscription_cancelled':
+        return 'bg-red-500/10';
+      case 'client_added':
+        return 'bg-blue-500/10';
+      default:
+        return 'bg-zinc-500/10';
+    }
+  };
 
   const handleImpersonate = async (orgId: string) => {
     // Store the impersonation in session storage
@@ -334,6 +409,40 @@ export default function PlatformPage() {
               </div>
             </div>
           )}
+
+          {/* Recent Activity */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                <Activity className="w-5 h-5 text-yellow-400" />
+                Recent Activity
+              </h2>
+            </div>
+            <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
+              {activitiesLoading ? (
+                <p className="text-zinc-500 text-sm">Loading activity...</p>
+              ) : activities.length === 0 ? (
+                <p className="text-zinc-500 text-sm">No recent activity yet. Events will appear here as trainers sign up, subscribe, and add clients.</p>
+              ) : (
+                <div className="space-y-3 max-h-64 overflow-y-auto">
+                  {activities.map((activity) => (
+                    <div key={activity.id} className="flex items-start gap-3">
+                      <div className={`p-2 rounded-lg ${getActivityBg(activity.type)}`}>
+                        {getActivityIcon(activity.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-medium">{activity.title}</p>
+                        <p className="text-zinc-400 text-xs truncate">{activity.description}</p>
+                      </div>
+                      <span className="text-zinc-500 text-xs whitespace-nowrap">
+                        {getTimeAgo(activity.created_at)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Search */}
           <div className="mb-6">
