@@ -37,7 +37,6 @@ const trainerNavItems = [
 // Super admin nav items (platform management only)
 const superAdminNavItems = [
   { name: 'Platform', href: '/platform', icon: Shield },
-  { name: 'All Trainers', href: '/platform/trainers', icon: Building2 },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
