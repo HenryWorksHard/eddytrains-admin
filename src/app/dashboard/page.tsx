@@ -175,7 +175,7 @@ export default async function DashboardPage() {
   const topPerformers = await getTopPerformers()
 
   const statCards = [
-    { name: 'Total Users', value: stats.totalUsers, icon: Users, color: 'from-blue-500 to-cyan-500', href: '/users' },
+    { name: 'Total Clients', value: stats.totalUsers, icon: Users, color: 'from-blue-500 to-cyan-500', href: '/users' },
     { name: 'Programs', value: stats.totalPrograms, icon: Dumbbell, color: 'from-yellow-400 to-yellow-500', href: '/programs' },
     { name: 'Active Today', value: stats.activeToday, icon: Activity, color: 'from-green-500 to-emerald-500', href: '/users' },
     { name: 'Weekly Completions', value: stats.weeklyCompletions, icon: CheckCircle, color: 'from-purple-500 to-pink-500', href: '/users' },
@@ -194,7 +194,7 @@ export default async function DashboardPage() {
           className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded-xl font-medium transition-colors"
         >
           <UserPlus className="w-5 h-5" />
-          Add User
+          Add Client
         </Link>
       </div>
 
@@ -218,10 +218,10 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {/* Recent Users */}
+      {/* Recent Clients */}
       <div className="card">
         <div className="p-6 border-b border-zinc-800 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-white">Recent Users</h2>
+          <h2 className="text-xl font-semibold text-white">Recent Clients</h2>
           <Link
             href="/users"
             className="text-sm text-yellow-400 hover:text-yellow-300 font-medium"
@@ -268,13 +268,13 @@ export default async function DashboardPage() {
         ) : (
           <div className="p-12 text-center">
             <Users className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-            <p className="text-zinc-400">No users yet. Add your first user to get started.</p>
+            <p className="text-zinc-400">No clients yet. Add your first client to get started.</p>
             <Link
               href="/users/new"
               className="inline-flex items-center gap-2 mt-4 text-yellow-400 hover:text-yellow-300 font-medium"
             >
               <UserPlus className="w-5 h-5" />
-              Add User
+              Add Client
             </Link>
           </div>
         )}
@@ -314,7 +314,7 @@ export default async function DashboardPage() {
           ) : (
             <div className="p-8 text-center">
               <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-3" />
-              <p className="text-zinc-400 text-sm">All users are on track! 🎉</p>
+              <p className="text-zinc-400 text-sm">All clients are on track! 🎉</p>
             </div>
           )}
         </div>
@@ -366,7 +366,7 @@ export default async function DashboardPage() {
       <div className="grid md:grid-cols-3 gap-6">
         <Link href="/users/new" className="card p-6 group hover:border-yellow-400/50">
           <UserPlus className="w-8 h-8 text-yellow-400 mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-yellow-400 transition-colors">Add New User</h3>
+          <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-yellow-400 transition-colors">Add New Client</h3>
           <p className="text-zinc-400 text-sm">Invite a new client and assign them programs</p>
         </Link>
         <Link href="/programs/new" className="card p-6 group hover:border-yellow-400/50">

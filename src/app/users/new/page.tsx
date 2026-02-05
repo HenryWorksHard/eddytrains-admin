@@ -103,7 +103,7 @@ export default function NewUserPage() {
           <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-6">
             <Check className="w-10 h-10 text-green-500" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">User Created!</h2>
+          <h2 className="text-2xl font-bold text-white mb-2">Client Created!</h2>
           <p className="text-zinc-400 mb-4">
             {fullName || email} has been added and will receive an invite email.
           </p>
@@ -122,9 +122,9 @@ export default function NewUserPage() {
           className="inline-flex items-center gap-2 text-zinc-400 hover:text-white mb-4 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Users
+          Back to Clients
         </Link>
-        <h1 className="text-3xl font-bold text-white">Add New User</h1>
+        <h1 className="text-3xl font-bold text-white">Add New Client</h1>
         <p className="text-zinc-400 mt-1">Create a new client account and send them an invite</p>
       </div>
 

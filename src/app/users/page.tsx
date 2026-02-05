@@ -170,7 +170,7 @@ export default function UsersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Users</h1>
+          <h1 className="text-3xl font-bold text-white">Clients</h1>
           <p className="text-zinc-400 mt-1">Manage your fitness clients</p>
         </div>
         <div className="flex items-center gap-3">
@@ -186,7 +186,7 @@ export default function UsersPage() {
             className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded-xl font-medium transition-colors"
           >
             <UserPlus className="w-5 h-5" />
-            Add User
+            Add Client
           </Link>
         </div>
       </div>
@@ -345,7 +345,7 @@ export default function UsersPage() {
             <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center mx-auto mb-4">
               <UserPlus className="w-8 h-8 text-zinc-500" />
             </div>
-            <h3 className="text-xl font-semibold text-white mb-2">No users yet</h3>
+            <h3 className="text-xl font-semibold text-white mb-2">No clients yet</h3>
             <p className="text-zinc-400 mb-6">Get started by adding your first client</p>
             <Link
               href="/users/new"
@@ -362,7 +362,7 @@ export default function UsersPage() {
       <div className="grid grid-cols-3 gap-4">
         <div className="card p-4 text-center">
           <p className="text-2xl font-bold text-white">{users.length}</p>
-          <p className="text-zinc-400 text-sm">Total Users</p>
+          <p className="text-zinc-400 text-sm">Total Clients</p>
         </div>
         <div className="card p-4 text-center">
           <p className="text-2xl font-bold text-green-500">{users.filter(u => u.is_active).length}</p>
