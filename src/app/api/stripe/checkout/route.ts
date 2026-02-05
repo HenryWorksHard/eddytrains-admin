@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server';
-import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -16,6 +13,18 @@ const PRICE_IDS: Record<string, string> = {
   studio: 'price_1SxHgDBDGilw48s7hHTBfSGO',
   gym: 'price_1SxHgEBDGilw48s7ccmMHgzb',
 };
+
+async function stripeRequest(endpoint: string, data: Record<string, string>) {
+  const response = await fetch(`https://api.stripe.com/v1/${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams(data).toString(),
+  });
+  return response.json();
+}
 
 export async function POST(req: Request) {
   try {
@@ -47,13 +56,19 @@ export async function POST(req: Request) {
 
     // Create new customer if needed
     if (!customerId) {
-      const customer = await stripe.customers.create({
+      const customer = await stripeRequest('customers', {
         email,
-        metadata: {
-          organization_id: organizationId,
-          organization_name: org?.name || '',
-        },
+        'metadata[organization_id]': organizationId,
+        'metadata[organization_name]': org?.name || '',
       });
+      
+      if (customer.error) {
+        return NextResponse.json(
+          { error: 'Failed to create customer', details: customer.error.message },
+          { status: 500 }
+        );
+      }
+      
       customerId = customer.id;
 
       // Save customer ID to organization
@@ -64,27 +79,24 @@ export async function POST(req: Request) {
     }
 
     // Create checkout session
-    const session = await stripe.checkout.sessions.create({
+    const session = await stripeRequest('checkout/sessions', {
       customer: customerId,
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
+      'payment_method_types[0]': 'card',
+      'line_items[0][price]': priceId,
+      'line_items[0][quantity]': '1',
       mode: 'subscription',
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?success=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?canceled=true`,
-      metadata: {
-        organization_id: organizationId,
-      },
-      subscription_data: {
-        metadata: {
-          organization_id: organizationId,
-        },
-      },
+      'metadata[organization_id]': organizationId,
+      'subscription_data[metadata][organization_id]': organizationId,
     });
+
+    if (session.error) {
+      return NextResponse.json(
+        { error: 'Failed to create checkout', details: session.error.message },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({ url: session.url });
   } catch (error) {
