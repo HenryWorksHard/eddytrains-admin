@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Apple, Plus, Search, Users, Edit, Trash2 } from 'lucide-react'
 import Link from 'next/link'
+import { FeatureGate } from '@/components/FeatureGate'
 
 interface NutritionPlan {
   id: string
@@ -57,6 +58,7 @@ export default function NutritionPage() {
   }
 
   return (
+    <FeatureGate feature="nutrition">
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -165,5 +167,6 @@ export default function NutritionPage() {
         </div>
       )}
     </div>
+    </FeatureGate>
   )
 }
