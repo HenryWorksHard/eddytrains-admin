@@ -67,6 +67,34 @@ export default function UsersPage() {
   const [selectedNutrition, setSelectedNutrition] = useState<string | null>(null)
   const [bulkAssigning, setBulkAssigning] = useState(false)
   const [bulkDuration, setBulkDuration] = useState(4)
+  const [deletingUser, setDeletingUser] = useState<string | null>(null)
+
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (!confirm(`Are you sure you want to delete ${userName}? This cannot be undone.`)) {
+      return
+    }
+    
+    setDeletingUser(userId)
+    try {
+      const response = await fetch(`/api/users?id=${userId}`, {
+        method: 'DELETE'
+      })
+      
+      if (!response.ok) {
+        const data = await response.json()
+        alert(data.error || 'Failed to delete client')
+        return
+      }
+      
+      // Remove from local state
+      setUsers(prev => prev.filter(u => u.id !== userId))
+    } catch (error) {
+      console.error('Delete error:', error)
+      alert('Failed to delete client')
+    } finally {
+      setDeletingUser(null)
+    }
+  }
 
   const toggleUserSelection = (userId: string) => {
     const newSelected = new Set(selectedUsers)
@@ -330,8 +358,16 @@ export default function UsersPage() {
                         >
                           <Edit2 className="w-4 h-4" />
                         </Link>
-                        <button className="p-2 rounded-lg hover:bg-red-500/10 text-zinc-400 hover:text-red-400 transition-colors">
-                          <Trash2 className="w-4 h-4" />
+                        <button 
+                          onClick={() => handleDeleteUser(user.id, user.full_name || user.email)}
+                          disabled={deletingUser === user.id}
+                          className="p-2 rounded-lg hover:bg-red-500/10 text-zinc-400 hover:text-red-400 transition-colors disabled:opacity-50"
+                        >
+                          {deletingUser === user.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
                         </button>
                       </div>
                     </td>

@@ -119,11 +119,11 @@ export async function GET() {
   try {
     const adminClient = getAdminClient()
     
-    // Get all profiles (non-admin users)
+    // Get only client profiles (exclude admin, super_admin, trainer)
     const { data: profiles, error } = await adminClient
       .from('profiles')
       .select('*')
-      .neq('role', 'admin')
+      .eq('role', 'client')
       .order('created_at', { ascending: false })
     
     if (error) throw error
@@ -144,6 +144,46 @@ export async function GET() {
   } catch (error) {
     console.error('Get users error:', error)
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const userId = searchParams.get('id')
+    
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
+    }
+    
+    const adminClient = getAdminClient()
+    
+    // Verify this is a client (not admin/trainer)
+    const { data: profile } = await adminClient
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single()
+    
+    if (!profile || profile.role !== 'client') {
+      return NextResponse.json({ error: 'Can only delete client accounts' }, { status: 403 })
+    }
+    
+    // Delete from auth (this will cascade to profile via trigger or we delete manually)
+    const { error: authError } = await adminClient.auth.admin.deleteUser(userId)
+    
+    if (authError) {
+      console.error('Auth delete error:', authError)
+      return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 })
+    }
+    
+    // Also delete profile explicitly (in case no cascade)
+    await adminClient.from('profiles').delete().eq('id', userId)
+    
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Delete user error:', error)
+    return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 })
   }
 }
 
