@@ -175,14 +175,55 @@ async function generateSlug(adminClient: ReturnType<typeof getAdminClient>, name
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, full_name, permissions } = await request.json()
+    const { email, full_name, permissions, organization_id } = await request.json()
     
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 })
     }
     
-    const tempPassword = generateTempPassword()
     const adminClient = getAdminClient()
+    
+    // Check client limit if organization_id provided
+    if (organization_id) {
+      // Get organization's client limit
+      const { data: org } = await adminClient
+        .from('organizations')
+        .select('client_limit, subscription_status')
+        .eq('id', organization_id)
+        .single()
+      
+      if (org) {
+        // Check subscription status
+        if (org.subscription_status === 'canceled' || org.subscription_status === 'past_due') {
+          return NextResponse.json({ 
+            error: 'Subscription inactive', 
+            details: 'Please update your billing to add new clients.',
+            upgradeRequired: true
+          }, { status: 403 })
+        }
+        
+        // Check client count (only if not unlimited)
+        if (org.client_limit !== -1) {
+          const { count } = await adminClient
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('organization_id', organization_id)
+            .eq('role', 'client')
+          
+          if (count !== null && count >= org.client_limit) {
+            return NextResponse.json({ 
+              error: 'Client limit reached', 
+              details: `You've reached your limit of ${org.client_limit} clients. Upgrade your plan to add more.`,
+              currentCount: count,
+              limit: org.client_limit,
+              upgradeRequired: true
+            }, { status: 403 })
+          }
+        }
+      }
+    }
+    
+    const tempPassword = generateTempPassword()
     
     // Generate unique slug
     const slug = await generateSlug(adminClient, full_name, email)
@@ -210,7 +251,8 @@ export async function POST(request: NextRequest) {
         email: email,
         slug: slug,
         full_name: full_name || email.split('@')[0],
-        role: 'user',
+        role: 'client',
+        organization_id: organization_id || null,
         is_active: true,
         must_change_password: true,
         password_changed: false,

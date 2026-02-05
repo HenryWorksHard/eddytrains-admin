@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { ArrowLeft, Mail, User, Check, AlertCircle, Dumbbell, Heart, Zap, Loader2, Apple } from 'lucide-react'
+import { ArrowLeft, Mail, User, Check, AlertCircle, Dumbbell, Heart, Zap, Loader2, Apple, CreditCard } from 'lucide-react'
 
 export default function NewUserPage() {
   const router = useRouter()
@@ -21,11 +21,31 @@ export default function NewUserPage() {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [upgradeRequired, setUpgradeRequired] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [organizationId, setOrganizationId] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function getOrganization() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('organization_id')
+          .eq('id', user.id)
+          .single()
+        if (profile?.organization_id) {
+          setOrganizationId(profile.organization_id)
+        }
+      }
+    }
+    getOrganization()
+  }, [supabase])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setUpgradeRequired(false)
     setLoading(true)
 
     try {
@@ -35,14 +55,20 @@ export default function NewUserPage() {
         body: JSON.stringify({
           email,
           full_name: fullName,
-          permissions
+          permissions,
+          organization_id: organizationId
         })
       })
       
       const data = await response.json()
       
       if (!response.ok) {
-        setError(data.error || 'Failed to create user')
+        if (data.upgradeRequired) {
+          setUpgradeRequired(true)
+          setError(data.details || data.error)
+        } else {
+          setError(data.error || 'Failed to create user')
+        }
         return
       }
       
@@ -105,9 +131,20 @@ export default function NewUserPage() {
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
-          <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-400">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <p className="text-sm">{error}</p>
+          <div className={`rounded-xl p-4 ${upgradeRequired ? 'bg-yellow-500/10 border border-yellow-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
+            <div className="flex items-center gap-3">
+              <AlertCircle className={`w-5 h-5 flex-shrink-0 ${upgradeRequired ? 'text-yellow-400' : 'text-red-400'}`} />
+              <p className={`text-sm ${upgradeRequired ? 'text-yellow-400' : 'text-red-400'}`}>{error}</p>
+            </div>
+            {upgradeRequired && (
+              <Link
+                href="/billing"
+                className="mt-3 flex items-center justify-center gap-2 w-full py-2 bg-yellow-400 hover:bg-yellow-500 text-black font-medium rounded-lg transition-colors"
+              >
+                <CreditCard className="w-4 h-4" />
+                Upgrade Plan
+              </Link>
+            )}
           </div>
         )}
 
