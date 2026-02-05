@@ -124,14 +124,27 @@ export async function GET(req: Request) {
     // List all organizations (super_admin only - add auth check in production)
     const { data: orgs, error } = await supabase
       .from('organizations')
-      .select('*, profiles!organizations_owner_id_fkey(email, full_name)')
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ organizations: orgs });
+    // Fetch owner profiles separately
+    const ownerIds = orgs?.map(o => o.owner_id).filter(Boolean) || [];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, email, full_name')
+      .in('id', ownerIds);
+
+    // Attach profiles to orgs
+    const orgsWithProfiles = orgs?.map(org => ({
+      ...org,
+      profiles: profiles?.filter(p => p.id === org.owner_id) || []
+    }));
+
+    return NextResponse.json({ organizations: orgsWithProfiles });
   } catch (error) {
     console.error('Get organizations error:', error);
     return NextResponse.json(
