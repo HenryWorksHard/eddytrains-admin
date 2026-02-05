@@ -79,14 +79,15 @@ export async function POST(req: Request) {
     }
 
     // Create checkout session
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://eddytrains-admin.vercel.app';
     const session = await stripeRequest('checkout/sessions', {
       customer: customerId,
       'payment_method_types[0]': 'card',
       'line_items[0][price]': priceId,
       'line_items[0][quantity]': '1',
       mode: 'subscription',
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?canceled=true`,
+      success_url: `${appUrl}/billing?success=true`,
+      cancel_url: `${appUrl}/billing?canceled=true`,
       'metadata[organization_id]': organizationId,
       'subscription_data[metadata][organization_id]': organizationId,
     });
