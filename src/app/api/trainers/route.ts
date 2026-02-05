@@ -66,22 +66,25 @@ export async function POST(request: NextRequest) {
 
     const userId = authData.user.id;
 
-    // Determine subscription status and expiry based on access type
+    // Determine subscription status and trial_ends_at based on access type
     let subscriptionStatus = 'trialing';
-    let subscriptionEndDate: string | null = null;
+    let trialEndsAt: string | null = null;
 
     if (accessType === 'lifetime') {
       subscriptionStatus = 'active';
-      subscriptionEndDate = null; // null means never expires
+      // Set trial_ends_at far in the future for lifetime (100 years)
+      const farFuture = new Date();
+      farFuture.setFullYear(farFuture.getFullYear() + 100);
+      trialEndsAt = farFuture.toISOString();
     } else if (accessType === 'custom') {
       subscriptionStatus = 'active';
-      subscriptionEndDate = expiryDate;
+      trialEndsAt = new Date(expiryDate).toISOString();
     } else {
       // Trial - 14 days from now
       subscriptionStatus = 'trialing';
       const trialEnd = new Date();
       trialEnd.setDate(trialEnd.getDate() + 14);
-      subscriptionEndDate = trialEnd.toISOString().split('T')[0];
+      trialEndsAt = trialEnd.toISOString();
     }
 
     // Create the organization
@@ -93,9 +96,8 @@ export async function POST(request: NextRequest) {
         owner_id: userId,
         subscription_tier: tier || 'starter',
         subscription_status: subscriptionStatus,
-        subscription_end_date: subscriptionEndDate,
+        trial_ends_at: trialEndsAt,
         client_limit: TIER_CLIENT_LIMITS[tier || 'starter'],
-        is_lifetime: accessType === 'lifetime',
       })
       .select()
       .single();
