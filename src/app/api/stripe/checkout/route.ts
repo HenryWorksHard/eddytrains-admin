@@ -79,22 +79,29 @@ export async function POST(req: Request) {
     }
 
     // Create checkout session
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://eddytrains-admin.vercel.app';
-    const session = await stripeRequest('checkout/sessions', {
+    const successUrl = 'https://eddytrains-admin.vercel.app/billing?success=true';
+    const cancelUrl = 'https://eddytrains-admin.vercel.app/billing?canceled=true';
+    
+    const sessionParams = {
       customer: customerId,
       'payment_method_types[0]': 'card',
       'line_items[0][price]': priceId,
       'line_items[0][quantity]': '1',
       mode: 'subscription',
-      success_url: `${appUrl}/billing?success=true`,
-      cancel_url: `${appUrl}/billing?canceled=true`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       'metadata[organization_id]': organizationId,
       'subscription_data[metadata][organization_id]': organizationId,
-    });
+    };
+    
+    console.log('Creating checkout session with params:', JSON.stringify(sessionParams));
+    
+    const session = await stripeRequest('checkout/sessions', sessionParams);
 
     if (session.error) {
+      console.error('Stripe error:', JSON.stringify(session.error));
       return NextResponse.json(
-        { error: 'Failed to create checkout', details: session.error.message },
+        { error: 'Failed to create checkout', details: session.error.message, code: session.error.code },
         { status: 500 }
       );
     }
