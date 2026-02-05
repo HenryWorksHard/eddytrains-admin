@@ -41,6 +41,7 @@ const superAdminNavItems = [
 ]
 
 import { useState, useEffect } from 'react'
+import { ArrowLeft } from 'lucide-react'
 
 export default function Sidebar() {
   const pathname = usePathname()
@@ -50,9 +51,28 @@ export default function Sidebar() {
   const [mounted, setMounted] = useState(false)
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
   const [orgName, setOrgName] = useState<string>('CMPD')
+  const [isImpersonating, setIsImpersonating] = useState(false)
+  const [impersonatedOrgName, setImpersonatedOrgName] = useState<string>('')
 
   useEffect(() => {
     setMounted(true)
+    
+    // Check for impersonation
+    const impersonatingOrgId = sessionStorage.getItem('impersonating_org')
+    if (impersonatingOrgId) {
+      setIsImpersonating(true)
+      // Fetch the impersonated org name
+      supabase
+        .from('organizations')
+        .select('name')
+        .eq('id', impersonatingOrgId)
+        .single()
+        .then(({ data }) => {
+          if (data?.name) {
+            setImpersonatedOrgName(data.name)
+          }
+        })
+    }
     
     async function checkRole() {
       const { data: { user } } = await supabase.auth.getUser()
@@ -80,7 +100,7 @@ export default function Sidebar() {
     checkRole()
   }, [supabase])
   
-  const navItems = isSuperAdmin ? superAdminNavItems : trainerNavItems
+  const navItems = isSuperAdmin && !isImpersonating ? superAdminNavItems : trainerNavItems
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -88,17 +108,40 @@ export default function Sidebar() {
     router.refresh()
   }
 
+  const handleBackToPlatform = () => {
+    sessionStorage.removeItem('impersonating_org')
+    router.push('/platform')
+    router.refresh()
+  }
+
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col">
+      {/* Back to Platform button when impersonating */}
+      {isImpersonating && (
+        <button
+          onClick={handleBackToPlatform}
+          className="flex items-center gap-2 px-4 py-3 bg-yellow-400/10 text-yellow-400 hover:bg-yellow-400/20 transition-colors border-b border-zinc-800"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span className="text-sm font-medium">Back to Platform</span>
+        </button>
+      )}
+      
       {/* Logo */}
       <div className="p-6 border-b border-zinc-800">
-        <Link href={isSuperAdmin ? "/platform" : "/dashboard"} className="flex items-center gap-3">
+        <Link href={isSuperAdmin && !isImpersonating ? "/platform" : "/dashboard"} className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center">
-            <span className="text-black font-bold">{orgName.charAt(0).toUpperCase()}</span>
+            <span className="text-black font-bold">
+              {isImpersonating ? impersonatedOrgName.charAt(0).toUpperCase() : orgName.charAt(0).toUpperCase()}
+            </span>
           </div>
           <div>
-            <h1 className="font-bold text-white truncate max-w-[140px]">{isSuperAdmin ? 'CMPD' : orgName}</h1>
-            <p className="text-xs text-zinc-500">{isSuperAdmin ? 'Platform Admin' : 'Trainer Portal'}</p>
+            <h1 className="font-bold text-white truncate max-w-[140px]">
+              {isImpersonating ? impersonatedOrgName : (isSuperAdmin ? 'CMPD' : orgName)}
+            </h1>
+            <p className="text-xs text-zinc-500">
+              {isImpersonating ? 'Viewing as Trainer' : (isSuperAdmin ? 'Platform Admin' : 'Trainer Portal')}
+            </p>
           </div>
         </Link>
       </div>
