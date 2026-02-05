@@ -21,10 +21,11 @@ import {
   Shield,
 } from 'lucide-react'
 
-const baseNavItems = [
+// Trainer nav items (what trainers see)
+const trainerNavItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Alerts', href: '/alerts', icon: Bell },
-  { name: 'Users', href: '/users', icon: Users },
+  { name: 'Clients', href: '/users', icon: Users },
   { name: 'Programs', href: '/programs', icon: Dumbbell },
   { name: 'Nutrition', href: '/nutrition', icon: Apple },
   { name: 'Schedules', href: '/schedules', icon: Calendar },
@@ -33,8 +34,11 @@ const baseNavItems = [
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
-const superAdminItems = [
+// Super admin nav items (platform management only)
+const superAdminNavItems = [
   { name: 'Platform', href: '/platform', icon: Shield },
+  { name: 'All Trainers', href: '/platform/trainers', icon: Building2 },
+  { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
 import { useState, useEffect } from 'react'
@@ -64,7 +68,7 @@ export default function Sidebar() {
     checkRole()
   }, [supabase])
   
-  const navItems = isSuperAdmin ? [...baseNavItems, ...superAdminItems] : baseNavItems
+  const navItems = isSuperAdmin ? superAdminNavItems : trainerNavItems
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()

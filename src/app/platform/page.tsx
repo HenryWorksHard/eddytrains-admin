@@ -144,11 +144,11 @@ export default function PlatformPage() {
 
           {/* Stats Grid */}
           {stats && (
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
                 <div className="flex items-center gap-3 mb-2">
                   <Building2 className="w-5 h-5 text-yellow-400" />
-                  <span className="text-zinc-400 text-sm">Trainers</span>
+                  <span className="text-zinc-400 text-sm">Total Trainers</span>
                 </div>
                 <p className="text-2xl font-bold text-white">{stats.totalTrainers}</p>
               </div>
@@ -164,23 +164,15 @@ export default function PlatformPage() {
               <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
                 <div className="flex items-center gap-3 mb-2">
                   <TrendingUp className="w-5 h-5 text-green-400" />
-                  <span className="text-zinc-400 text-sm">Active Subs</span>
+                  <span className="text-zinc-400 text-sm">Paying Trainers</span>
                 </div>
                 <p className="text-2xl font-bold text-white">{stats.activeSubscriptions}</p>
               </div>
 
               <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
                 <div className="flex items-center gap-3 mb-2">
-                  <Users className="w-5 h-5 text-purple-400" />
-                  <span className="text-zinc-400 text-sm">Trialing</span>
-                </div>
-                <p className="text-2xl font-bold text-white">{stats.trialingOrgs}</p>
-              </div>
-
-              <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
-                <div className="flex items-center gap-3 mb-2">
                   <DollarSign className="w-5 h-5 text-green-400" />
-                  <span className="text-zinc-400 text-sm">MRR</span>
+                  <span className="text-zinc-400 text-sm">Monthly Revenue</span>
                 </div>
                 <p className="text-2xl font-bold text-white">${stats.mrr}</p>
               </div>
