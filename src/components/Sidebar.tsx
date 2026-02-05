@@ -16,6 +16,7 @@ import {
   Bell,
   Sun,
   Moon,
+  CreditCard,
 } from 'lucide-react'
 
 const navItems = [
@@ -25,6 +26,7 @@ const navItems = [
   { name: 'Programs', href: '/programs', icon: Dumbbell },
   { name: 'Nutrition', href: '/nutrition', icon: Apple },
   { name: 'Schedules', href: '/schedules', icon: Calendar },
+  { name: 'Billing', href: '/billing', icon: CreditCard },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
