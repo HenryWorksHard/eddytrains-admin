@@ -17,17 +17,24 @@ import {
   Sun,
   Moon,
   CreditCard,
+  Building2,
+  Shield,
 } from 'lucide-react'
 
-const navItems = [
+const baseNavItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Alerts', href: '/alerts', icon: Bell },
   { name: 'Users', href: '/users', icon: Users },
   { name: 'Programs', href: '/programs', icon: Dumbbell },
   { name: 'Nutrition', href: '/nutrition', icon: Apple },
   { name: 'Schedules', href: '/schedules', icon: Calendar },
+  { name: 'Organization', href: '/organization', icon: Building2 },
   { name: 'Billing', href: '/billing', icon: CreditCard },
   { name: 'Settings', href: '/settings', icon: Settings },
+]
+
+const superAdminItems = [
+  { name: 'Platform', href: '/platform', icon: Shield },
 ]
 
 import { useState, useEffect } from 'react'
@@ -38,10 +45,26 @@ export default function Sidebar() {
   const supabase = createClient()
   const { theme, toggleTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
 
   useEffect(() => {
     setMounted(true)
-  }, [])
+    
+    async function checkRole() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+        setIsSuperAdmin(profile?.role === 'super_admin')
+      }
+    }
+    checkRole()
+  }, [supabase])
+  
+  const navItems = isSuperAdmin ? [...baseNavItems, ...superAdminItems] : baseNavItems
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
