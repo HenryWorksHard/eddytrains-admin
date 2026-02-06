@@ -13,6 +13,7 @@ interface Organization {
   client_limit: number;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
+  trial_ends_at: string | null;
 }
 
 interface Tier {
@@ -230,6 +231,12 @@ function BillingContent() {
               <p className="text-zinc-400 mt-2">
                 {clientCount} / {organization.client_limit === -1 ? '∞' : organization.client_limit} clients
               </p>
+              {/* Trial days remaining */}
+              {organization.subscription_status === 'trialing' && organization.trial_ends_at && (
+                <p className="text-blue-400 mt-2 text-sm font-medium">
+                  {Math.max(0, Math.ceil((new Date(organization.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} days remaining in trial
+                </p>
+              )}
             </div>
             {organization.stripe_subscription_id && (
               <button
