@@ -33,21 +33,11 @@ export default function OnboardingBanner({
   const completedCount = checklistItems.filter(item => item.complete).length
 
   useEffect(() => {
-    // Check localStorage if animation was already seen
-    const animationSeen = localStorage.getItem('onboarding-animation-seen')
-    
     if (allComplete && !hasAnimated.current) {
-      if (animationSeen === 'true') {
-        // Already seen animation, skip to complete state
-        setShowComplete(true)
-        setVisibleItems(checklistItems.map(() => false))
-        return
-      }
-      
       hasAnimated.current = true
       
-      // Small delay before starting animation
-      setTimeout(() => {
+      // Small delay before starting animation so user sees completed checklist
+      const startDelay = setTimeout(() => {
         // Pop away items one by one
         checklistItems.forEach((_, index) => {
           setTimeout(() => {
@@ -56,15 +46,16 @@ export default function OnboardingBanner({
               newVisible[index] = false
               return newVisible
             })
-          }, index * 400) // 400ms between each pop
+          }, index * 350) // 350ms between each pop
         })
 
         // Show complete message after all items popped
         setTimeout(() => {
           setShowComplete(true)
-          localStorage.setItem('onboarding-animation-seen', 'true')
-        }, checklistItems.length * 400 + 300)
-      }, 500) // 500ms initial delay so user sees the completed checklist first
+        }, checklistItems.length * 350 + 200)
+      }, 800) // 800ms initial delay so user sees the completed checklist first
+      
+      return () => clearTimeout(startDelay)
     }
   }, [allComplete, checklistItems])
 
