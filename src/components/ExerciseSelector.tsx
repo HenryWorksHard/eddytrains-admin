@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Search, X, Dumbbell, ChevronDown, Check, Layers } from 'lucide-react'
-import exercisesData from '@/data/exercises.json'
+import { Search, X, Dumbbell, ChevronDown, Check, Layers, Loader2 } from 'lucide-react'
+import exercisesData from '@/data/exercises.json' // Fallback data
 
 interface Exercise {
   id: string
@@ -52,12 +52,34 @@ export default function ExerciseSelector({ onSelect, onSelectSuperset, onClose, 
   const [isSupersetMode, setIsSupersetMode] = useState(false)
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([])
   const [showAllExercises, setShowAllExercises] = useState(false)
+  const [exercises, setExercises] = useState<Exercise[]>(exercisesData.exercises as Exercise[])
+  const [loading, setLoading] = useState(true)
   const modalRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
 
-  const exercises = exercisesData.exercises as Exercise[]
+  // Use fallback data for categories and equipment
   const categories = exercisesData.categories
   const equipment = exercisesData.equipment
+
+  // Fetch exercises from Supabase API
+  useEffect(() => {
+    async function fetchExercises() {
+      try {
+        const res = await fetch('/api/exercises')
+        if (res.ok) {
+          const data = await res.json()
+          if (data.exercises?.length > 0) {
+            setExercises(data.exercises)
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch exercises, using fallback:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchExercises()
+  }, [])
 
   useEffect(() => {
     searchRef.current?.focus()
@@ -312,6 +334,11 @@ export default function ExerciseSelector({ onSelect, onSelectSuperset, onClose, 
                   </button>
                 )
               })}
+            </div>
+          ) : loading ? (
+            <div className="text-center py-12">
+              <Loader2 className="w-12 h-12 text-yellow-400 mx-auto mb-3 animate-spin" />
+              <p className="text-zinc-500">Loading exercises...</p>
             </div>
           ) : (
             <div className="text-center py-12">
