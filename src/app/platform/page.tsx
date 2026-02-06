@@ -563,6 +563,14 @@ export default function PlatformPage() {
                     <td className="p-4">
                       <div className="flex items-center gap-2">
                         <button
+                          onClick={() => handleEditPrice(org)}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-400 rounded-lg text-sm transition-colors"
+                          title="Edit subscription tier and status"
+                        >
+                          <CreditCard className="w-4 h-4" />
+                          Edit
+                        </button>
+                        <button
                           onClick={() => handleImpersonate(org.id)}
                           className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm transition-colors"
                         >
