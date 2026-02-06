@@ -168,11 +168,11 @@ export default function ExerciseSelector({ onSelect, onSelectSuperset, onClose, 
                 }}
                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
                   !isSupersetMode 
-                    ? 'bg-zinc-700 text-white' 
+                    ? 'bg-zinc-600 text-white shadow-sm' 
                     : 'text-zinc-400 hover:text-white'
                 }`}
               >
-                <Dumbbell className="w-4 h-4" />
+                <Dumbbell className={`w-4 h-4 ${!isSupersetMode ? 'text-white' : ''}`} />
                 Individual
               </button>
               <button
@@ -180,11 +180,11 @@ export default function ExerciseSelector({ onSelect, onSelectSuperset, onClose, 
                 onClick={() => setIsSupersetMode(true)}
                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
                   isSupersetMode 
-                    ? 'bg-yellow-400 text-black' 
+                    ? 'bg-yellow-400 text-black shadow-sm' 
                     : 'text-zinc-400 hover:text-white'
                 }`}
               >
-                <Layers className="w-4 h-4" />
+                <Layers className={`w-4 h-4 ${isSupersetMode ? 'text-black' : ''}`} />
                 Superset
               </button>
             </div>
