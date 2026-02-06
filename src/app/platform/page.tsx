@@ -604,9 +604,9 @@ export default function PlatformPage() {
 
       {/* Add Trainer Modal */}
       {showAddTrainer && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-6">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-md max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-zinc-800 flex-shrink-0">
               <h2 className="text-xl font-semibold text-white">Add New Trainer</h2>
               <button
                 onClick={() => setShowAddTrainer(false)}
@@ -616,7 +616,7 @@ export default function PlatformPage() {
               </button>
             </div>
 
-            <form onSubmit={handleAddTrainer} className="space-y-4">
+            <form onSubmit={handleAddTrainer} className="flex-1 overflow-y-auto p-6 pt-0 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-zinc-300 mb-2">
                   Full Name
