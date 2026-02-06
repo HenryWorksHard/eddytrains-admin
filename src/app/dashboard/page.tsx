@@ -294,14 +294,21 @@ export default async function DashboardPage({
                 <h2 className="text-xl font-bold text-white">
                   {isWelcome ? 'Welcome to CMPD' : 'Getting Started'}
                 </h2>
-                <span className="text-sm text-zinc-400">
-                  {completedCount}/{checklistItems.length} complete
-                </span>
+                <div className="flex items-center gap-4">
+                  {orgInfo?.trialDaysRemaining !== undefined && (
+                    <span className="text-sm text-blue-400 font-medium">
+                      {orgInfo.trialDaysRemaining} days left
+                    </span>
+                  )}
+                  <span className="text-sm text-zinc-400">
+                    {completedCount}/{checklistItems.length} complete
+                  </span>
+                </div>
               </div>
               <p className="text-zinc-300 mb-4">
                 {isWelcome 
                   ? <>Your account is ready. You have <span className="text-yellow-400 font-semibold">full access</span> to all features for 14 days — explore everything, then pick a plan that fits.</>
-                  : <>Complete these steps to get the most out of your trial.</>
+                  : <>Complete these steps to get the most out of your trial. Full access to all features.</>
                 }
               </p>
               
