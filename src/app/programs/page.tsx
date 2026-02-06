@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { Plus, Dumbbell, Search, ChevronRight } from 'lucide-react'
 import ProgramCard from '@/components/ProgramCard'
@@ -25,9 +25,25 @@ const categories = [
 ]
 
 async function getPrograms(): Promise<Program[]> {
-  const { data } = await supabaseAdmin
+  const supabase = await createClient()
+  
+  // Get current user's organization
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+  
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single()
+  
+  if (!profile?.organization_id) return []
+  
+  // Only fetch programs for this organization
+  const { data } = await supabase
     .from('programs')
     .select('*')
+    .eq('organization_id', profile.organization_id)
     .order('created_at', { ascending: false })
   
   return (data as Program[]) || []
