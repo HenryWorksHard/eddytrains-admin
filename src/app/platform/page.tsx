@@ -449,8 +449,7 @@ export default function PlatformPage() {
           {/* Recent Activity */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                <Activity className="w-5 h-5 text-yellow-400" />
+              <h2 className="text-lg font-semibold text-white">
                 Recent Activity
               </h2>
             </div>
