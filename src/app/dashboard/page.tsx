@@ -247,7 +247,7 @@ export default async function DashboardPage({
               <div className="bg-zinc-900/50 rounded-lg p-4 mb-4">
                 <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-3">Get Started</h3>
                 <div className="space-y-2">
-                  <Link href="/settings" className="flex items-center gap-3 text-zinc-300 hover:text-white transition-colors group">
+                  <Link href="/organization" className="flex items-center gap-3 text-zinc-300 hover:text-white transition-colors group">
                     <span className="w-5 h-5 rounded-full border-2 border-zinc-600 group-hover:border-yellow-500 flex items-center justify-center text-xs"></span>
                     <span>Add your logo & customize branding</span>
                   </Link>
