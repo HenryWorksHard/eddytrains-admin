@@ -157,14 +157,18 @@ html.light-mode body {
 .light-mode select.bg-zinc-800,
 .light-mode input.bg-zinc-900,
 .light-mode textarea.bg-zinc-900,
-.light-mode select.bg-zinc-900 {
+.light-mode select.bg-zinc-900,
+.light-mode input.bg-zinc-700,
+.light-mode select.bg-zinc-700 {
   background-color: #ffffff !important;
   border-color: #d4d4d8 !important;
   color: #18181b !important;
 }
 
-.light-mode input.bg-zinc-700,
-.light-mode select.bg-zinc-700 {
+/* Broader input selector for any input with zinc bg */
+.light-mode input[class*="bg-zinc"],
+.light-mode select[class*="bg-zinc"],
+.light-mode textarea[class*="bg-zinc"] {
   background-color: #ffffff !important;
   border-color: #d4d4d8 !important;
   color: #18181b !important;
