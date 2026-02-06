@@ -29,9 +29,29 @@ export default function NutritionPage() {
   }, [])
 
   const fetchPlans = async () => {
+    // Get current trainer's organization_id
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setLoading(false)
+      return
+    }
+
+    // Get trainer's organization_id from profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.organization_id) {
+      setLoading(false)
+      return
+    }
+
     const { data, error } = await supabase
       .from('nutrition_plans')
       .select('*')
+      .eq('organization_id', profile.organization_id)
       .order('created_at', { ascending: false })
 
     if (!error && data) {
