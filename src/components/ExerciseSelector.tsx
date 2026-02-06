@@ -126,6 +126,7 @@ export default function ExerciseSelector({ onSelect, onSelectSuperset, onClose, 
               {isSupersetMode ? 'Select Superset Exercises' : 'Select Exercise'}
             </h2>
             <button
+              type="button"
               onClick={onClose}
               className="p-2 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
             >
@@ -137,6 +138,7 @@ export default function ExerciseSelector({ onSelect, onSelectSuperset, onClose, 
           {allowSuperset && (
             <div className="flex items-center gap-2 mb-4 p-1 bg-zinc-800 rounded-xl">
               <button
+                type="button"
                 onClick={() => {
                   setIsSupersetMode(false)
                   setSelectedExercises([])
@@ -151,6 +153,7 @@ export default function ExerciseSelector({ onSelect, onSelectSuperset, onClose, 
                 Individual
               </button>
               <button
+                type="button"
                 onClick={() => setIsSupersetMode(true)}
                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
                   isSupersetMode 
@@ -182,6 +185,7 @@ export default function ExerciseSelector({ onSelect, onSelectSuperset, onClose, 
                 </div>
                 {selectedExercises.length >= 2 && (
                   <button
+                    type="button"
                     onClick={handleAddSuperset}
                     className="px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-black font-medium rounded-lg transition-colors"
                   >
@@ -265,6 +269,7 @@ export default function ExerciseSelector({ onSelect, onSelectSuperset, onClose, 
                 const selected = isSelected(exercise.id)
                 return (
                   <button
+                    type="button"
                     key={exercise.id}
                     onClick={() => handleExerciseClick(exercise)}
                     className={`w-full flex items-center gap-4 p-4 border rounded-xl transition-all text-left group ${
