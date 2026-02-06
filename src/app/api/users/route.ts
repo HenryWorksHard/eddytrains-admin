@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
 // Admin client with service role for user management
@@ -13,6 +15,38 @@ function getAdminClient() {
       }
     }
   )
+}
+
+// Get authenticated user's organization
+async function getAuthUserOrg() {
+  const cookieStore = await cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options)
+          })
+        },
+      },
+    }
+  )
+  
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single()
+  
+  return profile?.organization_id || null
 }
 
 // Generate a random temp password
@@ -119,11 +153,18 @@ export async function GET() {
   try {
     const adminClient = getAdminClient()
     
-    // Get only client profiles (exclude admin, super_admin, trainer)
+    // Get current trainer's organization
+    const organizationId = await getAuthUserOrg()
+    if (!organizationId) {
+      return NextResponse.json({ users: [] })
+    }
+    
+    // Get only client profiles for this organization
     const { data: profiles, error } = await adminClient
       .from('profiles')
       .select('*')
       .eq('role', 'client')
+      .eq('organization_id', organizationId)
       .order('created_at', { ascending: false })
     
     if (error) throw error
