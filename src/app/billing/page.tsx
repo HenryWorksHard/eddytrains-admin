@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Sidebar from '@/components/Sidebar';
+import { Crown, Sparkles, Clock } from 'lucide-react';
 
 interface Organization {
   id: string;
@@ -21,7 +22,9 @@ interface Tier {
   name: string;
   price: number;
   clients: string;
+  clientLimit: number;
   features: string[];
+  popular?: boolean;
 }
 
 const TIERS: Tier[] = [
@@ -30,6 +33,7 @@ const TIERS: Tier[] = [
     name: 'Starter',
     price: 39,
     clients: 'Up to 10 clients',
+    clientLimit: 10,
     features: ['Client management', 'Program builder', 'Basic analytics'],
   },
   {
@@ -37,13 +41,16 @@ const TIERS: Tier[] = [
     name: 'Pro',
     price: 79,
     clients: 'Up to 30 clients',
+    clientLimit: 30,
     features: ['Everything in Starter', 'Nutrition plans', 'Progress tracking', 'Priority support'],
+    popular: true,
   },
   {
     id: 'studio',
     name: 'Studio',
     price: 149,
     clients: 'Up to 75 clients',
+    clientLimit: 75,
     features: ['Everything in Pro', 'Team accounts', 'Custom branding', 'API access'],
   },
   {
@@ -51,6 +58,7 @@ const TIERS: Tier[] = [
     name: 'Gym',
     price: 299,
     clients: 'Unlimited clients',
+    clientLimit: -1,
     features: ['Everything in Studio', 'White-label option', 'Dedicated support', 'Custom integrations'],
   },
 ];
@@ -66,8 +74,12 @@ function BillingContent() {
   const [actionLoading, setActionLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  const isTrialing = organization?.subscription_status === 'trialing';
+  const trialDaysLeft = organization?.trial_ends_at
+    ? Math.max(0, Math.ceil((new Date(organization.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : null;
+
   useEffect(() => {
-    // Check for success/cancel from Stripe redirect
     if (searchParams.get('success')) {
       setMessage({ type: 'success', text: 'Subscription activated successfully!' });
     } else if (searchParams.get('canceled')) {
@@ -83,7 +95,6 @@ function BillingContent() {
         return;
       }
 
-      // Get user's organization
       const { data: profile } = await supabase
         .from('profiles')
         .select('organization_id')
@@ -95,7 +106,6 @@ function BillingContent() {
         return;
       }
 
-      // Get organization details
       const { data: org } = await supabase
         .from('organizations')
         .select('*')
@@ -104,7 +114,6 @@ function BillingContent() {
 
       setOrganization(org);
 
-      // Get client count
       const { count } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
@@ -142,7 +151,7 @@ function BillingContent() {
       } else {
         setMessage({ type: 'error', text: data.error || 'Failed to start checkout' });
       }
-    } catch (error) {
+    } catch {
       setMessage({ type: 'error', text: 'Something went wrong' });
     } finally {
       setActionLoading(false);
@@ -167,26 +176,19 @@ function BillingContent() {
       } else {
         setMessage({ type: 'error', text: data.error || 'Failed to open billing portal' });
       }
-    } catch (error) {
+    } catch {
       setMessage({ type: 'error', text: 'Something went wrong' });
     } finally {
       setActionLoading(false);
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-500/20 text-green-400';
-      case 'trialing':
-        return 'bg-blue-500/20 text-blue-400';
-      case 'past_due':
-        return 'bg-yellow-500/20 text-yellow-400';
-      case 'canceled':
-        return 'bg-red-500/20 text-red-400';
-      default:
-        return 'bg-zinc-500/20 text-zinc-400';
-    }
+  // Recommend a tier based on client count
+  const getRecommendedTier = () => {
+    if (clientCount <= 10) return 'starter';
+    if (clientCount <= 30) return 'pro';
+    if (clientCount <= 75) return 'studio';
+    return 'gym';
   };
 
   if (loading) {
@@ -199,8 +201,14 @@ function BillingContent() {
 
   return (
     <div className="max-w-5xl">
-      <h1 className="text-2xl font-bold text-white mb-2">Billing</h1>
-      <p className="text-zinc-400 mb-8">Manage your subscription and billing details</p>
+      <h1 className="text-2xl font-bold text-white mb-2">
+        {isTrialing ? 'Choose Your Plan' : 'Billing'}
+      </h1>
+      <p className="text-zinc-400 mb-8">
+        {isTrialing 
+          ? 'You have full access to all features during your trial. Pick a plan to continue after your trial ends.'
+          : 'Manage your subscription and billing details'}
+      </p>
 
       {message && (
         <div
@@ -214,8 +222,36 @@ function BillingContent() {
         </div>
       )}
 
-      {/* Current Plan */}
-      {organization && (
+      {/* Trial Status Banner */}
+      {isTrialing && organization && (
+        <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 rounded-xl p-6 mb-8">
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-blue-500/20 rounded-xl">
+              <Sparkles className="w-6 h-6 text-blue-400" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-lg font-semibold text-white mb-1">
+                Full Access Trial
+              </h2>
+              <p className="text-zinc-300 text-sm mb-3">
+                You&apos;re experiencing all premium features. Explore everything, add clients, 
+                build programs — when you&apos;re ready, pick the plan that fits your needs.
+              </p>
+              <div className="flex items-center gap-2 text-blue-400">
+                <Clock className="w-4 h-4" />
+                <span className="font-medium">{trialDaysLeft} days remaining</span>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-zinc-400 text-sm">Current clients</p>
+              <p className="text-2xl font-bold text-white">{clientCount}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Active Subscription Status */}
+      {!isTrialing && organization && (
         <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 mb-8">
           <div className="flex items-start justify-between">
             <div>
@@ -224,19 +260,17 @@ function BillingContent() {
                 <span className="text-2xl font-bold text-yellow-500 capitalize">
                   {organization.subscription_tier}
                 </span>
-                <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(organization.subscription_status)}`}>
+                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                  organization.subscription_status === 'active' 
+                    ? 'bg-green-500/20 text-green-400'
+                    : 'bg-yellow-500/20 text-yellow-400'
+                }`}>
                   {organization.subscription_status}
                 </span>
               </div>
               <p className="text-zinc-400 mt-2">
                 {clientCount} / {organization.client_limit === -1 ? '∞' : organization.client_limit} clients
               </p>
-              {/* Trial days remaining */}
-              {organization.subscription_status === 'trialing' && organization.trial_ends_at && (
-                <p className="text-blue-400 mt-2 text-sm font-medium">
-                  {Math.max(0, Math.ceil((new Date(organization.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} days remaining in trial
-                </p>
-              )}
             </div>
             {organization.stripe_subscription_id && (
               <button
@@ -249,7 +283,6 @@ function BillingContent() {
             )}
           </div>
 
-          {/* Usage bar */}
           {organization.client_limit !== -1 && (
             <div className="mt-4">
               <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
@@ -275,19 +308,41 @@ function BillingContent() {
       )}
 
       {/* Pricing Tiers */}
-      <h2 className="text-lg font-semibold text-white mb-4">Available Plans</h2>
+      <h2 className="text-lg font-semibold text-white mb-4">
+        {isTrialing ? 'Select a plan to continue after your trial' : 'Available Plans'}
+      </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {TIERS.map((tier) => {
-          const isCurrentTier = organization?.subscription_tier === tier.id;
+          const isCurrentTier = !isTrialing && organization?.subscription_tier === tier.id;
           const hasSubscription = !!organization?.stripe_subscription_id;
+          const isRecommended = isTrialing && tier.id === getRecommendedTier();
 
           return (
             <div
               key={tier.id}
-              className={`bg-zinc-900 rounded-xl border p-6 ${
-                isCurrentTier ? 'border-yellow-500' : 'border-zinc-800'
+              className={`bg-zinc-900 rounded-xl border p-6 relative ${
+                isCurrentTier 
+                  ? 'border-yellow-500' 
+                  : isRecommended
+                  ? 'border-green-500'
+                  : tier.popular
+                  ? 'border-blue-500'
+                  : 'border-zinc-800'
               }`}
             >
+              {/* Badges */}
+              {isRecommended && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-green-500 text-black text-xs font-bold rounded-full flex items-center gap-1">
+                  <Crown className="w-3 h-3" />
+                  Recommended
+                </div>
+              )}
+              {tier.popular && !isRecommended && !isCurrentTier && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-blue-500 text-white text-xs font-bold rounded-full">
+                  Most Popular
+                </div>
+              )}
+
               <h3 className="text-lg font-semibold text-white">{tier.name}</h3>
               <div className="mt-2">
                 <span className="text-3xl font-bold text-white">${tier.price}</span>
@@ -310,6 +365,8 @@ function BillingContent() {
                 className={`w-full mt-6 py-2 rounded-lg font-medium transition-colors ${
                   isCurrentTier
                     ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                    : isRecommended
+                    ? 'bg-green-500 hover:bg-green-400 text-black'
                     : 'bg-yellow-500 hover:bg-yellow-400 text-zinc-900'
                 }`}
               >
@@ -317,6 +374,8 @@ function BillingContent() {
                   ? 'Current Plan'
                   : hasSubscription
                   ? 'Switch Plan'
+                  : isTrialing
+                  ? 'Choose Plan'
                   : 'Subscribe'}
               </button>
             </div>
@@ -324,13 +383,26 @@ function BillingContent() {
         })}
       </div>
 
-      {/* FAQ or additional info */}
+      {/* FAQ */}
       <div className="mt-12 bg-zinc-900 rounded-xl border border-zinc-800 p-6">
         <h2 className="text-lg font-semibold text-white mb-4">Billing FAQ</h2>
         <div className="space-y-4 text-sm">
+          {isTrialing && (
+            <div>
+              <h3 className="font-medium text-white">What happens when my trial ends?</h3>
+              <p className="text-zinc-400">
+                You&apos;ll need to select a plan to continue. If you don&apos;t, you&apos;ll lose access to premium features 
+                but your data will be saved.
+              </p>
+            </div>
+          )}
           <div>
             <h3 className="font-medium text-white">When will I be charged?</h3>
-            <p className="text-zinc-400">You&apos;ll be charged immediately upon subscribing, then monthly on the same date.</p>
+            <p className="text-zinc-400">
+              {isTrialing 
+                ? 'You\'ll only be charged when you select a plan. Your trial is completely free.'
+                : 'You\'ll be charged immediately upon subscribing, then monthly on the same date.'}
+            </p>
           </div>
           <div>
             <h3 className="font-medium text-white">Can I cancel anytime?</h3>

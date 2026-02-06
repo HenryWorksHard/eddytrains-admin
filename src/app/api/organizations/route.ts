@@ -43,15 +43,17 @@ export async function POST(req: Request) {
     trialEndsAt.setDate(trialEndsAt.getDate() + 14);
 
     // Create organization
+    // During trial: full access (gym tier, unlimited clients)
+    // User picks their plan when trial ends or when they subscribe
     const { data: org, error: orgError } = await supabase
       .from('organizations')
       .insert({
         name,
         slug,
         owner_id,
-        subscription_tier: 'starter',
+        subscription_tier: 'gym', // Full access during trial
         subscription_status: 'trialing',
-        client_limit: 10,
+        client_limit: -1, // Unlimited during trial
         trial_ends_at: trialEndsAt.toISOString(),
       })
       .select()
