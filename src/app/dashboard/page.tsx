@@ -251,8 +251,10 @@ export default async function DashboardPage({
     : { hasProgram: false, hasClient: false }
   
   const onboardingComplete = orgInfo?.hasLogo && onboarding.hasProgram && onboarding.hasClient
-  // Show checklist for ALL trialing users (they can dismiss by completing tasks)
-  const showChecklist = orgInfo?.status === 'trialing'
+  // Show checklist for trialing users who haven't completed setup
+  const showChecklist = orgInfo?.status === 'trialing' && !onboardingComplete
+  // Show completion celebration for trialing users who just finished setup
+  const showSetupComplete = orgInfo?.status === 'trialing' && onboardingComplete
 
   const statCards = [
     { name: 'Total Clients', value: stats.totalUsers, icon: Users, color: 'from-blue-500 to-cyan-500', href: '/users' },
@@ -358,8 +360,35 @@ export default async function DashboardPage({
         </div>
       )}
 
-      {/* Trial Status Banner (show when trialing AND checklist is complete) */}
-      {orgInfo?.status === 'trialing' && !showChecklist && !isWelcome && (
+      {/* Setup Complete Banner - celebratory state when all tasks done */}
+      {showSetupComplete && !isWelcome && (
+        <div className="bg-gradient-to-r from-green-500/20 to-emerald-600/10 border border-green-500/30 rounded-xl p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center animate-bounce">
+                <CheckCircle className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  Setup Complete! 🎉
+                </h2>
+                <p className="text-zinc-300">
+                  You&apos;re all set. <span className="text-blue-400 font-medium">{orgInfo?.trialDaysRemaining} days</span> left in your trial.
+                </p>
+              </div>
+            </div>
+            <Link 
+              href="/billing" 
+              className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-green-500/20"
+            >
+              Upgrade Now →
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Trial Status Banner (fallback for trialing without checklist context) */}
+      {orgInfo?.status === 'trialing' && !showChecklist && !showSetupComplete && !isWelcome && (
         <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Clock className="w-5 h-5 text-blue-400" />
