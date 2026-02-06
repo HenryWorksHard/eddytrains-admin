@@ -10,7 +10,7 @@ export interface Profile {
   slug: string | null
   email: string | null
   full_name: string | null
-  role: 'admin' | 'user'
+  role: 'super_admin' | 'admin' | 'trainer' | 'client' | 'user'
   is_active: boolean
   status: 'pending' | 'active' | null
   temp_password: string | null

@@ -20,7 +20,7 @@ async function getStats() {
   
   // Get counts
   const [usersResult, programsResult, schedulesResult] = await Promise.all([
-    supabase.from('profiles').select('id', { count: 'exact' }).eq('role', 'user'),
+    supabase.from('profiles').select('id', { count: 'exact' }).eq('role', 'client'),
     supabase.from('programs').select('id', { count: 'exact' }),
     supabase.from('schedules').select('id', { count: 'exact' }),
   ])
@@ -57,7 +57,7 @@ async function getRecentUsers() {
   const { data } = await supabase
     .from('profiles')
     .select('id, email, full_name, created_at, is_active')
-    .eq('role', 'user')
+    .eq('role', 'client')
     .order('created_at', { ascending: false })
     .limit(5)
   
@@ -67,11 +67,11 @@ async function getRecentUsers() {
 async function getUsersNeedingAttention() {
   const supabase = await createClient()
   
-  // Get all active users
+  // Get all active clients
   const { data: users } = await supabase
     .from('profiles')
     .select('id, email, full_name, is_active')
-    .eq('role', 'user')
+    .eq('role', 'client')
     .eq('is_active', true)
   
   if (!users || users.length === 0) return []

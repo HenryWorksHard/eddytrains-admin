@@ -29,7 +29,7 @@ export async function GET(request: Request) {
     const { data: activeUsers } = await supabaseAdmin
       .from('profiles')
       .select('id, email, full_name')
-      .eq('role', 'user')
+      .eq('role', 'client')
       .eq('is_active', true)
 
     if (!activeUsers || activeUsers.length === 0) {

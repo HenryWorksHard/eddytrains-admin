@@ -17,7 +17,7 @@ export default async function SettingsPage() {
 
   // Get some stats for the data section
   const [usersCount, programsCount, completionsCount] = await Promise.all([
-    supabase.from('profiles').select('id', { count: 'exact' }).eq('role', 'user'),
+    supabase.from('profiles').select('id', { count: 'exact' }).eq('role', 'client'),
     supabase.from('programs').select('id', { count: 'exact' }),
     supabase.from('workout_completions').select('id', { count: 'exact' }),
   ])

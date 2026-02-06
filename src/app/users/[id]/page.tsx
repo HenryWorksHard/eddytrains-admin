@@ -720,7 +720,7 @@ export default function UserProfilePage() {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, email, full_name')
-        .eq('role', 'user')
+        .eq('role', 'client')
         .neq('id', user?.id || '')
         .order('full_name')
       
