@@ -237,17 +237,37 @@ export default async function DashboardPage({
             <div className="w-12 h-12 bg-yellow-500 rounded-xl flex items-center justify-center flex-shrink-0">
               <Sparkles className="w-6 h-6 text-black" />
             </div>
-            <div>
+            <div className="flex-1">
               <h2 className="text-xl font-bold text-white mb-1">Welcome to CMPD</h2>
-              <p className="text-zinc-300 mb-3">
+              <p className="text-zinc-300 mb-4">
                 Your account is ready. You&apos;re on a <span className="text-yellow-400 font-semibold">14-day free trial</span> of the Starter plan.
               </p>
+              
+              {/* Getting Started Checklist */}
+              <div className="bg-zinc-900/50 rounded-lg p-4 mb-4">
+                <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-3">Get Started</h3>
+                <div className="space-y-2">
+                  <Link href="/settings" className="flex items-center gap-3 text-zinc-300 hover:text-white transition-colors group">
+                    <span className="w-5 h-5 rounded-full border-2 border-zinc-600 group-hover:border-yellow-500 flex items-center justify-center text-xs"></span>
+                    <span>Add your logo & customize branding</span>
+                  </Link>
+                  <Link href="/programs/new" className="flex items-center gap-3 text-zinc-300 hover:text-white transition-colors group">
+                    <span className="w-5 h-5 rounded-full border-2 border-zinc-600 group-hover:border-yellow-500 flex items-center justify-center text-xs"></span>
+                    <span>Create your first program</span>
+                  </Link>
+                  <Link href="/users/new" className="flex items-center gap-3 text-zinc-300 hover:text-white transition-colors group">
+                    <span className="w-5 h-5 rounded-full border-2 border-zinc-600 group-hover:border-yellow-500 flex items-center justify-center text-xs"></span>
+                    <span>Invite your first client</span>
+                  </Link>
+                </div>
+              </div>
+
               <div className="flex flex-wrap gap-3">
                 <Link href="/users/new" className="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-medium rounded-lg transition-colors">
-                  Add Your First Client
+                  Add Client
                 </Link>
                 <Link href="/programs/new" className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-lg transition-colors">
-                  Create a Program
+                  Create Program
                 </Link>
                 <Link href="/billing" className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-lg transition-colors">
                   View Plans
