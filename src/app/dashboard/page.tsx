@@ -348,8 +348,8 @@ export default async function DashboardPage({
                     Create Program
                   </Link>
                 )}
-                <Link href="/billing" className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-lg transition-colors">
-                  View Plans
+                <Link href="/billing" className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-medium rounded-lg transition-all shadow-lg shadow-blue-500/20">
+                  Upgrade Now →
                 </Link>
               </div>
             </div>
