@@ -251,7 +251,8 @@ export default async function DashboardPage({
     : { hasProgram: false, hasClient: false }
   
   const onboardingComplete = orgInfo?.hasLogo && onboarding.hasProgram && onboarding.hasClient
-  const showChecklist = orgInfo?.status === 'trialing' && !onboardingComplete
+  // Show checklist for ALL trialing users (they can dismiss by completing tasks)
+  const showChecklist = orgInfo?.status === 'trialing'
 
   const statCards = [
     { name: 'Total Clients', value: stats.totalUsers, icon: Users, color: 'from-blue-500 to-cyan-500', href: '/users' },
