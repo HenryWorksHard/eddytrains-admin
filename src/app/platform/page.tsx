@@ -667,7 +667,11 @@ export default function PlatformPage() {
                 <input
                   type="text"
                   value={newTrainer.orgName}
-                  onChange={(e) => setNewTrainer({ ...newTrainer, orgName: e.target.value })}
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                    setNewTrainer({ ...newTrainer, orgName: name, orgSlug: slug });
+                  }}
                   className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                   placeholder="Smith Fitness"
                   required
