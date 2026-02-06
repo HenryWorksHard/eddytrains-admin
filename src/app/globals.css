@@ -61,6 +61,14 @@ html.light-mode body {
   background-color: rgba(244, 244, 245, 0.5) !important;
 }
 
+.light-mode .bg-zinc-700 {
+  background-color: #e4e4e7 !important;
+}
+
+.light-mode .bg-zinc-600 {
+  background-color: #d4d4d8 !important;
+}
+
 /* Light mode - borders */
 .light-mode .border-zinc-800 {
   border-color: #e4e4e7 !important;
