@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { CheckCircle, Sparkles } from 'lucide-react'
 
@@ -27,33 +27,46 @@ export default function OnboardingBanner({
 }: OnboardingBannerProps) {
   const [visibleItems, setVisibleItems] = useState<boolean[]>(checklistItems.map(() => true))
   const [showComplete, setShowComplete] = useState(false)
-  const [animating, setAnimating] = useState(false)
+  const hasAnimated = useRef(false)
   
   const allComplete = checklistItems.every(item => item.complete)
   const completedCount = checklistItems.filter(item => item.complete).length
 
   useEffect(() => {
-    if (allComplete && !animating && !showComplete) {
-      setAnimating(true)
-      
-      // Pop away items one by one
-      checklistItems.forEach((_, index) => {
-        setTimeout(() => {
-          setVisibleItems(prev => {
-            const newVisible = [...prev]
-            newVisible[index] = false
-            return newVisible
-          })
-        }, index * 300) // 300ms between each pop
-      })
-
-      // Show complete message after all items popped
-      setTimeout(() => {
+    // Check localStorage if animation was already seen
+    const animationSeen = localStorage.getItem('onboarding-animation-seen')
+    
+    if (allComplete && !hasAnimated.current) {
+      if (animationSeen === 'true') {
+        // Already seen animation, skip to complete state
         setShowComplete(true)
-        setAnimating(false)
-      }, checklistItems.length * 300 + 200)
+        setVisibleItems(checklistItems.map(() => false))
+        return
+      }
+      
+      hasAnimated.current = true
+      
+      // Small delay before starting animation
+      setTimeout(() => {
+        // Pop away items one by one
+        checklistItems.forEach((_, index) => {
+          setTimeout(() => {
+            setVisibleItems(prev => {
+              const newVisible = [...prev]
+              newVisible[index] = false
+              return newVisible
+            })
+          }, index * 400) // 400ms between each pop
+        })
+
+        // Show complete message after all items popped
+        setTimeout(() => {
+          setShowComplete(true)
+          localStorage.setItem('onboarding-animation-seen', 'true')
+        }, checklistItems.length * 400 + 300)
+      }, 500) // 500ms initial delay so user sees the completed checklist first
     }
-  }, [allComplete, animating, showComplete, checklistItems])
+  }, [allComplete, checklistItems])
 
   // Show completion state
   if (showComplete) {
