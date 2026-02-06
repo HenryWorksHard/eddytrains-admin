@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Sidebar from '@/components/Sidebar';
-import { Building2, Palette, Globe, Save, Loader2, Check, AlertCircle } from 'lucide-react';
+import { Building2, Palette, Globe, Save, Loader2, Check, AlertCircle, Upload, X, Image } from 'lucide-react';
 
 interface Organization {
   id: string;
@@ -21,9 +21,11 @@ interface Organization {
 export default function OrganizationPage() {
   const router = useRouter();
   const supabase = createClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -32,6 +34,7 @@ export default function OrganizationPage() {
   const [slug, setSlug] = useState('');
   const [brandColor, setBrandColor] = useState('#FACC15');
   const [logoUrl, setLogoUrl] = useState('');
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadOrganization() {
@@ -71,6 +74,7 @@ export default function OrganizationPage() {
         setSlug(org.slug);
         setBrandColor(org.brand_color || '#FACC15');
         setLogoUrl(org.logo_url || '');
+        setLogoPreview(org.logo_url || null);
       }
 
       setLoading(false);
@@ -117,6 +121,66 @@ export default function OrganizationPage() {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '')
       .substring(0, 50);
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !organization) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setMessage({ type: 'error', text: 'Please upload an image file' });
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'Image must be less than 2MB' });
+      return;
+    }
+
+    setUploadingLogo(true);
+    setMessage(null);
+
+    try {
+      // Create a unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${organization.id}/logo-${Date.now()}.${fileExt}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('logos')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('logos')
+        .getPublicUrl(fileName);
+
+      setLogoUrl(publicUrl);
+      setLogoPreview(publicUrl);
+      setMessage({ type: 'success', text: 'Logo uploaded! Click Save to apply changes.' });
+    } catch (err) {
+      console.error('Upload error:', err);
+      setMessage({ type: 'error', text: 'Failed to upload logo. Please try again.' });
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const removeLogo = () => {
+    setLogoUrl('');
+    setLogoPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   if (loading) {
@@ -273,21 +337,66 @@ export default function OrganizationPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-zinc-300 mb-2">
-                    Logo URL
+                    Logo
                   </label>
-                  <input
-                    type="url"
-                    value={logoUrl}
-                    onChange={(e) => setLogoUrl(e.target.value)}
-                    className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                    placeholder="https://example.com/logo.png"
-                  />
-                  <p className="text-xs text-zinc-500 mt-1">Optional. Recommended size: 200x200px</p>
-                  {logoUrl && (
-                    <div className="mt-3 p-4 bg-zinc-800 rounded-lg inline-block">
-                      <img src={logoUrl} alt="Logo preview" className="h-16 w-auto" />
+                  
+                  {/* Current/Preview Logo */}
+                  {(logoUrl || logoPreview) && (
+                    <div className="mb-4 p-4 bg-zinc-800 rounded-xl flex items-center gap-4">
+                      <img 
+                        src={logoPreview || logoUrl} 
+                        alt="Logo preview" 
+                        className="h-16 w-16 object-contain rounded-lg"
+                      />
+                      <div className="flex-1">
+                        <p className="text-sm text-zinc-300">Current Logo</p>
+                        <p className="text-xs text-zinc-500">Click below to replace</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={removeLogo}
+                        className="p-2 text-zinc-400 hover:text-red-400 hover:bg-zinc-700 rounded-lg transition-colors"
+                        title="Remove logo"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
                     </div>
                   )}
+
+                  {/* Upload Area */}
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
+                      uploadingLogo 
+                        ? 'border-yellow-400 bg-yellow-400/10' 
+                        : 'border-zinc-700 hover:border-zinc-500 hover:bg-zinc-800/50'
+                    }`}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                    />
+                    
+                    {uploadingLogo ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <Loader2 className="w-8 h-8 text-yellow-400 animate-spin" />
+                        <p className="text-sm text-yellow-400">Uploading...</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="p-3 bg-zinc-800 rounded-full">
+                          <Upload className="w-6 h-6 text-zinc-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-zinc-300">Click to upload logo</p>
+                          <p className="text-xs text-zinc-500 mt-1">PNG, JPG up to 2MB. Recommended: 200x200px</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
