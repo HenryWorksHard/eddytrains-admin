@@ -54,7 +54,7 @@ html.light-mode body {
 }
 
 .light-mode .bg-zinc-800 {
-  background-color: #f4f4f5 !important;
+  background-color: #f7f6f3 !important;
 }
 
 .light-mode .bg-zinc-800\/50 {
@@ -151,15 +151,22 @@ html.light-mode body {
   background-color: #f4f4f5 !important;
 }
 
-/* Light mode - inputs */
+/* Light mode - inputs (warm light gray) */
 .light-mode input.bg-zinc-800,
 .light-mode textarea.bg-zinc-800,
 .light-mode select.bg-zinc-800,
 .light-mode input.bg-zinc-900,
 .light-mode textarea.bg-zinc-900,
 .light-mode select.bg-zinc-900 {
-  background-color: #f4f4f5 !important;
-  border-color: #d4d4d8 !important;
+  background-color: #faf9f6 !important;
+  border-color: #e8e5df !important;
+  color: #18181b !important;
+}
+
+.light-mode input.bg-zinc-700,
+.light-mode select.bg-zinc-700 {
+  background-color: #faf9f6 !important;
+  border-color: #e8e5df !important;
   color: #18181b !important;
 }
 
