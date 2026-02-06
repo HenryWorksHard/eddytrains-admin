@@ -86,27 +86,8 @@ export default function SignupPage() {
         return;
       }
 
-      // 3. Redirect to Stripe checkout for trial with card
-      const checkoutResponse = await fetch('/api/stripe/trial-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          organizationId: orgData.organization.id,
-          email,
-          organizationName: businessName,
-        }),
-      });
-
-      const checkoutData = await checkoutResponse.json();
-
-      if (checkoutData.url) {
-        // Redirect to Stripe Checkout
-        window.location.href = checkoutData.url;
-      } else {
-        // If checkout fails, still go to dashboard but show warning
-        console.error('Checkout error:', checkoutData.error);
-        router.push('/dashboard?welcome=true&billing=pending');
-      }
+      // 3. Redirect to dashboard with welcome message (no card required)
+      router.push('/dashboard?welcome=true');
     } catch (err) {
       setError('An unexpected error occurred');
     } finally {
@@ -124,6 +105,7 @@ export default function SignupPage() {
           </div>
           <h1 className="text-2xl font-bold text-white">Start Your Free Trial</h1>
           <p className="text-zinc-400 mt-2">Create your trainer account in 2 minutes</p>
+          <p className="text-green-400 text-sm mt-1 font-medium">No credit card required</p>
         </div>
 
         {/* Progress */}
