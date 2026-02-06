@@ -1701,10 +1701,10 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
             {/* Day Header */}
             <div className="flex items-center gap-3">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                group.day === null ? 'bg-zinc-600' : 'bg-yellow-400/20'
+                group.day === null ? 'icon-inverted' : 'bg-yellow-400/20'
               }`}>
                 <span className={`text-sm font-bold ${
-                  group.day === null ? 'text-white' : 'text-yellow-400'
+                  group.day === null ? '' : 'text-yellow-400'
                 }`}>
                   {group.day === null ? '?' : group.dayName.slice(0, 2).toUpperCase()}
                 </span>
@@ -1781,7 +1781,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                       className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
                         workout.isEmom 
                           ? 'bg-yellow-400 text-black' 
-                          : 'bg-zinc-700 text-zinc-400 hover:text-white'
+                          : 'badge-inverted hover:opacity-80'
                       }`}
                     >
                       EMOM
@@ -1989,7 +1989,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                                   className={`px-1.5 py-0.5 rounded text-[10px] font-semibold transition-all ${
                                     workout.finisher.isEmom 
                                       ? 'bg-yellow-400 text-black' 
-                                      : 'bg-zinc-700 text-zinc-400 hover:text-white'
+                                      : 'badge-inverted hover:opacity-80'
                                   }`}
                                 >
                                   EMOM

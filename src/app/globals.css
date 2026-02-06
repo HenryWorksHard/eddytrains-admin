@@ -69,6 +69,43 @@ html.light-mode body {
   background-color: #d4d4d8 !important;
 }
 
+/* Light mode - buttons and badges with zinc backgrounds */
+.light-mode button.bg-zinc-700,
+.light-mode button.bg-zinc-600 {
+  background-color: #e4e4e7 !important;
+}
+
+.light-mode button.text-zinc-400 {
+  color: #52525b !important;
+}
+
+/* Light mode - ensure inverted elements keep contrast */
+.light-mode .text-zinc-400.hover\:text-white:hover {
+  color: #18181b !important;
+}
+
+/* Badge that stays dark in both modes */
+.badge-inverted {
+  background-color: #3f3f46 !important;
+  color: #fafafa !important;
+}
+
+.light-mode .badge-inverted {
+  background-color: #52525b !important;
+  color: #fafafa !important;
+}
+
+/* Icon circle that stays dark in both modes */
+.icon-inverted {
+  background-color: #52525b !important;
+  color: #ffffff !important;
+}
+
+.light-mode .icon-inverted {
+  background-color: #71717a !important;
+  color: #ffffff !important;
+}
+
 /* Light mode - borders */
 .light-mode .border-zinc-800 {
   border-color: #e4e4e7 !important;
