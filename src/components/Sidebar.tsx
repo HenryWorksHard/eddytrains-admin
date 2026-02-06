@@ -53,6 +53,8 @@ export default function Sidebar() {
   const [orgName, setOrgName] = useState<string>('CMPD')
   const [isImpersonating, setIsImpersonating] = useState(false)
   const [impersonatedOrgName, setImpersonatedOrgName] = useState<string>('')
+  const [isTrialing, setIsTrialing] = useState(false)
+  const [trialDaysLeft, setTrialDaysLeft] = useState(0)
 
   useEffect(() => {
     setMounted(true)
@@ -93,15 +95,24 @@ export default function Sidebar() {
         
         setIsSuperAdmin(profile?.role === 'super_admin')
         
-        // Fetch org name for trainers
+        // Fetch org name and subscription status for trainers
         if (profile?.organization_id && profile?.role !== 'super_admin') {
           const { data: org } = await supabase
             .from('organizations')
-            .select('name')
+            .select('name, subscription_status, trial_ends_at')
             .eq('id', profile.organization_id)
             .single()
           if (org?.name) {
             setOrgName(org.name)
+          }
+          if (org?.subscription_status === 'trialing') {
+            setIsTrialing(true)
+            if (org?.trial_ends_at) {
+              const trialEnd = new Date(org.trial_ends_at)
+              const now = new Date()
+              const daysLeft = Math.max(0, Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+              setTrialDaysLeft(daysLeft)
+            }
           }
         }
       }
@@ -176,6 +187,24 @@ export default function Sidebar() {
           )
         })}
       </nav>
+
+      {/* Upgrade Banner for Trial Users */}
+      {isTrialing && !isSuperAdmin && !isImpersonating && (
+        <div className="p-4 border-t border-zinc-800">
+          <Link
+            href="/billing"
+            className="block p-3 bg-gradient-to-r from-yellow-400/20 to-yellow-500/10 border border-yellow-400/30 rounded-xl hover:border-yellow-400/50 transition-all"
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <CreditCard className="w-4 h-4 text-yellow-400" />
+              <span className="text-sm font-semibold text-yellow-400">Free Trial</span>
+            </div>
+            <p className="text-xs text-zinc-400">
+              {trialDaysLeft} days left · <span className="text-yellow-400">Upgrade</span>
+            </p>
+          </Link>
+        </div>
+      )}
 
       {/* Theme Toggle & Sign Out */}
       <div className="p-4 border-t border-zinc-800 space-y-2">
