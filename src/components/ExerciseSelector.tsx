@@ -310,9 +310,9 @@ export default function ExerciseSelector({ onSelect, onSelectSuperset, onClose, 
                         {selected && <Check className="w-4 h-4 text-black" />}
                       </div>
                     )}
-                    <div className="w-12 h-12 rounded-xl bg-zinc-700 flex items-center justify-center flex-shrink-0">
+                    <div className="w-12 h-12 rounded-xl bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center flex-shrink-0">
                       <Dumbbell className={`w-6 h-6 transition-colors ${
-                        selected ? 'text-yellow-400' : 'text-zinc-400 group-hover:text-yellow-400'
+                        selected ? 'text-yellow-500' : 'text-zinc-500 dark:text-zinc-400 group-hover:text-yellow-500'
                       }`} />
                     </div>
                     <div className="flex-1 min-w-0">
