@@ -1,9 +1,46 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { Users, Dumbbell, Calendar, Activity, TrendingUp, UserPlus, AlertTriangle, CheckCircle } from 'lucide-react'
+import { Users, Dumbbell, Calendar, Activity, TrendingUp, UserPlus, AlertTriangle, CheckCircle, Sparkles, Clock } from 'lucide-react'
 
 // Force dynamic rendering - no caching
 export const dynamic = 'force-dynamic'
+
+async function getOrgInfo() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.organization_id) return null
+
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('name, subscription_tier, subscription_status, trial_ends_at')
+    .eq('id', profile.organization_id)
+    .single()
+
+  if (!org) return null
+
+  // Calculate trial days remaining
+  let trialDaysRemaining = 0
+  if (org.subscription_status === 'trialing' && org.trial_ends_at) {
+    const trialEnd = new Date(org.trial_ends_at)
+    const now = new Date()
+    trialDaysRemaining = Math.max(0, Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+  }
+
+  return {
+    name: org.name,
+    tier: org.subscription_tier,
+    status: org.subscription_status,
+    trialDaysRemaining,
+  }
+}
 
 interface UserWithActivity {
   id: string
@@ -168,11 +205,21 @@ async function getTopPerformers() {
   })
 }
 
-export default async function DashboardPage() {
-  const stats = await getStats()
-  const recentUsers = await getRecentUsers()
-  const usersNeedingAttention = await getUsersNeedingAttention()
-  const topPerformers = await getTopPerformers()
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ welcome?: string }>
+}) {
+  const params = await searchParams
+  const isWelcome = params.welcome === 'true'
+  
+  const [stats, recentUsers, usersNeedingAttention, topPerformers, orgInfo] = await Promise.all([
+    getStats(),
+    getRecentUsers(),
+    getUsersNeedingAttention(),
+    getTopPerformers(),
+    getOrgInfo(),
+  ])
 
   const statCards = [
     { name: 'Total Clients', value: stats.totalUsers, icon: Users, color: 'from-blue-500 to-cyan-500', href: '/users' },
@@ -183,6 +230,49 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
+      {/* Welcome Banner for New Signups */}
+      {isWelcome && (
+        <div className="bg-gradient-to-r from-yellow-500/20 to-yellow-600/10 border border-yellow-500/30 rounded-xl p-6">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-yellow-500 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Sparkles className="w-6 h-6 text-black" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white mb-1">Welcome to CMPD! 🎉</h2>
+              <p className="text-zinc-300 mb-3">
+                Your account is ready. You&apos;re on a <span className="text-yellow-400 font-semibold">14-day free trial</span> of the Starter plan.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Link href="/users/new" className="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-medium rounded-lg transition-colors">
+                  Add Your First Client
+                </Link>
+                <Link href="/programs/new" className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-lg transition-colors">
+                  Create a Program
+                </Link>
+                <Link href="/billing" className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-lg transition-colors">
+                  View Plans
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Trial Status Banner (always show when trialing) */}
+      {orgInfo?.status === 'trialing' && !isWelcome && (
+        <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Clock className="w-5 h-5 text-blue-400" />
+            <span className="text-zinc-300">
+              <span className="font-semibold text-blue-400">{orgInfo.trialDaysRemaining} days</span> left in your free trial
+            </span>
+          </div>
+          <Link href="/billing" className="px-4 py-2 bg-blue-500 hover:bg-blue-400 text-white font-medium rounded-lg transition-colors text-sm">
+            Upgrade Now
+          </Link>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

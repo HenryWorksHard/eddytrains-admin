@@ -79,8 +79,8 @@ export default function SignupPage() {
         return;
       }
 
-      // 3. Redirect to billing to choose plan
-      router.push('/billing?welcome=true');
+      // 3. Redirect to dashboard with welcome message
+      router.push('/dashboard?welcome=true');
     } catch (err) {
       setError('An unexpected error occurred');
     } finally {
