@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { Users, Dumbbell, Calendar, Activity, TrendingUp, UserPlus, AlertTriangle, CheckCircle, Sparkles, Clock } from 'lucide-react'
+import OnboardingBanner from '@/components/OnboardingBanner'
 
 // Force dynamic rendering - no caching
 export const dynamic = 'force-dynamic'
@@ -285,106 +286,15 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-8">
-      {/* Welcome Banner - shows for new signups OR trialing users with incomplete checklist */}
-      {(isWelcome || showChecklist) && (
-        <div className="bg-gradient-to-r from-yellow-500/20 to-yellow-600/10 border border-yellow-500/30 rounded-xl p-6">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-yellow-500 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Sparkles className="w-6 h-6 text-black" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-1">
-                <h2 className="text-xl font-bold text-white">
-                  {isWelcome ? 'Welcome to CMPD' : 'Getting Started'}
-                </h2>
-                <div className="flex items-center gap-4">
-                  {orgInfo?.trialDaysRemaining !== undefined && (
-                    <span className="text-sm text-blue-400 font-medium">
-                      {orgInfo.trialDaysRemaining} days left
-                    </span>
-                  )}
-                  <span className="text-sm text-zinc-400">
-                    {completedCount}/{checklistItems.length} complete
-                  </span>
-                </div>
-              </div>
-              <p className="text-zinc-300 mb-4">
-                {isWelcome 
-                  ? <>Your account is ready. You have <span className="text-yellow-400 font-semibold">full access</span> to all features for 14 days — explore everything, then pick a plan that fits.</>
-                  : <>Complete these steps to get the most out of your trial. Full access to all features.</>
-                }
-              </p>
-              
-              {/* Getting Started Checklist */}
-              <div className="bg-zinc-900/50 rounded-lg p-4 mb-4">
-                <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-3">Setup Checklist</h3>
-                <div className="space-y-2">
-                  {checklistItems.map((item) => (
-                    <Link 
-                      key={item.label}
-                      href={item.href} 
-                      className={`flex items-center gap-3 transition-colors group ${
-                        item.complete ? 'text-green-400' : 'text-zinc-300 hover:text-white'
-                      }`}
-                    >
-                      {item.complete ? (
-                        <CheckCircle className="w-5 h-5 text-green-400" />
-                      ) : (
-                        <span className="w-5 h-5 rounded-full border-2 border-zinc-600 group-hover:border-yellow-500 flex items-center justify-center text-xs"></span>
-                      )}
-                      <span className={item.complete ? 'line-through opacity-60' : ''}>
-                        {item.label}
-                      </span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                {!onboarding.hasClient && (
-                  <Link href="/users/new" className="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-medium rounded-lg transition-colors">
-                    Add Client
-                  </Link>
-                )}
-                {!onboarding.hasProgram && (
-                  <Link href="/programs/new" className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-lg transition-colors">
-                    Create Program
-                  </Link>
-                )}
-                <Link href="/billing" className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-medium rounded-lg transition-all shadow-lg shadow-blue-500/20">
-                  Upgrade Now →
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Setup Complete Banner - celebratory state when all tasks done */}
-      {showSetupComplete && !isWelcome && (
-        <div className="bg-gradient-to-r from-green-500/20 to-emerald-600/10 border border-green-500/30 rounded-xl p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center animate-bounce">
-                <CheckCircle className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  Setup Complete! 🎉
-                </h2>
-                <p className="text-zinc-300">
-                  You&apos;re all set. <span className="text-blue-400 font-medium">{orgInfo?.trialDaysRemaining} days</span> left in your trial.
-                </p>
-              </div>
-            </div>
-            <Link 
-              href="/billing" 
-              className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-green-500/20"
-            >
-              Upgrade Now →
-            </Link>
-          </div>
-        </div>
+      {/* Onboarding Banner - handles animation when all tasks complete */}
+      {(isWelcome || showChecklist || showSetupComplete) && orgInfo && (
+        <OnboardingBanner
+          checklistItems={checklistItems}
+          trialDaysRemaining={orgInfo.trialDaysRemaining}
+          isWelcome={isWelcome}
+          hasClient={onboarding.hasClient}
+          hasProgram={onboarding.hasProgram}
+        />
       )}
 
       {/* Trial Status Banner (fallback for trialing without checklist context) */}
