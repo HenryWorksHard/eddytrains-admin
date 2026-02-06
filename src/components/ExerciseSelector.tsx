@@ -29,6 +29,7 @@ const categoryColors: Record<string, string> = {
   shoulders: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
   biceps: 'bg-pink-500/20 text-pink-400 border-pink-500/30',
   triceps: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+  forearms: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
   legs: 'bg-green-500/20 text-green-400 border-green-500/30',
   glutes: 'bg-rose-500/20 text-rose-400 border-rose-500/30',
   core: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',

@@ -50,6 +50,11 @@
       "icon": "💪"
     },
     {
+      "id": "forearms",
+      "label": "Forearms",
+      "icon": "💪"
+    },
+    {
       "id": "legs",
       "label": "Legs",
       "icon": "🦵"
@@ -3904,6 +3909,40 @@
           "Ignoring terrain"
         ],
         "breathingPattern": "Find a rhythm that works for your pace"
+      }
+    },
+    {
+      "id": "barbell_forearm_curl",
+      "name": "Barbell Forearm Curls",
+      "category": "forearms",
+      "equipment": [
+        "barbell"
+      ],
+      "movementPattern": "isolation",
+      "primaryMuscles": [
+        "forearms"
+      ],
+      "secondaryMuscles": [],
+      "difficulty": "beginner",
+      "tags": [
+        "strength"
+      ],
+      "tutorial": {
+        "setup": "Sit on a bench with forearms resting on your thighs, wrists hanging over knees.",
+        "execution": "Grip the barbell with an underhand grip, hands shoulder-width apart. Let the barbell roll down to your fingertips. Curl the barbell up by flexing your wrists. Squeeze at the top, then slowly lower back down.",
+        "cues": [
+          "Keep forearms stationary throughout",
+          "Squeeze at the top",
+          "Control the negative",
+          "Let bar roll to fingertips for full ROM"
+        ],
+        "commonMistakes": [
+          "Moving forearms off thighs",
+          "Using momentum",
+          "Rushing reps",
+          "Not using full range of motion"
+        ],
+        "breathingPattern": "Exhale on curl, inhale on lower"
       }
     }
   ],
