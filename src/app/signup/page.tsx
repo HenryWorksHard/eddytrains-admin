@@ -86,8 +86,27 @@ export default function SignupPage() {
         return;
       }
 
-      // 3. Redirect to dashboard with welcome message
-      router.push('/dashboard?welcome=true');
+      // 3. Redirect to Stripe checkout for trial with card
+      const checkoutResponse = await fetch('/api/stripe/trial-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organizationId: orgData.organization.id,
+          email,
+          organizationName: businessName,
+        }),
+      });
+
+      const checkoutData = await checkoutResponse.json();
+
+      if (checkoutData.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = checkoutData.url;
+      } else {
+        // If checkout fails, still go to dashboard but show warning
+        console.error('Checkout error:', checkoutData.error);
+        router.push('/dashboard?welcome=true&billing=pending');
+      }
     } catch (err) {
       setError('An unexpected error occurred');
     } finally {
