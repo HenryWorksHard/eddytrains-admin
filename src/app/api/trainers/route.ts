@@ -77,7 +77,8 @@ export async function POST(request: NextRequest) {
       farFuture.setFullYear(farFuture.getFullYear() + 100);
       trialEndsAt = farFuture.toISOString();
     } else if (accessType === 'custom') {
-      subscriptionStatus = 'active';
+      // Custom expiry - still shows as trialing with countdown to custom date
+      subscriptionStatus = 'trialing';
       trialEndsAt = new Date(expiryDate).toISOString();
     } else {
       // Trial - 14 days from now
