@@ -20,7 +20,7 @@ async function getOrgInfo() {
 
   const { data: org } = await supabase
     .from('organizations')
-    .select('name, subscription_tier, subscription_status, trial_ends_at')
+    .select('name, subscription_tier, subscription_status, trial_ends_at, logo_url')
     .eq('id', profile.organization_id)
     .single()
 
@@ -39,6 +39,30 @@ async function getOrgInfo() {
     tier: org.subscription_tier,
     status: org.subscription_status,
     trialDaysRemaining,
+    hasLogo: !!org.logo_url,
+    organizationId: profile.organization_id,
+  }
+}
+
+async function getOnboardingStatus(organizationId: string) {
+  const supabase = await createClient()
+  
+  // Check if has any programs
+  const { count: programCount } = await supabase
+    .from('programs')
+    .select('*', { count: 'exact', head: true })
+    .eq('organization_id', organizationId)
+  
+  // Check if has any clients
+  const { count: clientCount } = await supabase
+    .from('profiles')
+    .select('*', { count: 'exact', head: true })
+    .eq('organization_id', organizationId)
+    .eq('role', 'client')
+  
+  return {
+    hasProgram: (programCount || 0) > 0,
+    hasClient: (clientCount || 0) > 0,
   }
 }
 
@@ -220,6 +244,14 @@ export default async function DashboardPage({
     getTopPerformers(),
     getOrgInfo(),
   ])
+  
+  // Get onboarding status for trialing users
+  const onboarding = orgInfo?.organizationId 
+    ? await getOnboardingStatus(orgInfo.organizationId)
+    : { hasProgram: false, hasClient: false }
+  
+  const onboardingComplete = orgInfo?.hasLogo && onboarding.hasProgram && onboarding.hasClient
+  const showChecklist = orgInfo?.status === 'trialing' && !onboardingComplete
 
   const statCards = [
     { name: 'Total Clients', value: stats.totalUsers, icon: Users, color: 'from-blue-500 to-cyan-500', href: '/users' },
@@ -228,47 +260,87 @@ export default async function DashboardPage({
     { name: 'Weekly Completions', value: stats.weeklyCompletions, icon: CheckCircle, color: 'from-purple-500 to-pink-500', href: '/users' },
   ]
 
+  // Checklist items with completion status
+  const checklistItems = [
+    { 
+      label: 'Add your logo & customize branding', 
+      href: '/organization', 
+      complete: orgInfo?.hasLogo || false 
+    },
+    { 
+      label: 'Create your first program', 
+      href: '/programs/new', 
+      complete: onboarding.hasProgram 
+    },
+    { 
+      label: 'Invite your first client', 
+      href: '/users/new', 
+      complete: onboarding.hasClient 
+    },
+  ]
+  const completedCount = checklistItems.filter(item => item.complete).length
+
   return (
     <div className="space-y-8">
-      {/* Welcome Banner for New Signups */}
-      {isWelcome && (
+      {/* Welcome Banner - shows for new signups OR trialing users with incomplete checklist */}
+      {(isWelcome || showChecklist) && (
         <div className="bg-gradient-to-r from-yellow-500/20 to-yellow-600/10 border border-yellow-500/30 rounded-xl p-6">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 bg-yellow-500 rounded-xl flex items-center justify-center flex-shrink-0">
               <Sparkles className="w-6 h-6 text-black" />
             </div>
             <div className="flex-1">
-              <h2 className="text-xl font-bold text-white mb-1">Welcome to CMPD</h2>
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="text-xl font-bold text-white">
+                  {isWelcome ? 'Welcome to CMPD' : 'Getting Started'}
+                </h2>
+                <span className="text-sm text-zinc-400">
+                  {completedCount}/{checklistItems.length} complete
+                </span>
+              </div>
               <p className="text-zinc-300 mb-4">
-                Your account is ready. You have <span className="text-yellow-400 font-semibold">full access</span> to all features for 14 days — explore everything, then pick a plan that fits.
+                {isWelcome 
+                  ? <>Your account is ready. You have <span className="text-yellow-400 font-semibold">full access</span> to all features for 14 days — explore everything, then pick a plan that fits.</>
+                  : <>Complete these steps to get the most out of your trial.</>
+                }
               </p>
               
               {/* Getting Started Checklist */}
               <div className="bg-zinc-900/50 rounded-lg p-4 mb-4">
-                <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-3">Get Started</h3>
+                <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-3">Setup Checklist</h3>
                 <div className="space-y-2">
-                  <Link href="/organization" className="flex items-center gap-3 text-zinc-300 hover:text-white transition-colors group">
-                    <span className="w-5 h-5 rounded-full border-2 border-zinc-600 group-hover:border-yellow-500 flex items-center justify-center text-xs"></span>
-                    <span>Add your logo & customize branding</span>
-                  </Link>
-                  <Link href="/programs/new" className="flex items-center gap-3 text-zinc-300 hover:text-white transition-colors group">
-                    <span className="w-5 h-5 rounded-full border-2 border-zinc-600 group-hover:border-yellow-500 flex items-center justify-center text-xs"></span>
-                    <span>Create your first program</span>
-                  </Link>
-                  <Link href="/users/new" className="flex items-center gap-3 text-zinc-300 hover:text-white transition-colors group">
-                    <span className="w-5 h-5 rounded-full border-2 border-zinc-600 group-hover:border-yellow-500 flex items-center justify-center text-xs"></span>
-                    <span>Invite your first client</span>
-                  </Link>
+                  {checklistItems.map((item) => (
+                    <Link 
+                      key={item.label}
+                      href={item.href} 
+                      className={`flex items-center gap-3 transition-colors group ${
+                        item.complete ? 'text-green-400' : 'text-zinc-300 hover:text-white'
+                      }`}
+                    >
+                      {item.complete ? (
+                        <CheckCircle className="w-5 h-5 text-green-400" />
+                      ) : (
+                        <span className="w-5 h-5 rounded-full border-2 border-zinc-600 group-hover:border-yellow-500 flex items-center justify-center text-xs"></span>
+                      )}
+                      <span className={item.complete ? 'line-through opacity-60' : ''}>
+                        {item.label}
+                      </span>
+                    </Link>
+                  ))}
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-3">
-                <Link href="/users/new" className="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-medium rounded-lg transition-colors">
-                  Add Client
-                </Link>
-                <Link href="/programs/new" className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-lg transition-colors">
-                  Create Program
-                </Link>
+                {!onboarding.hasClient && (
+                  <Link href="/users/new" className="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-medium rounded-lg transition-colors">
+                    Add Client
+                  </Link>
+                )}
+                {!onboarding.hasProgram && (
+                  <Link href="/programs/new" className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-lg transition-colors">
+                    Create Program
+                  </Link>
+                )}
                 <Link href="/billing" className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-lg transition-colors">
                   View Plans
                 </Link>
@@ -278,8 +350,8 @@ export default async function DashboardPage({
         </div>
       )}
 
-      {/* Trial Status Banner (always show when trialing) */}
-      {orgInfo?.status === 'trialing' && !isWelcome && (
+      {/* Trial Status Banner (show when trialing AND checklist is complete) */}
+      {orgInfo?.status === 'trialing' && !showChecklist && !isWelcome && (
         <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Clock className="w-5 h-5 text-blue-400" />
