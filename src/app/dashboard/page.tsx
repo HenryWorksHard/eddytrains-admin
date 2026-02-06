@@ -238,7 +238,7 @@ export default async function DashboardPage({
               <Sparkles className="w-6 h-6 text-black" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white mb-1">Welcome to CMPD! 🎉</h2>
+              <h2 className="text-xl font-bold text-white mb-1">Welcome to CMPD</h2>
               <p className="text-zinc-300 mb-3">
                 Your account is ready. You&apos;re on a <span className="text-yellow-400 font-semibold">14-day free trial</span> of the Starter plan.
               </p>
