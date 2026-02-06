@@ -71,6 +71,8 @@ export default function PlatformPage() {
   const [deletingOrgId, setDeletingOrgId] = useState<string | null>(null);
   const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
   const [editPrice, setEditPrice] = useState('');
+  const [editTier, setEditTier] = useState('');
+  const [editStatus, setEditStatus] = useState('');
   const [activities, setActivities] = useState<PlatformActivity[]>([]);
   const [activitiesLoading, setActivitiesLoading] = useState(true);
 
@@ -271,17 +273,30 @@ export default function PlatformPage() {
   const handleEditPrice = (org: Organization) => {
     setEditingOrg(org);
     setEditPrice(org.custom_monthly_price?.toString() || '');
+    setEditTier(org.subscription_tier);
+    setEditStatus(org.subscription_status);
   };
 
   const handleSavePrice = async () => {
     if (!editingOrg) return;
 
     const newPrice = editPrice === '' ? null : parseInt(editPrice);
+    const tierClientLimits: Record<string, number> = {
+      starter: 10,
+      pro: 30,
+      studio: 75,
+      gym: -1,
+    };
 
     try {
       const { error } = await supabase
         .from('organizations')
-        .update({ custom_monthly_price: newPrice })
+        .update({ 
+          custom_monthly_price: newPrice,
+          subscription_tier: editTier,
+          subscription_status: editStatus,
+          client_limit: tierClientLimits[editTier] || 10,
+        })
         .eq('id', editingOrg.id);
 
       if (error) throw error;
@@ -289,24 +304,45 @@ export default function PlatformPage() {
       // Update local state
       setOrganizations(orgs =>
         orgs.map(o =>
-          o.id === editingOrg.id ? { ...o, custom_monthly_price: newPrice } : o
+          o.id === editingOrg.id ? { 
+            ...o, 
+            custom_monthly_price: newPrice,
+            subscription_tier: editTier,
+            subscription_status: editStatus,
+            client_limit: tierClientLimits[editTier] || 10,
+          } : o
         )
       );
 
-      // Update MRR if org is active
-      if (stats && editingOrg.subscription_status === 'active') {
-        const oldPrice = editingOrg.custom_monthly_price ?? TIER_PRICES[editingOrg.subscription_tier] ?? 0;
-        const newPriceVal = newPrice ?? TIER_PRICES[editingOrg.subscription_tier] ?? 0;
+      // Recalculate stats
+      const updatedOrgs = organizations.map(o =>
+        o.id === editingOrg.id ? { 
+          ...o, 
+          custom_monthly_price: newPrice,
+          subscription_tier: editTier,
+          subscription_status: editStatus,
+        } : o
+      );
+      const activeOrgs = updatedOrgs.filter(o => o.subscription_status === 'active');
+      const trialingOrgs = updatedOrgs.filter(o => o.subscription_status === 'trialing');
+      const mrr = activeOrgs.reduce((sum, o) => {
+        const price = o.custom_monthly_price ?? TIER_PRICES[o.subscription_tier] ?? 0;
+        return sum + price;
+      }, 0);
+
+      if (stats) {
         setStats({
           ...stats,
-          mrr: stats.mrr - oldPrice + newPriceVal,
+          activeSubscriptions: activeOrgs.length,
+          trialingOrgs: trialingOrgs.length,
+          mrr,
         });
       }
 
       setEditingOrg(null);
     } catch (error) {
-      console.error('Error updating price:', error);
-      alert('Failed to update price');
+      console.error('Error updating subscription:', error);
+      alert('Failed to update subscription');
     }
   };
 
@@ -771,12 +807,12 @@ export default function PlatformPage() {
         </div>
       )}
 
-      {/* Edit Price Modal */}
+      {/* Edit Subscription Modal */}
       {editingOrg && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-sm p-6">
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-white">Edit Monthly Price</h2>
+              <h2 className="text-xl font-semibold text-white">Edit Subscription</h2>
               <button
                 onClick={() => setEditingOrg(null)}
                 className="text-zinc-400 hover:text-white"
@@ -785,31 +821,68 @@ export default function PlatformPage() {
               </button>
             </div>
 
-            <div className="mb-4">
-              <p className="text-zinc-400 text-sm mb-4">
+            <div className="space-y-4">
+              <p className="text-zinc-400 text-sm">
                 {editingOrg.name}
               </p>
-              <label className="block text-sm font-medium text-zinc-300 mb-2">
-                Custom Monthly Price
-              </label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">$</span>
-                <input
-                  type="number"
-                  value={editPrice}
-                  onChange={(e) => setEditPrice(e.target.value)}
-                  className="w-full pl-8 pr-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                  placeholder={`${TIER_PRICES[editingOrg.subscription_tier] || 0} (tier default)`}
-                  min="0"
-                  autoFocus
-                />
+
+              {/* Tier Selection */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">
+                  Plan Tier
+                </label>
+                <select
+                  value={editTier}
+                  onChange={(e) => setEditTier(e.target.value)}
+                  className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                >
+                  <option value="starter">Starter (10 clients) - $39/mo</option>
+                  <option value="pro">Pro (30 clients) - $79/mo</option>
+                  <option value="studio">Studio (75 clients) - $149/mo</option>
+                  <option value="gym">Gym (Unlimited) - $299/mo</option>
+                </select>
               </div>
-              <p className="text-xs text-zinc-500 mt-2">
-                Leave empty to use tier price (${TIER_PRICES[editingOrg.subscription_tier] || 0}/mo for {editingOrg.subscription_tier})
-              </p>
+
+              {/* Status Selection */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">
+                  Status
+                </label>
+                <select
+                  value={editStatus}
+                  onChange={(e) => setEditStatus(e.target.value)}
+                  className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                >
+                  <option value="trialing">Trialing (Free Trial)</option>
+                  <option value="active">Active (Paid)</option>
+                  <option value="canceled">Canceled</option>
+                  <option value="past_due">Past Due</option>
+                </select>
+              </div>
+
+              {/* Custom Price */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">
+                  Custom Monthly Price
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">$</span>
+                  <input
+                    type="number"
+                    value={editPrice}
+                    onChange={(e) => setEditPrice(e.target.value)}
+                    className="w-full pl-8 pr-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    placeholder={`${TIER_PRICES[editTier] || 0} (tier default)`}
+                    min="0"
+                  />
+                </div>
+                <p className="text-xs text-zinc-500 mt-2">
+                  Leave empty to use tier price (${TIER_PRICES[editTier] || 0}/mo)
+                </p>
+              </div>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setEditingOrg(null)}
                 className="flex-1 px-4 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-medium transition-colors"
@@ -820,7 +893,7 @@ export default function PlatformPage() {
                 onClick={handleSavePrice}
                 className="flex-1 px-4 py-3 bg-yellow-400 hover:bg-yellow-500 text-black rounded-xl font-medium transition-colors"
               >
-                Save
+                Save Changes
               </button>
             </div>
           </div>
