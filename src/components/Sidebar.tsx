@@ -77,11 +77,20 @@ export default function Sidebar() {
     async function checkRole() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        const { data: profile } = await supabase
+        const { data: profile, error } = await supabase
           .from('profiles')
           .select('role, organization_id')
           .eq('id', user.id)
           .single()
+        
+        // If profile doesn't exist (user was deleted), sign them out
+        if (error || !profile) {
+          console.log('User profile not found, signing out...')
+          await supabase.auth.signOut()
+          router.push('/login')
+          return
+        }
+        
         setIsSuperAdmin(profile?.role === 'super_admin')
         
         // Fetch org name for trainers
