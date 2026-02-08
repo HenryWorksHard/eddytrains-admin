@@ -66,10 +66,11 @@ export default function DangerZone() {
         setMessage({ type: 'success', text: result.message || 'Subscription cancelled.' });
         setShowConfirm(false);
         
-        // If subscription was cleared (trial cancel), refresh the page to update all UI
+        // If subscription was cleared (trial cancel), redirect to billing with full reload
         if (result.cleared) {
+          setMessage({ type: 'success', text: result.message });
           setTimeout(() => {
-            window.location.href = '/billing';
+            window.location.replace('/billing');
           }, 1500);
           return;
         }

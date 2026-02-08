@@ -173,11 +173,11 @@ export async function POST(req: Request) {
         await stripe.subscriptions.cancel(org.stripe_subscription_id);
         
         // Clear subscription from database but keep trialing status
+        // Don't change subscription_tier - they stay on trial with current access
         await supabase
           .from('organizations')
           .update({ 
-            stripe_subscription_id: null,
-            subscription_tier: 'starter' // Reset to default tier
+            stripe_subscription_id: null
           })
           .eq('id', organizationId);
 
