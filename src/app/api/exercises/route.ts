@@ -8,16 +8,31 @@ const supabase = createClient(
 
 export async function GET() {
   try {
-    const { data: exercises, error } = await supabase
-      .from('exercises')
-      .select('*')
-      .order('name')
-      .range(0, 1999) // Increase limit from default 1000
-
-    if (error) {
-      console.error('Error fetching exercises:', error)
-      return NextResponse.json({ error: 'Failed to fetch exercises' }, { status: 500 })
+    // Fetch all exercises with pagination (Supabase default limit is 1000)
+    const allExercises: any[] = []
+    let from = 0
+    const pageSize = 1000
+    
+    while (true) {
+      const { data, error: fetchError } = await supabase
+        .from('exercises')
+        .select('*')
+        .order('name')
+        .range(from, from + pageSize - 1)
+      
+      if (fetchError) {
+        console.error('Error fetching exercises:', fetchError)
+        return NextResponse.json({ error: 'Failed to fetch exercises' }, { status: 500 })
+      }
+      
+      if (!data || data.length === 0) break
+      allExercises.push(...data)
+      
+      if (data.length < pageSize) break
+      from += pageSize
     }
+    
+    const exercises = allExercises
 
     // Transform to match the expected format
     const transformed = exercises.map(ex => ({
