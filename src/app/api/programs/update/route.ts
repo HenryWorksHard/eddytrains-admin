@@ -102,6 +102,7 @@ export async function POST(request: NextRequest) {
                 exercise_id: exercise.exerciseId,
                 exercise_name: exercise.exerciseName,
                 exercise_uuid: exerciseRef?.id || null, // FK to exercises table
+                category: exercise.category || 'strength', // Save exercise category
                 order_index: exercise.order,
                 notes: exercise.notes || null,
                 superset_group: exercise.supersetGroup || null,
@@ -193,6 +194,7 @@ export async function POST(request: NextRequest) {
                   exercise_id: exercise.exerciseId,
                   exercise_name: exercise.exerciseName,
                   exercise_uuid: exerciseRef?.id || null, // FK to exercises table
+                  category: exercise.category || 'strength', // Save exercise category
                   order_index: exercise.order,
                   notes: exercise.notes || null,
                 })

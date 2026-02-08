@@ -54,7 +54,8 @@ export async function GET(
         *,
         workout_exercises (
           *,
-          exercise_sets (*)
+          exercise_sets (*),
+          exercises:exercise_uuid (category, muscle_group)
         )
       `)
       .eq('program_id', id)
@@ -73,7 +74,8 @@ export async function GET(
         *,
         workout_exercises (
           *,
-          exercise_sets (*)
+          exercise_sets (*),
+          exercises:exercise_uuid (category, muscle_group)
         )
       `)
       .eq('program_id', id)
@@ -84,9 +86,31 @@ export async function GET(
       // Don't throw - finishers are optional
     }
 
+    // Helper to transform workout exercises with category from joined exercises table
+    const transformExercises = (exercises: any[]) => {
+      return exercises?.map(ex => ({
+        ...ex,
+        // Use category from exercises table if available, fallback to muscle_group
+        category: ex.exercises?.category || ex.exercises?.muscle_group || ex.category || 'strength',
+        exercises: undefined // Remove the nested exercises object
+      })) || []
+    }
+
+    // Transform workouts to include exercise categories
+    const transformedWorkouts = (workouts || []).map(workout => ({
+      ...workout,
+      workout_exercises: transformExercises(workout.workout_exercises)
+    }))
+
+    // Transform finishers similarly
+    const transformedFinishers = (finishers || []).map(finisher => ({
+      ...finisher,
+      workout_exercises: transformExercises(finisher.workout_exercises)
+    }))
+
     // Attach finishers to their parent workouts
-    const workoutsWithFinishers = (workouts || []).map(workout => {
-      const finisher = finishers?.find(f => f.parent_workout_id === workout.id)
+    const workoutsWithFinishers = transformedWorkouts.map(workout => {
+      const finisher = transformedFinishers?.find(f => f.parent_workout_id === workout.id)
       return {
         ...workout,
         finisher: finisher || null
