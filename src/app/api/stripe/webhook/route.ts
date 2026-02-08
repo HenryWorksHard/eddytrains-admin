@@ -9,12 +9,18 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// Tier configurations
+// Tier configurations - use env vars to support test/live modes
 const TIER_CONFIG: Record<string, { tier: string; clientLimit: number }> = {
+  // Live prices (defaults)
   'price_1SxHgCBDGilw48s7lrc9Pjox': { tier: 'starter', clientLimit: 10 },
   'price_1SxHgDBDGilw48s7vI6lQPE6': { tier: 'pro', clientLimit: 30 },
   'price_1SxHgDBDGilw48s7hHTBfSGO': { tier: 'studio', clientLimit: 75 },
-  'price_1SxHgEBDGilw48s7ccmMHgzb': { tier: 'gym', clientLimit: -1 }, // unlimited
+  'price_1SxHgEBDGilw48s7ccmMHgzb': { tier: 'gym', clientLimit: -1 },
+  // Test prices (added via env vars or hardcoded for test mode)
+  ...(process.env.STRIPE_PRICE_STARTER && { [process.env.STRIPE_PRICE_STARTER]: { tier: 'starter', clientLimit: 10 } }),
+  ...(process.env.STRIPE_PRICE_PRO && { [process.env.STRIPE_PRICE_PRO]: { tier: 'pro', clientLimit: 30 } }),
+  ...(process.env.STRIPE_PRICE_STUDIO && { [process.env.STRIPE_PRICE_STUDIO]: { tier: 'studio', clientLimit: 75 } }),
+  ...(process.env.STRIPE_PRICE_GYM && { [process.env.STRIPE_PRICE_GYM]: { tier: 'gym', clientLimit: -1 } }),
 };
 
 export async function POST(req: Request) {
