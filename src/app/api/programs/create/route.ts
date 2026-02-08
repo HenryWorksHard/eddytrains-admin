@@ -78,12 +78,20 @@ export async function POST(request: NextRequest) {
         // 3. Create workout exercises
         if (workout.exercises?.length > 0 && workoutData) {
           for (const exercise of workout.exercises) {
+            // Look up exercise_uuid from exercises table
+            const { data: exerciseRef } = await supabaseAdmin
+              .from('exercises')
+              .select('id')
+              .eq('name', exercise.exerciseName)
+              .single()
+            
             const { data: exerciseData, error: exerciseError } = await supabaseAdmin
               .from('workout_exercises')
               .insert({
                 workout_id: workoutData.id,
                 exercise_id: exercise.exerciseId,
                 exercise_name: exercise.exerciseName,
+                exercise_uuid: exerciseRef?.id || null, // FK to exercises table
                 order_index: exercise.order,
                 notes: exercise.notes || null,
                 superset_group: exercise.supersetGroup || null,
@@ -161,12 +169,20 @@ export async function POST(request: NextRequest) {
           // Create finisher exercises
           if (workout.finisher.exercises?.length > 0 && finisherData) {
             for (const exercise of workout.finisher.exercises) {
+              // Look up exercise_uuid from exercises table
+              const { data: exerciseRef } = await supabaseAdmin
+                .from('exercises')
+                .select('id')
+                .eq('name', exercise.exerciseName)
+                .single()
+              
               const { data: exerciseData, error: exerciseError } = await supabaseAdmin
                 .from('workout_exercises')
                 .insert({
                   workout_id: finisherData.id,
                   exercise_id: exercise.exerciseId,
                   exercise_name: exercise.exerciseName,
+                  exercise_uuid: exerciseRef?.id || null, // FK to exercises table
                   order_index: exercise.order,
                   notes: exercise.notes || null,
                 })

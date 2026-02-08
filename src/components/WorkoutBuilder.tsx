@@ -1640,11 +1640,13 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
       }
     })
 
-    // Sort by day of week (Sunday=0 through Saturday=6, then null/unassigned at bottom)
+    // Sort by day of week (Monday-first: Mon=0, Tue=1, ..., Sun=6, then null/unassigned at bottom)
+    // Convert JS day (0=Sun) to Monday-first index for sorting
+    const toMondayFirst = (day: number) => (day + 6) % 7
     const sortedDays = Array.from(dayMap.keys()).sort((a, b) => {
       if (a === null) return 1
       if (b === null) return -1
-      return a - b
+      return toMondayFirst(a) - toMondayFirst(b)
     })
 
     sortedDays.forEach(day => {
