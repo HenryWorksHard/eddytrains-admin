@@ -34,7 +34,7 @@ interface ExerciseSet {
   weightType: string
   notes: string
   // Cardio-specific fields
-  cardioType?: 'duration' | 'distance' | 'calories' | 'intervals'
+  cardioType?: 'duration' | 'distance' | 'calories' | 'intervals' | 'steps'
   cardioValue?: string // e.g., "20:00", "5km", "300cal", "10 rounds"
   cardioUnit?: string // e.g., "min", "km", "m", "cal", "rounds"
   heartRateZone?: 1 | 2 | 3 | 4 | 5
