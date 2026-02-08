@@ -78,23 +78,21 @@ export async function POST(req: Request) {
         .eq('id', organizationId);
     }
 
-    // Create checkout session
-    const successUrl = 'https://eddytrains-admin.vercel.app/billing?success=true';
-    const cancelUrl = 'https://eddytrains-admin.vercel.app/billing?canceled=true';
+    // Create checkout session for embedded checkout
+    const returnUrl = 'https://eddytrains-admin.vercel.app/billing?session_id={CHECKOUT_SESSION_ID}';
     
-    const sessionParams = {
+    const sessionParams: Record<string, string> = {
       customer: customerId,
-      'payment_method_types[0]': 'card',
       'line_items[0][price]': priceId,
       'line_items[0][quantity]': '1',
       mode: 'subscription',
-      success_url: successUrl,
-      cancel_url: cancelUrl,
+      ui_mode: 'embedded',
+      return_url: returnUrl,
       'metadata[organization_id]': organizationId,
       'subscription_data[metadata][organization_id]': organizationId,
     };
     
-    console.log('Creating checkout session with params:', JSON.stringify(sessionParams));
+    console.log('Creating embedded checkout session with params:', JSON.stringify(sessionParams));
     
     const session = await stripeRequest('checkout/sessions', sessionParams);
 
@@ -106,7 +104,8 @@ export async function POST(req: Request) {
       );
     }
 
-    return NextResponse.json({ url: session.url });
+    // Return client_secret for embedded checkout
+    return NextResponse.json({ clientSecret: session.client_secret });
   } catch (error) {
     console.error('Checkout error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

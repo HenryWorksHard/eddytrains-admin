@@ -1,10 +1,15 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Sidebar from '@/components/Sidebar';
-import { Crown, Sparkles, Clock } from 'lucide-react';
+import { Crown, Sparkles, Clock, X } from 'lucide-react';
+import { loadStripe } from '@stripe/stripe-js';
+import { EmbeddedCheckoutProvider, EmbeddedCheckout } from '@stripe/react-stripe-js';
+
+// Initialize Stripe
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 interface Organization {
   id: string;
@@ -73,6 +78,11 @@ function BillingContent() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  
+  // Embedded checkout state
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [selectedTier, setSelectedTier] = useState<string | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
 
   const isTrialing = organization?.subscription_status === 'trialing';
   const trialDaysLeft = organization?.trial_ends_at
@@ -80,12 +90,14 @@ function BillingContent() {
     : null;
 
   useEffect(() => {
-    if (searchParams.get('success')) {
+    // Check for successful checkout return
+    const sessionId = searchParams.get('session_id');
+    if (sessionId) {
       setMessage({ type: 'success', text: 'Subscription activated successfully!' });
-    } else if (searchParams.get('canceled')) {
-      setMessage({ type: 'error', text: 'Checkout was canceled.' });
+      // Clean up URL
+      router.replace('/billing');
     }
-  }, [searchParams]);
+  }, [searchParams, router]);
 
   useEffect(() => {
     async function loadData() {
@@ -127,35 +139,42 @@ function BillingContent() {
     loadData();
   }, [supabase, router]);
 
+  // Fetch client secret for embedded checkout
+  const fetchClientSecret = useCallback(async () => {
+    if (!organization || !selectedTier) return '';
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    const response = await fetch('/api/stripe/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        organizationId: organization.id,
+        tier: selectedTier,
+        email: user?.email,
+      }),
+    });
+
+    const data = await response.json();
+    
+    if (data.clientSecret) {
+      return data.clientSecret;
+    } else {
+      setMessage({ type: 'error', text: data.error || 'Failed to start checkout' });
+      setShowCheckout(false);
+      return '';
+    }
+  }, [organization, selectedTier, supabase]);
+
   const handleSubscribe = async (tier: string) => {
     if (!organization) return;
-    setActionLoading(true);
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      const response = await fetch('/api/stripe/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          organizationId: organization.id,
-          tier,
-          email: user?.email,
-        }),
-      });
-
-      const data = await response.json();
-      
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        setMessage({ type: 'error', text: data.error || 'Failed to start checkout' });
-      }
-    } catch {
-      setMessage({ type: 'error', text: 'Something went wrong' });
-    } finally {
-      setActionLoading(false);
-    }
+    setSelectedTier(tier);
+    setShowCheckout(true);
+  };
+  
+  const handleCloseCheckout = () => {
+    setShowCheckout(false);
+    setSelectedTier(null);
   };
 
   const handleManageBilling = async () => {
@@ -414,6 +433,41 @@ function BillingContent() {
           </div>
         </div>
       </div>
+
+      {/* Embedded Checkout Modal */}
+      {showCheckout && selectedTier && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden relative">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Subscribe to {selectedTier.charAt(0).toUpperCase() + selectedTier.slice(1)}
+                </h3>
+                <p className="text-sm text-gray-500">
+                  ${TIERS.find(t => t.id === selectedTier)?.price}/month
+                </p>
+              </div>
+              <button 
+                onClick={handleCloseCheckout}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {/* Stripe Embedded Checkout */}
+            <div className="p-4 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 80px)' }}>
+              <EmbeddedCheckoutProvider
+                stripe={stripePromise}
+                options={{ fetchClientSecret }}
+              >
+                <EmbeddedCheckout />
+              </EmbeddedCheckoutProvider>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
