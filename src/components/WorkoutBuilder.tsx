@@ -81,7 +81,7 @@ const cardioTypes = [
   { value: 'distance', label: 'Distance', icon: 'KM' },
   { value: 'calories', label: 'Calories', icon: 'CAL' },
   { value: 'intervals', label: 'Intervals', icon: 'INT' },
-  { value: 'steps', label: 'Steps', icon: '👟' },
+  { value: 'steps', label: 'Steps', icon: '#' },
 ]
 
 // Hyrox-specific options
@@ -1374,30 +1374,42 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
 
               <div className="w-px h-6 bg-zinc-700" />
 
-              {/* Value & Unit */}
-              <div className="flex items-center gap-1">
-                <input
-                  type="text"
-                  value={firstSet?.cardioValue || '20'}
-                  onChange={(e) => updateAllSets(workout.id, exercise.id, { cardioValue: e.target.value })}
-                  className="w-16 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                  placeholder="20"
-                />
-                <select
-                  value={firstSet?.cardioUnit || 'min'}
-                  onChange={(e) => updateAllSets(workout.id, exercise.id, { cardioUnit: e.target.value })}
-                  className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                >
-                  <option value="min">min</option>
-                  <option value="sec">sec</option>
-                  <option value="m">meters</option>
-                  <option value="km">km</option>
-                  <option value="mi">miles</option>
-                  <option value="cal">calories</option>
-                  <option value="rounds">rounds</option>
-                  <option value="steps">steps</option>
-                </select>
-              </div>
+              {/* Value & Unit - simplified for steps */}
+              {firstSet?.cardioType === 'steps' ? (
+                <div className="flex items-center gap-1">
+                  <input
+                    type="text"
+                    value={firstSet?.cardioValue || '10000'}
+                    onChange={(e) => updateAllSets(workout.id, exercise.id, { cardioValue: e.target.value, cardioUnit: 'steps' })}
+                    className="w-20 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                    placeholder="10000"
+                  />
+                  <span className="text-xs text-zinc-500">steps</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <input
+                    type="text"
+                    value={firstSet?.cardioValue || '20'}
+                    onChange={(e) => updateAllSets(workout.id, exercise.id, { cardioValue: e.target.value })}
+                    className="w-16 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                    placeholder="20"
+                  />
+                  <select
+                    value={firstSet?.cardioUnit || 'min'}
+                    onChange={(e) => updateAllSets(workout.id, exercise.id, { cardioUnit: e.target.value })}
+                    className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                  >
+                    <option value="min">min</option>
+                    <option value="sec">sec</option>
+                    <option value="m">meters</option>
+                    <option value="km">km</option>
+                    <option value="mi">miles</option>
+                    <option value="cal">calories</option>
+                    <option value="rounds">rounds</option>
+                  </select>
+                </div>
+              )}
 
               <div className="w-px h-6 bg-zinc-700" />
 
