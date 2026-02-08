@@ -179,12 +179,22 @@ async function handleSubscriptionCanceled(subscription: Stripe.Subscription) {
   // Find organization
   const { data: org } = await supabase
     .from('organizations')
-    .select('id')
+    .select('id, subscription_status, trial_ends_at')
     .eq('stripe_customer_id', customerId)
     .single();
 
   if (!org) {
     console.error('Organization not found for canceled subscription');
+    return;
+  }
+
+  // Check if org is still in trial period
+  const isStillInTrial = org.trial_ends_at && new Date(org.trial_ends_at) > new Date();
+  
+  if (isStillInTrial) {
+    // Trial user cancelled plan selection - keep them as trialing
+    // stripe_subscription_id was already cleared by our API
+    console.log(`Organization ${org.id} cancelled plan selection during trial - keeping trialing status`);
     return;
   }
 
