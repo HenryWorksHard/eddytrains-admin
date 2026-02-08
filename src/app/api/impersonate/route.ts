@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { IMPERSONATION_COOKIE } from '@/lib/org-context'
 
@@ -39,9 +38,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
   }
   
-  // Set the impersonation cookie
-  const cookieStore = await cookies()
-  cookieStore.set(IMPERSONATION_COOKIE, orgId, {
+  // Set the impersonation cookie via response headers
+  const response = NextResponse.json({ success: true, orgName: org.name })
+  response.cookies.set(IMPERSONATION_COOKIE, orgId, {
     httpOnly: false, // Allow client-side access for sidebar check
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
@@ -49,13 +48,13 @@ export async function POST(request: NextRequest) {
     path: '/',
   })
   
-  return NextResponse.json({ success: true, orgName: org.name })
+  return response
 }
 
 // End impersonation - clear cookie
 export async function DELETE() {
-  const cookieStore = await cookies()
-  cookieStore.delete(IMPERSONATION_COOKIE)
+  const response = NextResponse.json({ success: true })
+  response.cookies.delete(IMPERSONATION_COOKIE)
   
-  return NextResponse.json({ success: true })
+  return response
 }
