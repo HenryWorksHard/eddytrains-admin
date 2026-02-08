@@ -8,10 +8,10 @@ const supabase = createClient(
 
 // Price IDs for each tier
 const PRICE_IDS: Record<string, string> = {
-  starter: 'price_1SxHgCBDGilw48s7lrc9Pjox',
-  pro: 'price_1SxHgDBDGilw48s7vI6lQPE6',
-  studio: 'price_1SxHgDBDGilw48s7hHTBfSGO',
-  gym: 'price_1SxHgEBDGilw48s7ccmMHgzb',
+  starter: process.env.STRIPE_PRICE_STARTER || 'price_1SxHgCBDGilw48s7lrc9Pjox',
+  pro: process.env.STRIPE_PRICE_PRO || 'price_1SxHgDBDGilw48s7vI6lQPE6',
+  studio: process.env.STRIPE_PRICE_STUDIO || 'price_1SxHgDBDGilw48s7hHTBfSGO',
+  gym: process.env.STRIPE_PRICE_GYM || 'price_1SxHgEBDGilw48s7ccmMHgzb',
 };
 
 async function stripeRequest(endpoint: string, data: Record<string, string>) {
