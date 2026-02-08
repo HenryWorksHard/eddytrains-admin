@@ -63,8 +63,17 @@ export default function DangerZone() {
       if (result.error) {
         setMessage({ type: 'error', text: result.error });
       } else {
-        setMessage({ type: 'success', text: 'Subscription cancelled. You\'ll retain access until the end of your billing period.' });
+        setMessage({ type: 'success', text: result.message || 'Subscription cancelled.' });
         setShowConfirm(false);
+        
+        // If subscription was cleared (trial cancel), refresh the page to update all UI
+        if (result.cleared) {
+          setTimeout(() => {
+            window.location.href = '/billing';
+          }, 1500);
+          return;
+        }
+        
         // Refresh org data
         const { data: org } = await supabase
           .from('organizations')

@@ -132,7 +132,7 @@ export async function POST(req: Request) {
     // Get organization's Stripe IDs
     const { data: org, error } = await supabase
       .from('organizations')
-      .select('stripe_customer_id, stripe_subscription_id')
+      .select('stripe_customer_id, stripe_subscription_id, subscription_status')
       .eq('id', organizationId)
       .single();
 
@@ -166,12 +166,34 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'No active subscription' }, { status: 400 });
       }
 
-      // Cancel at period end (don't cancel immediately)
-      await stripe.subscriptions.update(org.stripe_subscription_id, {
-        cancel_at_period_end: true,
-      });
+      // For trialing users: cancel immediately and clear subscription
+      // For active users: cancel at period end
+      if (org.subscription_status === 'trialing') {
+        // Cancel subscription immediately (they haven't been charged)
+        await stripe.subscriptions.cancel(org.stripe_subscription_id);
+        
+        // Clear subscription from database but keep trialing status
+        await supabase
+          .from('organizations')
+          .update({ 
+            stripe_subscription_id: null,
+            subscription_tier: 'starter' // Reset to default tier
+          })
+          .eq('id', organizationId);
 
-      return NextResponse.json({ success: true, message: 'Subscription will cancel at period end' });
+        return NextResponse.json({ 
+          success: true, 
+          cleared: true,
+          message: 'Plan selection cancelled. You can select a new plan anytime before your trial ends.' 
+        });
+      } else {
+        // Active subscription: cancel at period end
+        await stripe.subscriptions.update(org.stripe_subscription_id, {
+          cancel_at_period_end: true,
+        });
+
+        return NextResponse.json({ success: true, message: 'Subscription will cancel at period end' });
+      }
     }
 
     if (action === 'reactivate') {
