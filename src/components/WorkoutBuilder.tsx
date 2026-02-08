@@ -81,6 +81,7 @@ const cardioTypes = [
   { value: 'distance', label: 'Distance', icon: 'KM' },
   { value: 'calories', label: 'Calories', icon: 'CAL' },
   { value: 'intervals', label: 'Intervals', icon: 'INT' },
+  { value: 'steps', label: 'Steps', icon: '👟' },
 ]
 
 // Hyrox-specific options
@@ -1215,7 +1216,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
     if (!exercise || !exercise.sets) return null
     const isExpanded = expandedExercises.has(exercise.id)
     const firstSet = exercise.sets[0]
-    const isCardio = isCardioExercise(exercise.exerciseId) || programType === 'cardio'
+    const isCardio = exercise.category === 'cardio' || isCardioExercise(exercise.exerciseId) || programType === 'cardio'
     const isHyrox = programType === 'hyrox'
     const isHybrid = programType === 'hybrid'
     // For hybrid, check the mode of the first set (or default to strength)
@@ -1394,6 +1395,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                   <option value="mi">miles</option>
                   <option value="cal">calories</option>
                   <option value="rounds">rounds</option>
+                  <option value="steps">steps</option>
                 </select>
               </div>
 
