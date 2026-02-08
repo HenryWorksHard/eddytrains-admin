@@ -172,12 +172,12 @@ export async function POST(req: Request) {
         // Cancel subscription immediately (they haven't been charged)
         await stripe.subscriptions.cancel(org.stripe_subscription_id);
         
-        // Clear subscription from database but keep trialing status
-        // Don't change subscription_tier - they stay on trial with current access
+        // Clear subscription from database, reset to default gym tier for trial
         await supabase
           .from('organizations')
           .update({ 
-            stripe_subscription_id: null
+            stripe_subscription_id: null,
+            subscription_tier: 'gym' // Reset to default trial tier (full access)
           })
           .eq('id', organizationId);
 
