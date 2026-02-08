@@ -52,7 +52,7 @@ export default function ExerciseSelector({ onSelect, onSelectSuperset, onClose, 
   const [isSupersetMode, setIsSupersetMode] = useState(false)
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([])
   const [showAllExercises, setShowAllExercises] = useState(false)
-  const [exercises, setExercises] = useState<Exercise[]>(exercisesData.exercises as Exercise[])
+  const [exercises, setExercises] = useState<Exercise[]>([])
   const [loading, setLoading] = useState(true)
   const modalRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -70,10 +70,15 @@ export default function ExerciseSelector({ onSelect, onSelectSuperset, onClose, 
           const data = await res.json()
           if (data.exercises?.length > 0) {
             setExercises(data.exercises)
+          } else {
+            setExercises(exercisesData.exercises as Exercise[])
           }
+        } else {
+          setExercises(exercisesData.exercises as Exercise[])
         }
       } catch (err) {
         console.error('Failed to fetch exercises, using fallback:', err)
+        setExercises(exercisesData.exercises as Exercise[])
       } finally {
         setLoading(false)
       }
