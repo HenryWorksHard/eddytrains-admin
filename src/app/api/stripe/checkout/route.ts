@@ -145,8 +145,9 @@ export async function POST(req: Request) {
     }
 
     // Create checkout session for embedded checkout
-    // Use APP_URL env var if set, otherwise default to production
-    const baseUrl = process.env.APP_URL || 'https://eddytrains-admin.vercel.app';
+    // Use the request origin to ensure we return to the same domain (important for preview deployments)
+    const requestUrl = new URL(req.url);
+    const baseUrl = `${requestUrl.protocol}//${requestUrl.host}`;
     const returnUrl = `${baseUrl}/billing?session_id={CHECKOUT_SESSION_ID}`;
     
     console.log('Using price ID:', priceId, 'Return URL:', returnUrl);
