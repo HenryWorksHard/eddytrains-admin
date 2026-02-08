@@ -36,9 +36,11 @@ export async function GET(req: Request) {
 
     // Get subscription details if exists
     if (org.stripe_subscription_id) {
-      const sub = await stripe.subscriptions.retrieve(org.stripe_subscription_id, {
+      const subResponse = await stripe.subscriptions.retrieve(org.stripe_subscription_id, {
         expand: ['default_payment_method', 'latest_invoice'],
       });
+      // Use any to handle Stripe SDK type variations
+      const sub = subResponse as any;
 
       subscription = {
         id: sub.id,
@@ -54,8 +56,8 @@ export async function GET(req: Request) {
       };
 
       // Get payment method
-      if (sub.default_payment_method && typeof sub.default_payment_method !== 'string') {
-        const pm = sub.default_payment_method as Stripe.PaymentMethod;
+      if (sub.default_payment_method && typeof sub.default_payment_method === 'object') {
+        const pm = sub.default_payment_method;
         if (pm.card) {
           paymentMethod = {
             id: pm.id,
