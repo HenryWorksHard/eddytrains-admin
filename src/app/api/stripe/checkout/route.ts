@@ -79,10 +79,8 @@ export async function POST(req: Request) {
     }
 
     // Create checkout session for embedded checkout
-    // Use dynamic URL based on environment
-    const baseUrl = process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
-      : 'https://eddytrains-admin.vercel.app';
+    // Use APP_URL env var if set, otherwise default to production
+    const baseUrl = process.env.APP_URL || 'https://eddytrains-admin.vercel.app';
     const returnUrl = `${baseUrl}/billing?session_id={CHECKOUT_SESSION_ID}`;
     
     console.log('Using price ID:', priceId, 'Return URL:', returnUrl);
