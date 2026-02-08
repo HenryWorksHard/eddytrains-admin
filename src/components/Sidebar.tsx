@@ -55,6 +55,8 @@ export default function Sidebar() {
   const [impersonatedOrgName, setImpersonatedOrgName] = useState<string>('')
   const [isTrialing, setIsTrialing] = useState(false)
   const [trialDaysLeft, setTrialDaysLeft] = useState(0)
+  const [hasPlanSelected, setHasPlanSelected] = useState(false)
+  const [selectedTier, setSelectedTier] = useState<string>('')
 
   useEffect(() => {
     setMounted(true)
@@ -99,7 +101,7 @@ export default function Sidebar() {
         if (profile?.organization_id && profile?.role !== 'super_admin') {
           const { data: org } = await supabase
             .from('organizations')
-            .select('name, subscription_status, trial_ends_at')
+            .select('name, subscription_status, trial_ends_at, stripe_subscription_id, subscription_tier')
             .eq('id', profile.organization_id)
             .single()
           if (org?.name) {
@@ -112,6 +114,11 @@ export default function Sidebar() {
               const now = new Date()
               const daysLeft = Math.max(0, Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
               setTrialDaysLeft(daysLeft)
+            }
+            // Check if plan is selected during trial
+            if (org?.stripe_subscription_id) {
+              setHasPlanSelected(true)
+              setSelectedTier(org?.subscription_tier || '')
             }
           }
         }
@@ -202,7 +209,11 @@ export default function Sidebar() {
               <span className="text-sm font-semibold text-yellow-400">Trial · {trialDaysLeft} days</span>
             </div>
             <p className="text-xs text-zinc-400">
-              Pick a plan to continue · <span className="text-yellow-400">Billing</span>
+              {hasPlanSelected ? (
+                <><span className="text-green-400 capitalize">{selectedTier}</span> selected · <span className="text-yellow-400">Billing</span></>
+              ) : (
+                <>Pick a plan to continue · <span className="text-yellow-400">Billing</span></>
+              )}
             </p>
           </Link>
         </div>
