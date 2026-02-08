@@ -14,14 +14,24 @@ const PRICE_IDS: Record<string, string> = {
   gym: process.env.STRIPE_PRICE_GYM || 'price_1SxHgEBDGilw48s7ccmMHgzb',
 };
 
-async function stripeRequest(endpoint: string, data: Record<string, string>) {
+async function stripeRequest(endpoint: string, data: Record<string, string>, method: string = 'POST') {
   const response = await fetch(`https://api.stripe.com/v1/${endpoint}`, {
-    method: 'POST',
+    method,
     headers: {
       'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}`,
       'Content-Type': 'application/x-www-form-urlencoded',
     },
-    body: new URLSearchParams(data).toString(),
+    body: method !== 'GET' ? new URLSearchParams(data).toString() : undefined,
+  });
+  return response.json();
+}
+
+async function stripeGet(endpoint: string) {
+  const response = await fetch(`https://api.stripe.com/v1/${endpoint}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}`,
+    },
   });
   return response.json();
 }
@@ -45,14 +55,70 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check if organization already has a Stripe customer
+    // Check organization status including subscription info
     const { data: org } = await supabase
       .from('organizations')
-      .select('stripe_customer_id, name')
+      .select('stripe_customer_id, stripe_subscription_id, subscription_status, name')
       .eq('id', organizationId)
       .single();
 
     let customerId = org?.stripe_customer_id;
+
+    // If organization is trialing and has an existing subscription, update it instead
+    if (org?.subscription_status === 'trialing' && org?.stripe_subscription_id) {
+      console.log('Updating existing trial subscription to new tier:', tier);
+      
+      // Get the current subscription to find the item ID
+      const subscription = await stripeGet(`subscriptions/${org.stripe_subscription_id}`);
+      
+      if (subscription.error) {
+        console.error('Failed to get subscription:', subscription.error);
+        return NextResponse.json(
+          { error: 'Failed to get subscription', details: subscription.error.message },
+          { status: 500 }
+        );
+      }
+
+      // Update the subscription item to the new price
+      // This preserves the trial - billing starts after trial_end
+      const subscriptionItemId = subscription.items?.data?.[0]?.id;
+      
+      if (!subscriptionItemId) {
+        return NextResponse.json(
+          { error: 'No subscription item found' },
+          { status: 500 }
+        );
+      }
+
+      const updateResult = await stripeRequest(`subscriptions/${org.stripe_subscription_id}`, {
+        [`items[0][id]`]: subscriptionItemId,
+        [`items[0][price]`]: priceId,
+        proration_behavior: 'none', // No proration during trial
+      });
+
+      if (updateResult.error) {
+        console.error('Failed to update subscription:', updateResult.error);
+        return NextResponse.json(
+          { error: 'Failed to update subscription', details: updateResult.error.message },
+          { status: 500 }
+        );
+      }
+
+      // Update the tier in Supabase
+      await supabase
+        .from('organizations')
+        .update({ subscription_tier: tier })
+        .eq('id', organizationId);
+
+      console.log('Successfully updated trial subscription to:', tier);
+
+      // Return success - no checkout needed, subscription updated
+      return NextResponse.json({ 
+        success: true, 
+        updated: true,
+        message: `Plan updated to ${tier}. Billing will start when your trial ends.`
+      });
+    }
 
     // Create new customer if needed
     if (!customerId) {

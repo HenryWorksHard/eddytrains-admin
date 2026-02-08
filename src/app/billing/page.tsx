@@ -159,7 +159,17 @@ function BillingContent() {
 
       const data = await response.json();
       
-      if (data.clientSecret) {
+      if (data.updated) {
+        // Subscription was updated directly (trial case) - no checkout needed
+        setMessage({ type: 'success', text: data.message || `Plan updated to ${tier}!` });
+        // Refresh organization data
+        const { data: updatedOrg } = await supabase
+          .from('organizations')
+          .select('*')
+          .eq('id', organization.id)
+          .single();
+        if (updatedOrg) setOrganization(updatedOrg);
+      } else if (data.clientSecret) {
         setClientSecret(data.clientSecret);
         setShowCheckout(true);
       } else {
@@ -169,6 +179,7 @@ function BillingContent() {
       setMessage({ type: 'error', text: 'Something went wrong' });
     } finally {
       setActionLoading(false);
+      setSelectedTier(null);
     }
   };
   
@@ -420,7 +431,7 @@ function BillingContent() {
             <h3 className="font-medium text-white">When will I be charged?</h3>
             <p className="text-zinc-400">
               {isTrialing 
-                ? 'You\'ll only be charged when you select a plan. Your trial is completely free.'
+                ? 'Pick your plan now and billing starts after your trial ends. Your trial is completely free.'
                 : 'You\'ll be charged immediately upon subscribing, then monthly on the same date.'}
             </p>
           </div>
