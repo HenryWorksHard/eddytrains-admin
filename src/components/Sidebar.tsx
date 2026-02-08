@@ -199,10 +199,10 @@ export default function Sidebar() {
           >
             <div className="flex items-center gap-2 mb-1">
               <CreditCard className="w-4 h-4 text-yellow-400" />
-              <span className="text-sm font-semibold text-yellow-400">Free Trial</span>
+              <span className="text-sm font-semibold text-yellow-400">Trial · {trialDaysLeft} days</span>
             </div>
             <p className="text-xs text-zinc-400">
-              {trialDaysLeft} days left · <span className="text-yellow-400">Upgrade</span>
+              Pick a plan to continue · <span className="text-yellow-400">Billing</span>
             </p>
           </Link>
         </div>
