@@ -455,25 +455,19 @@ function BillingContent() {
               )}
             </div>
 
-            {/* Subscription Actions */}
+            {/* Subscription Info */}
             <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
               <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
                 <Calendar className="w-5 h-5" />
-                Manage Subscription
+                Subscription
               </h3>
-              <div className="space-y-3">
-                <button
-                  onClick={handleCancelSubscription}
-                  disabled={actionLoading}
-                  className="w-full py-2 px-4 bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 rounded-lg transition-colors text-sm flex items-center justify-center gap-2"
-                >
-                  {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Cancel Plan Selection
-                </button>
-                <p className="text-xs text-zinc-500 text-center">
-                  Cancel before trial ends to avoid being charged
-                </p>
-              </div>
+              <p className="text-sm text-zinc-400">
+                Your <span className="text-yellow-400 capitalize font-medium">{organization.subscription_tier}</span> plan will begin billing on{' '}
+                <span className="text-white">{organization.trial_ends_at ? new Date(organization.trial_ends_at).toLocaleDateString() : 'trial end'}</span>.
+              </p>
+              <p className="text-xs text-zinc-500 mt-2">
+                To cancel or change plans, visit Settings.
+              </p>
             </div>
           </div>
         </div>
@@ -608,24 +602,17 @@ function BillingContent() {
                 Subscription
               </h3>
               <div className="space-y-3">
-                {billingData?.subscription && !billingData.subscription.cancelAtPeriodEnd && (
-                  <button
-                    onClick={handleCancelSubscription}
-                    disabled={actionLoading}
-                    className="w-full py-2 px-4 bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 rounded-lg transition-colors text-sm flex items-center justify-center gap-2"
-                  >
-                    {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                    Cancel Subscription
-                  </button>
-                )}
                 <button
                   onClick={() => organization && fetchBillingData(organization.id)}
                   disabled={billingLoading}
                   className="w-full py-2 px-4 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors text-sm flex items-center justify-center gap-2"
                 >
                   {billingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                  Refresh
+                  Refresh Billing
                 </button>
+                <p className="text-xs text-zinc-500 text-center">
+                  To cancel your subscription, visit Settings.
+                </p>
               </div>
             </div>
           </div>

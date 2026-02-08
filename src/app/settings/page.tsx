@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { Settings, User, Bell, Database, Shield } from 'lucide-react'
+import DangerZone from '@/components/DangerZone'
 
 export const dynamic = 'force-dynamic'
 
@@ -155,6 +156,9 @@ export default async function SettingsPage() {
             </button>
           </div>
         </section>
+
+        {/* Danger Zone */}
+        <DangerZone />
 
         {/* App Info */}
         <section className="text-center py-6 text-zinc-600 text-sm">
