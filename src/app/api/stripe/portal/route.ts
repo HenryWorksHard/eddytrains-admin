@@ -35,9 +35,10 @@ export async function POST(req: Request) {
     }
 
     // Create billing portal session
+    const returnUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://eddytrains-admin.vercel.app';
     const session = await stripe.billingPortal.sessions.create({
       customer: org.stripe_customer_id,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing`,
+      return_url: `${returnUrl}/billing`,
     });
 
     return NextResponse.json({ url: session.url });

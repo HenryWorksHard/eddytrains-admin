@@ -271,9 +271,16 @@ function BillingContent() {
                 You&apos;re experiencing all premium features. Explore everything, add clients, 
                 build programs — when you&apos;re ready, pick the plan that fits your needs.
               </p>
-              <div className="flex items-center gap-2 text-blue-400">
-                <Clock className="w-4 h-4" />
-                <span className="font-medium">{trialDaysLeft} days remaining</span>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 text-blue-400">
+                  <Clock className="w-4 h-4" />
+                  <span className="font-medium">{trialDaysLeft} days remaining</span>
+                </div>
+                {organization.stripe_subscription_id && organization.trial_ends_at && (
+                  <div className="text-green-400 text-sm">
+                    ✓ Plan selected — billing starts {new Date(organization.trial_ends_at).toLocaleDateString()}
+                  </div>
+                )}
               </div>
             </div>
             <div className="text-right">
@@ -306,7 +313,7 @@ function BillingContent() {
                 {clientCount} / {organization.client_limit === -1 ? '∞' : organization.client_limit} clients
               </p>
             </div>
-            {organization.stripe_subscription_id && (
+            {(organization.stripe_subscription_id || organization.stripe_customer_id) && (
               <button
                 onClick={handleManageBilling}
                 disabled={actionLoading}
