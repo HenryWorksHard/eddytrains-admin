@@ -79,7 +79,13 @@ export async function POST(req: Request) {
     }
 
     // Create checkout session for embedded checkout
-    const returnUrl = 'https://eddytrains-admin.vercel.app/billing?session_id={CHECKOUT_SESSION_ID}';
+    // Use dynamic URL based on environment
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : 'https://eddytrains-admin.vercel.app';
+    const returnUrl = `${baseUrl}/billing?session_id={CHECKOUT_SESSION_ID}`;
+    
+    console.log('Using price ID:', priceId, 'Return URL:', returnUrl);
     
     const sessionParams: Record<string, string> = {
       customer: customerId,
