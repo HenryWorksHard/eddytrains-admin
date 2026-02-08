@@ -4,12 +4,53 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Sidebar from '@/components/Sidebar';
-import { Crown, Sparkles, Clock, X, Loader2 } from 'lucide-react';
+import { Crown, Sparkles, Clock, X, Loader2, CreditCard, FileText, Calendar, AlertTriangle, RefreshCw, ExternalLink } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
-import { EmbeddedCheckoutProvider, EmbeddedCheckout } from '@stripe/react-stripe-js';
+import { EmbeddedCheckoutProvider, EmbeddedCheckout, Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
 // Initialize Stripe
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+
+interface SubscriptionDetails {
+  id: string;
+  status: string;
+  currentPeriodEnd: string;
+  currentPeriodStart: string;
+  cancelAtPeriodEnd: boolean;
+  cancelAt: string | null;
+  trialEnd: string | null;
+  priceId: string;
+  amount: number;
+  interval: string;
+}
+
+interface PaymentMethod {
+  id: string;
+  brand: string;
+  last4: string;
+  expMonth: number;
+  expYear: number;
+}
+
+interface Invoice {
+  id: string;
+  number: string;
+  status: string;
+  amount: number;
+  currency: string;
+  created: string;
+  hostedUrl: string;
+  pdfUrl: string;
+}
+
+interface BillingData {
+  subscription: SubscriptionDetails | null;
+  paymentMethod: PaymentMethod | null;
+  invoices: Invoice[];
+  tier: string;
+  status: string;
+  trialEndsAt: string | null;
+}
 
 interface Organization {
   id: string;
@@ -83,6 +124,12 @@ function BillingContent() {
   const [showCheckout, setShowCheckout] = useState(false);
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  
+  // Billing management state
+  const [billingData, setBillingData] = useState<BillingData | null>(null);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [showUpdateCard, setShowUpdateCard] = useState(false);
+  const [setupIntentSecret, setSetupIntentSecret] = useState<string | null>(null);
 
   const isTrialing = organization?.subscription_status === 'trialing';
   const trialDaysLeft = organization?.trial_ends_at
@@ -134,10 +181,105 @@ function BillingContent() {
 
       setClientCount(count || 0);
       setLoading(false);
+      
+      // Fetch billing data if customer exists
+      if (org?.stripe_customer_id) {
+        fetchBillingData(org.id);
+      }
     }
 
     loadData();
   }, [supabase, router]);
+
+  const fetchBillingData = async (orgId: string) => {
+    setBillingLoading(true);
+    try {
+      const response = await fetch(`/api/stripe/subscription?organizationId=${orgId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setBillingData(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch billing data:', error);
+    } finally {
+      setBillingLoading(false);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!organization || !confirm('Are you sure you want to cancel? You\'ll retain access until the end of your billing period.')) return;
+    
+    setActionLoading(true);
+    try {
+      const response = await fetch('/api/stripe/subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ organizationId: organization.id, action: 'cancel' }),
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        setMessage({ type: 'success', text: 'Subscription will cancel at the end of your billing period.' });
+        fetchBillingData(organization.id);
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Failed to cancel subscription' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Something went wrong' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReactivateSubscription = async () => {
+    if (!organization) return;
+    
+    setActionLoading(true);
+    try {
+      const response = await fetch('/api/stripe/subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ organizationId: organization.id, action: 'reactivate' }),
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        setMessage({ type: 'success', text: 'Subscription reactivated!' });
+        fetchBillingData(organization.id);
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Failed to reactivate' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Something went wrong' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleUpdateCard = async () => {
+    if (!organization) return;
+    
+    setActionLoading(true);
+    try {
+      const response = await fetch('/api/stripe/setup-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ organizationId: organization.id }),
+      });
+      
+      const data = await response.json();
+      if (data.clientSecret) {
+        setSetupIntentSecret(data.clientSecret);
+        setShowUpdateCard(true);
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Failed to start card update' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Something went wrong' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const handleSubscribe = async (tier: string) => {
     if (!organization) return;
@@ -293,59 +435,189 @@ function BillingContent() {
 
       {/* Active Subscription Status */}
       {!isTrialing && organization && (
-        <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 mb-8">
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-white mb-1">Current Plan</h2>
-              <div className="flex items-center gap-3">
-                <span className="text-2xl font-bold text-yellow-500 capitalize">
-                  {organization.subscription_tier}
-                </span>
-                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                  organization.subscription_status === 'active' 
-                    ? 'bg-green-500/20 text-green-400'
-                    : 'bg-yellow-500/20 text-yellow-400'
-                }`}>
-                  {organization.subscription_status}
-                </span>
+        <div className="space-y-4 mb-8">
+          {/* Current Plan Card */}
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-white mb-1">Current Plan</h2>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl font-bold text-yellow-500 capitalize">
+                    {organization.subscription_tier}
+                  </span>
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${
+                    organization.subscription_status === 'active' 
+                      ? 'bg-green-500/20 text-green-400'
+                      : organization.subscription_status === 'canceled'
+                      ? 'bg-red-500/20 text-red-400'
+                      : 'bg-yellow-500/20 text-yellow-400'
+                  }`}>
+                    {billingData?.subscription?.cancelAtPeriodEnd ? 'Canceling' : organization.subscription_status}
+                  </span>
+                </div>
+                <p className="text-zinc-400 mt-2">
+                  {clientCount} / {organization.client_limit === -1 ? '∞' : organization.client_limit} clients
+                </p>
               </div>
-              <p className="text-zinc-400 mt-2">
-                {clientCount} / {organization.client_limit === -1 ? '∞' : organization.client_limit} clients
-              </p>
-            </div>
-            {(organization.stripe_subscription_id || organization.stripe_customer_id) && (
-              <button
-                onClick={handleManageBilling}
-                disabled={actionLoading}
-                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
-              >
-                {actionLoading && !selectedTier && (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+              <div className="text-right">
+                {billingData?.subscription && (
+                  <>
+                    <p className="text-sm text-zinc-400">Next billing date</p>
+                    <p className="text-white font-medium">
+                      {new Date(billingData.subscription.currentPeriodEnd).toLocaleDateString()}
+                    </p>
+                    <p className="text-xl font-bold text-white mt-1">
+                      ${(billingData.subscription.amount / 100).toFixed(0)}/{billingData.subscription.interval}
+                    </p>
+                  </>
                 )}
-                Manage Billing
-              </button>
+              </div>
+            </div>
+
+            {/* Cancel warning */}
+            {billingData?.subscription?.cancelAtPeriodEnd && (
+              <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center justify-between">
+                <div className="flex items-center gap-2 text-red-400">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span className="text-sm">Subscription ends {new Date(billingData.subscription.currentPeriodEnd).toLocaleDateString()}</span>
+                </div>
+                <button
+                  onClick={handleReactivateSubscription}
+                  disabled={actionLoading}
+                  className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1"
+                >
+                  {actionLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                  Reactivate
+                </button>
+              </div>
+            )}
+
+            {organization.client_limit !== -1 && (
+              <div className="mt-4">
+                <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all ${
+                      clientCount / organization.client_limit > 0.9
+                        ? 'bg-red-500'
+                        : clientCount / organization.client_limit > 0.7
+                        ? 'bg-yellow-500'
+                        : 'bg-green-500'
+                    }`}
+                    style={{ width: `${Math.min((clientCount / organization.client_limit) * 100, 100)}%` }}
+                  />
+                </div>
+                {clientCount >= organization.client_limit && (
+                  <p className="text-red-400 text-sm mt-2">
+                    You&apos;ve reached your client limit. Upgrade to add more clients.
+                  </p>
+                )}
+              </div>
             )}
           </div>
 
-          {organization.client_limit !== -1 && (
-            <div className="mt-4">
-              <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-                <div
-                  className={`h-full transition-all ${
-                    clientCount / organization.client_limit > 0.9
-                      ? 'bg-red-500'
-                      : clientCount / organization.client_limit > 0.7
-                      ? 'bg-yellow-500'
-                      : 'bg-green-500'
-                  }`}
-                  style={{ width: `${Math.min((clientCount / organization.client_limit) * 100, 100)}%` }}
-                />
+          {/* Payment Method & Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Payment Method Card */}
+            <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-white flex items-center gap-2">
+                  <CreditCard className="w-5 h-5" />
+                  Payment Method
+                </h3>
+                <button
+                  onClick={handleUpdateCard}
+                  disabled={actionLoading}
+                  className="text-sm text-yellow-400 hover:text-yellow-300 flex items-center gap-1"
+                >
+                  {actionLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                  Update
+                </button>
               </div>
-              {clientCount >= organization.client_limit && (
-                <p className="text-red-400 text-sm mt-2">
-                  You&apos;ve reached your client limit. Upgrade to add more clients.
-                </p>
+              {billingLoading ? (
+                <div className="flex items-center gap-2 text-zinc-400">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading...
+                </div>
+              ) : billingData?.paymentMethod ? (
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-8 bg-zinc-800 rounded flex items-center justify-center text-xs font-bold text-white uppercase">
+                    {billingData.paymentMethod.brand}
+                  </div>
+                  <div>
+                    <p className="text-white">•••• {billingData.paymentMethod.last4}</p>
+                    <p className="text-sm text-zinc-400">
+                      Expires {billingData.paymentMethod.expMonth}/{billingData.paymentMethod.expYear}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-zinc-400 text-sm">No payment method on file</p>
               )}
+            </div>
+
+            {/* Subscription Actions */}
+            <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+              <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+                <Calendar className="w-5 h-5" />
+                Subscription
+              </h3>
+              <div className="space-y-3">
+                {billingData?.subscription && !billingData.subscription.cancelAtPeriodEnd && (
+                  <button
+                    onClick={handleCancelSubscription}
+                    disabled={actionLoading}
+                    className="w-full py-2 px-4 bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 rounded-lg transition-colors text-sm flex items-center justify-center gap-2"
+                  >
+                    {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                    Cancel Subscription
+                  </button>
+                )}
+                <button
+                  onClick={() => organization && fetchBillingData(organization.id)}
+                  disabled={billingLoading}
+                  className="w-full py-2 px-4 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors text-sm flex items-center justify-center gap-2"
+                >
+                  {billingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                  Refresh
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Invoice History */}
+          {billingData?.invoices && billingData.invoices.length > 0 && (
+            <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+              <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Invoice History
+              </h3>
+              <div className="space-y-2">
+                {billingData.invoices.map((invoice) => (
+                  <div key={invoice.id} className="flex items-center justify-between py-2 border-b border-zinc-800 last:border-0">
+                    <div>
+                      <p className="text-white text-sm">{invoice.number || 'Invoice'}</p>
+                      <p className="text-zinc-400 text-xs">{new Date(invoice.created).toLocaleDateString()}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-sm font-medium ${
+                        invoice.status === 'paid' ? 'text-green-400' : 'text-yellow-400'
+                      }`}>
+                        ${(invoice.amount / 100).toFixed(2)}
+                      </span>
+                      {invoice.hostedUrl && (
+                        <a
+                          href={invoice.hostedUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-zinc-400 hover:text-white"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -496,7 +768,117 @@ function BillingContent() {
           </div>
         </div>
       )}
+
+      {/* Update Card Modal */}
+      {showUpdateCard && setupIntentSecret && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden relative">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+              <h3 className="text-lg font-semibold text-gray-900">Update Payment Method</h3>
+              <button 
+                onClick={() => {
+                  setShowUpdateCard(false);
+                  setSetupIntentSecret(null);
+                }}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              <Elements stripe={stripePromise} options={{ clientSecret: setupIntentSecret }}>
+                <UpdateCardForm 
+                  organizationId={organization?.id || ''} 
+                  onSuccess={() => {
+                    setShowUpdateCard(false);
+                    setSetupIntentSecret(null);
+                    setMessage({ type: 'success', text: 'Payment method updated!' });
+                    if (organization) fetchBillingData(organization.id);
+                  }}
+                  onError={(error) => {
+                    setMessage({ type: 'error', text: error });
+                  }}
+                />
+              </Elements>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+// Update Card Form Component
+function UpdateCardForm({ 
+  organizationId, 
+  onSuccess, 
+  onError 
+}: { 
+  organizationId: string; 
+  onSuccess: () => void; 
+  onError: (error: string) => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    setLoading(true);
+    try {
+      const { error, setupIntent } = await stripe.confirmSetup({
+        elements,
+        confirmParams: {
+          return_url: window.location.href,
+        },
+        redirect: 'if_required',
+      });
+
+      if (error) {
+        onError(error.message || 'Failed to update card');
+        return;
+      }
+
+      if (setupIntent && setupIntent.payment_method) {
+        // Update the payment method on the backend
+        const response = await fetch('/api/stripe/subscription', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            organizationId,
+            action: 'update_payment_method',
+            paymentMethodId: setupIntent.payment_method,
+          }),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          onSuccess();
+        } else {
+          onError(data.error || 'Failed to save payment method');
+        }
+      }
+    } catch {
+      onError('Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <PaymentElement />
+      <button
+        type="submit"
+        disabled={!stripe || loading}
+        className="w-full py-3 bg-yellow-400 hover:bg-yellow-500 disabled:bg-gray-300 text-black font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+      >
+        {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+        Save Card
+      </button>
+    </form>
   );
 }
 
