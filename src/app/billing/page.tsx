@@ -615,7 +615,7 @@ function BillingContent() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {TIERS.map((tier) => {
           const isCurrentTier = organization?.subscription_tier === tier.id;
-          const isSelectedForTrial = isTrialing && isCurrentTier && organization?.stripe_subscription_id;
+          const isSelectedForTrial = isTrialing && isCurrentTier && !!organization?.stripe_subscription_id;
           const hasSubscription = !!organization?.stripe_subscription_id;
           const isRecommended = isTrialing && !hasSubscription && tier.id === getRecommendedTier();
 
