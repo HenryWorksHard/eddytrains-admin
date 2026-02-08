@@ -413,6 +413,72 @@ function BillingContent() {
         </div>
       )}
 
+      {/* Trial Billing Management - shows when trial user has selected a plan */}
+      {isTrialing && organization?.stripe_subscription_id && (
+        <div className="space-y-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Payment Method Card */}
+            <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-white flex items-center gap-2">
+                  <CreditCard className="w-5 h-5" />
+                  Payment Method
+                </h3>
+                <button
+                  onClick={handleUpdateCard}
+                  disabled={actionLoading}
+                  className="text-sm text-yellow-400 hover:text-yellow-300 flex items-center gap-1"
+                >
+                  {actionLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                  Update
+                </button>
+              </div>
+              {billingLoading ? (
+                <div className="flex items-center gap-2 text-zinc-400">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading...
+                </div>
+              ) : billingData?.paymentMethod ? (
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-8 bg-zinc-800 rounded flex items-center justify-center text-xs font-bold text-white uppercase">
+                    {billingData.paymentMethod.brand}
+                  </div>
+                  <div>
+                    <p className="text-white">•••• {billingData.paymentMethod.last4}</p>
+                    <p className="text-sm text-zinc-400">
+                      Expires {billingData.paymentMethod.expMonth}/{billingData.paymentMethod.expYear}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-zinc-400 text-sm">No payment method on file</p>
+              )}
+            </div>
+
+            {/* Subscription Actions */}
+            <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+              <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+                <Calendar className="w-5 h-5" />
+                Manage Subscription
+              </h3>
+              <div className="space-y-3">
+                <button
+                  onClick={handleCancelSubscription}
+                  disabled={actionLoading}
+                  className="w-full py-2 px-4 bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 rounded-lg transition-colors text-sm flex items-center justify-center gap-2"
+                >
+                  {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Cancel Plan Selection
+                </button>
+                <p className="text-xs text-zinc-500 text-center">
+                  Cancel before trial ends to avoid being charged
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Active Subscription Status */}
       {!isTrialing && organization && (
         <div className="space-y-4 mb-8">
