@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState, useCallback } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Sidebar from '@/components/Sidebar';
@@ -139,42 +139,43 @@ function BillingContent() {
     loadData();
   }, [supabase, router]);
 
-  // Fetch client secret for embedded checkout
-  const fetchClientSecret = useCallback(async () => {
-    if (!organization || !selectedTier) return '';
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    const response = await fetch('/api/stripe/checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        organizationId: organization.id,
-        tier: selectedTier,
-        email: user?.email,
-      }),
-    });
-
-    const data = await response.json();
-    
-    if (data.clientSecret) {
-      return data.clientSecret;
-    } else {
-      setMessage({ type: 'error', text: data.error || 'Failed to start checkout' });
-      setShowCheckout(false);
-      return '';
-    }
-  }, [organization, selectedTier, supabase]);
-
   const handleSubscribe = async (tier: string) => {
     if (!organization) return;
+    setActionLoading(true);
     setSelectedTier(tier);
-    setShowCheckout(true);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organizationId: organization.id,
+          tier,
+          email: user?.email,
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.clientSecret) {
+        setClientSecret(data.clientSecret);
+        setShowCheckout(true);
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Failed to start checkout' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Something went wrong' });
+    } finally {
+      setActionLoading(false);
+    }
   };
   
   const handleCloseCheckout = () => {
     setShowCheckout(false);
     setSelectedTier(null);
+    setClientSecret(null);
   };
 
   const handleManageBilling = async () => {
@@ -435,7 +436,7 @@ function BillingContent() {
       </div>
 
       {/* Embedded Checkout Modal */}
-      {showCheckout && selectedTier && (
+      {showCheckout && selectedTier && clientSecret && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden relative">
             {/* Header */}
@@ -460,7 +461,7 @@ function BillingContent() {
             <div className="p-4 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 80px)' }}>
               <EmbeddedCheckoutProvider
                 stripe={stripePromise}
-                options={{ fetchClientSecret }}
+                options={{ clientSecret }}
               >
                 <EmbeddedCheckout />
               </EmbeddedCheckoutProvider>
