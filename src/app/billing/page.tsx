@@ -334,31 +334,6 @@ function BillingContent() {
     setClientSecret(null);
   };
 
-  const handleManageBilling = async () => {
-    if (!organization) return;
-    setActionLoading(true);
-
-    try {
-      const response = await fetch('/api/stripe/portal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ organizationId: organization.id }),
-      });
-
-      const data = await response.json();
-      
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        setMessage({ type: 'error', text: data.error || 'Failed to open billing portal' });
-      }
-    } catch {
-      setMessage({ type: 'error', text: 'Something went wrong' });
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
   // Recommend a tier based on client count
   const getRecommendedTier = () => {
     if (clientCount <= 10) return 'starter';
@@ -624,9 +599,14 @@ function BillingContent() {
       )}
 
       {/* Pricing Tiers */}
-      <h2 className="text-lg font-semibold text-white mb-4">
+      <h2 className="text-lg font-semibold text-white mb-2">
         {isTrialing ? 'Select a plan to continue after your trial' : 'Available Plans'}
       </h2>
+      {isTrialing && (
+        <p className="text-zinc-400 text-sm mb-4">
+          Your card will be saved but you won&apos;t be charged until your trial ends on {organization?.trial_ends_at ? new Date(organization.trial_ends_at).toLocaleDateString() : 'the trial end date'}.
+        </p>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {TIERS.map((tier) => {
           const isCurrentTier = !isTrialing && organization?.subscription_tier === tier.id;

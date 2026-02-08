@@ -58,7 +58,7 @@ export async function POST(req: Request) {
     // Check organization status including subscription info
     const { data: org } = await supabase
       .from('organizations')
-      .select('stripe_customer_id, stripe_subscription_id, subscription_status, name')
+      .select('stripe_customer_id, stripe_subscription_id, subscription_status, trial_ends_at, name')
       .eq('id', organizationId)
       .single();
 
@@ -161,6 +161,16 @@ export async function POST(req: Request) {
       'metadata[organization_id]': organizationId,
       'subscription_data[metadata][organization_id]': organizationId,
     };
+
+    // For trialing users, set trial_end so they're not charged until trial ends
+    if (org?.subscription_status === 'trialing' && org?.trial_ends_at) {
+      const trialEndTimestamp = Math.floor(new Date(org.trial_ends_at).getTime() / 1000);
+      // Only set trial_end if it's in the future
+      if (trialEndTimestamp > Math.floor(Date.now() / 1000)) {
+        sessionParams['subscription_data[trial_end]'] = trialEndTimestamp.toString();
+        console.log('Setting trial_end to:', org.trial_ends_at);
+      }
+    }
     
     console.log('Creating embedded checkout session with params:', JSON.stringify(sessionParams));
     
