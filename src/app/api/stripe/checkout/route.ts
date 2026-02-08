@@ -64,9 +64,10 @@ export async function POST(req: Request) {
 
     let customerId = org?.stripe_customer_id;
 
-    // If organization is trialing and has an existing subscription, update it instead
-    if (org?.subscription_status === 'trialing' && org?.stripe_subscription_id) {
-      console.log('Updating existing trial subscription to new tier:', tier);
+    // If organization has an existing subscription, update it directly
+    if (org?.stripe_subscription_id) {
+      const isTrialing = org?.subscription_status === 'trialing';
+      console.log(`Updating existing ${isTrialing ? 'trial' : 'active'} subscription to new tier:`, tier);
       
       // Get the current subscription to find the item ID
       const subscription = await stripeGet(`subscriptions/${org.stripe_subscription_id}`);
@@ -80,7 +81,6 @@ export async function POST(req: Request) {
       }
 
       // Update the subscription item to the new price
-      // This preserves the trial - billing starts after trial_end
       const subscriptionItemId = subscription.items?.data?.[0]?.id;
       
       if (!subscriptionItemId) {
@@ -90,10 +90,12 @@ export async function POST(req: Request) {
         );
       }
 
+      // For trialing: no proration (no charge yet)
+      // For active: prorate immediately (charge/credit difference)
       const updateResult = await stripeRequest(`subscriptions/${org.stripe_subscription_id}`, {
         [`items[0][id]`]: subscriptionItemId,
         [`items[0][price]`]: priceId,
-        proration_behavior: 'none', // No proration during trial
+        proration_behavior: isTrialing ? 'none' : 'create_prorations',
       });
 
       if (updateResult.error) {
@@ -110,13 +112,17 @@ export async function POST(req: Request) {
         .update({ subscription_tier: tier })
         .eq('id', organizationId);
 
-      console.log('Successfully updated trial subscription to:', tier);
+      console.log('Successfully updated subscription to:', tier);
 
       // Return success - no checkout needed, subscription updated
+      const message = isTrialing 
+        ? `Plan updated to ${tier}. Billing will start when your trial ends.`
+        : `Plan upgraded to ${tier}. Your billing has been adjusted.`;
+      
       return NextResponse.json({ 
         success: true, 
         updated: true,
-        message: `Plan updated to ${tier}. Billing will start when your trial ends.`
+        message
       });
     }
 
