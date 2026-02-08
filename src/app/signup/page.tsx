@@ -244,7 +244,8 @@ export default function SignupPage() {
                   <button
                     type="button"
                     onClick={() => setStep(1)}
-                    className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-xl transition-colors"
+                    disabled={loading}
+                    className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50"
                   >
                     Back
                   </button>
@@ -260,6 +261,17 @@ export default function SignupPage() {
                     )}
                   </button>
                 </div>
+
+                {/* Loading Overlay */}
+                {loading && (
+                  <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center">
+                    <div className="bg-zinc-900 rounded-2xl p-8 text-center max-w-sm mx-4">
+                      <Loader2 className="w-12 h-12 text-yellow-400 animate-spin mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold text-white mb-2">Creating Your Account</h3>
+                      <p className="text-zinc-400 text-sm">Setting up your trainer portal...</p>
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </form>
