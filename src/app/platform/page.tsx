@@ -16,6 +16,9 @@ interface Organization {
   client_limit: number;
   created_at: string;
   custom_monthly_price?: number | null;
+  trial_ends_at?: string | null;
+  stripe_subscription_id?: string | null;
+  stripe_customer_id?: string | null;
   profiles?: { email: string; full_name: string }[];
   client_count?: number;
 }
@@ -25,6 +28,7 @@ interface Stats {
   totalClients: number;
   activeSubscriptions: number;
   trialingOrgs: number;
+  trialingNoPlan: number;
   mrr: number;
 }
 
@@ -120,6 +124,7 @@ export default function PlatformPage() {
         // Calculate stats
         const activeOrgs = orgsWithCounts.filter((o: Organization) => o.subscription_status === 'active');
         const trialingOrgs = orgsWithCounts.filter((o: Organization) => o.subscription_status === 'trialing');
+        const trialingNoPlan = trialingOrgs.filter((o: Organization) => !o.stripe_subscription_id);
         const totalClients = orgsWithCounts.reduce((sum: number, o: Organization) => sum + (o.client_count || 0), 0);
         // Use custom_monthly_price if set, otherwise use tier price
         const mrr = activeOrgs.reduce((sum: number, o: Organization) => {
@@ -132,6 +137,7 @@ export default function PlatformPage() {
           totalClients,
           activeSubscriptions: activeOrgs.length,
           trialingOrgs: trialingOrgs.length,
+          trialingNoPlan: trialingNoPlan.length,
           mrr,
         });
       }
@@ -455,6 +461,25 @@ export default function PlatformPage() {
             </div>
           )}
 
+          {/* Trialing Without Plan Alert */}
+          {stats && stats.trialingNoPlan > 0 && (
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-8">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-yellow-500/20 rounded-lg">
+                  <CreditCard className="w-5 h-5 text-yellow-400" />
+                </div>
+                <div>
+                  <p className="text-white font-medium">
+                    {stats.trialingNoPlan} trainer{stats.trialingNoPlan !== 1 ? 's' : ''} on trial without a plan selected
+                  </p>
+                  <p className="text-zinc-400 text-sm">
+                    Consider sending reminder emails before their trials expire
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Recent Activity */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
@@ -503,15 +528,15 @@ export default function PlatformPage() {
           </div>
 
           {/* Organizations Table */}
-          <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
-            <table className="w-full">
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden overflow-x-auto">
+            <table className="w-full min-w-[1000px]">
               <thead>
                 <tr className="border-b border-zinc-800">
                   <th className="text-left p-4 text-zinc-400 font-medium">Organization</th>
                   <th className="text-left p-4 text-zinc-400 font-medium">Owner</th>
                   <th className="text-left p-4 text-zinc-400 font-medium">Plan</th>
-                  <th className="text-left p-4 text-zinc-400 font-medium">Price</th>
                   <th className="text-left p-4 text-zinc-400 font-medium">Status</th>
+                  <th className="text-left p-4 text-zinc-400 font-medium">Trial / Billing</th>
                   <th className="text-left p-4 text-zinc-400 font-medium">Clients</th>
                   <th className="text-left p-4 text-zinc-400 font-medium">Actions</th>
                 </tr>
@@ -530,26 +555,15 @@ export default function PlatformPage() {
                       <p className="text-zinc-500 text-sm">{org.profiles?.[0]?.email || ''}</p>
                     </td>
                     <td className="p-4">
-                      <span className="px-2 py-1 bg-yellow-400/10 text-yellow-400 rounded text-sm capitalize">
-                        {org.subscription_tier}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <button
-                        onClick={() => handleEditPrice(org)}
-                        className="group flex items-center gap-1 hover:text-yellow-400 transition-colors"
-                        title="Click to edit price"
-                      >
-                        <span className="text-white font-medium group-hover:text-yellow-400">
-                          ${org.custom_monthly_price ?? TIER_PRICES[org.subscription_tier] ?? 0}
+                      <div>
+                        <span className="px-2 py-1 bg-yellow-400/10 text-yellow-400 rounded text-sm capitalize">
+                          {org.subscription_tier}
                         </span>
-                        {org.custom_monthly_price !== null && org.custom_monthly_price !== undefined && (
-                          <span className="text-xs text-zinc-500 ml-1">(custom)</span>
-                        )}
-                        <svg className="w-3 h-3 text-zinc-600 group-hover:text-yellow-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                      </button>
+                        <p className="text-zinc-500 text-xs mt-1">
+                          ${org.custom_monthly_price ?? TIER_PRICES[org.subscription_tier] ?? 0}/mo
+                          {org.custom_monthly_price !== null && org.custom_monthly_price !== undefined && ' (custom)'}
+                        </p>
+                      </div>
                     </td>
                     <td className="p-4">
                       <span
@@ -558,11 +572,47 @@ export default function PlatformPage() {
                             ? 'bg-green-500/10 text-green-400'
                             : org.subscription_status === 'trialing'
                             ? 'bg-blue-500/10 text-blue-400'
+                            : org.subscription_status === 'canceled'
+                            ? 'bg-red-500/10 text-red-400'
                             : 'bg-zinc-500/10 text-zinc-400'
                         }`}
                       >
                         {org.subscription_status}
                       </span>
+                    </td>
+                    <td className="p-4">
+                      {org.subscription_status === 'trialing' ? (
+                        <div>
+                          {org.trial_ends_at ? (
+                            <>
+                              <p className="text-white text-sm">
+                                {Math.max(0, Math.ceil((new Date(org.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} days left
+                              </p>
+                              <p className="text-zinc-500 text-xs">
+                                Ends {new Date(org.trial_ends_at).toLocaleDateString()}
+                              </p>
+                            </>
+                          ) : (
+                            <p className="text-zinc-500 text-sm">No trial date</p>
+                          )}
+                          {org.stripe_subscription_id ? (
+                            <span className="text-green-400 text-xs">✓ Plan selected</span>
+                          ) : (
+                            <span className="text-yellow-400 text-xs">⚠ No plan selected</span>
+                          )}
+                        </div>
+                      ) : org.subscription_status === 'active' ? (
+                        <div>
+                          <p className="text-green-400 text-sm">Active</p>
+                          {org.stripe_subscription_id ? (
+                            <span className="text-zinc-500 text-xs">Stripe connected</span>
+                          ) : (
+                            <span className="text-zinc-500 text-xs">Manual billing</span>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-zinc-500 text-sm">—</p>
+                      )}
                     </td>
                     <td className="p-4">
                       <span className="text-white">
