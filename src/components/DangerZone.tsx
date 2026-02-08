@@ -66,11 +66,13 @@ export default function DangerZone() {
         setMessage({ type: 'success', text: result.message || 'Subscription cancelled.' });
         setShowConfirm(false);
         
-        // If subscription was cleared (trial cancel), redirect to billing with full reload
+        // If subscription was cleared (trial cancel), hide immediately and redirect
         if (result.cleared) {
+          setOrganization(null); // Hide the danger zone immediately
           setMessage({ type: 'success', text: result.message });
           setTimeout(() => {
-            window.location.replace('/billing');
+            // Force fresh page load with cache buster
+            window.location.href = '/billing?cleared=' + Date.now();
           }, 1500);
           return;
         }

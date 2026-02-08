@@ -139,9 +139,13 @@ function BillingContent() {
   useEffect(() => {
     // Check for successful checkout return
     const sessionId = searchParams.get('session_id');
+    const cleared = searchParams.get('cleared');
+    
     if (sessionId) {
       setMessage({ type: 'success', text: 'Subscription activated successfully!' });
-      // Clean up URL
+      router.replace('/billing');
+    } else if (cleared) {
+      setMessage({ type: 'success', text: 'Plan selection cancelled.' });
       router.replace('/billing');
     }
   }, [searchParams, router]);
