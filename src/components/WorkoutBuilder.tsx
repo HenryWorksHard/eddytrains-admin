@@ -182,6 +182,9 @@ export interface Workout {
   // EMOM settings (for cardio/hyrox/hybrid)
   isEmom?: boolean
   emomInterval?: number // interval in seconds (e.g., 60 = every minute)
+  // Warmup & Recovery (optional)
+  warmupExercises?: WorkoutExercise[]
+  recoveryNotes?: string
 }
 
 interface WorkoutBuilderProps {
@@ -353,6 +356,7 @@ function SortableExerciseItem({ id, children }: { id: string; children: React.Re
 export default function WorkoutBuilder({ workouts, onChange, programType }: WorkoutBuilderProps) {
   const [showExerciseSelector, setShowExerciseSelector] = useState<string | null>(null)
   const [showFinisherExerciseSelector, setShowFinisherExerciseSelector] = useState<string | null>(null)
+  const [showWarmupSelector, setShowWarmupSelector] = useState<string | null>(null)
   const [expandedWorkouts, setExpandedWorkouts] = useState<Set<string>>(new Set())
   const [expandedFinishers, setExpandedFinishers] = useState<Set<string>>(new Set())
   const [expandedExercises, setExpandedExercises] = useState<Set<string>>(new Set())
@@ -828,6 +832,40 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
       exercises: [...workout.finisher.exercises, ...newExercises]
     })
     setShowFinisherExerciseSelector(null)
+  }
+
+  // Add exercise to warmup section
+  const addWarmupExercise = (workoutId: string, exercise: { id: string; name: string; category: string }) => {
+    const workout = workouts.find(w => w.id === workoutId)
+    if (!workout) return
+
+    const defaultWeightType = getDefaultWeightType(exercise.id)
+    const warmupExercises = workout.warmupExercises || []
+
+    const newExercise: WorkoutExercise = {
+      id: generateId(),
+      exerciseId: exercise.id,
+      exerciseName: exercise.name,
+      category: exercise.category,
+      order: warmupExercises.length,
+      sets: [{
+        id: generateId(),
+        setNumber: 1,
+        reps: '10',
+        intensityType: 'rir',
+        intensityValue: '3',
+        restSeconds: 60,
+        restBracket: '30-60',
+        weightType: defaultWeightType,
+        notes: '',
+      }],
+      notes: '',
+    }
+
+    updateWorkout(workoutId, {
+      warmupExercises: [...warmupExercises, newExercise]
+    })
+    setShowWarmupSelector(null)
   }
 
   // Add Hyrox station to finisher directly
@@ -1851,7 +1889,74 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
           {/* Workout Content */}
           {expandedWorkouts.has(workout.id) && (
             <div className="p-4 space-y-4">
-              {/* Exercises - with drag and drop */}
+              {/* Warmup Section (optional) */}
+              <div className="border border-green-500/20 bg-green-500/5 rounded-xl overflow-hidden">
+                <div 
+                  className="flex items-center justify-between px-4 py-3 bg-green-500/10 cursor-pointer"
+                  onClick={() => {
+                    const warmupId = `warmup-${workout.id}`
+                    setExpandedWorkouts(prev => {
+                      const next = new Set(prev)
+                      if (next.has(warmupId)) next.delete(warmupId)
+                      else next.add(warmupId)
+                      return next
+                    })
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <span className="text-sm font-medium text-green-400">Warmup</span>
+                    <span className="text-xs text-zinc-500">
+                      {(workout.warmupExercises?.length || 0)} exercise{(workout.warmupExercises?.length || 0) !== 1 ? 's' : ''}
+                    </span>
+                    <span className="text-zinc-600 text-[10px]">(optional)</span>
+                  </div>
+                  {expandedWorkouts.has(`warmup-${workout.id}`) ? (
+                    <ChevronUp className="w-4 h-4 text-zinc-500" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-zinc-500" />
+                  )}
+                </div>
+                
+                {expandedWorkouts.has(`warmup-${workout.id}`) && (
+                  <div className="p-3 space-y-2">
+                    {(workout.warmupExercises || []).map((exercise, idx) => (
+                      <div key={exercise.id} className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg">
+                        <span className="w-6 h-6 rounded bg-green-500/20 text-green-400 flex items-center justify-center text-xs font-bold">
+                          {idx + 1}
+                        </span>
+                        <span className="flex-1 text-white text-sm">{exercise.exerciseName}</span>
+                        <span className="text-zinc-500 text-xs">
+                          {exercise.sets.length} × {exercise.sets[0]?.reps || '-'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const warmupExercises = [...(workout.warmupExercises || [])]
+                            warmupExercises.splice(idx, 1)
+                            updateWorkout(workout.id, { warmupExercises })
+                          }}
+                          className="p-1 text-zinc-500 hover:text-red-400"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setShowWarmupSelector(workout.id)}
+                      className="w-full py-2 border border-dashed border-green-500/30 hover:border-green-500 rounded-lg text-green-400 text-sm flex items-center justify-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Warmup Exercise
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Main Exercises - with drag and drop */}
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
@@ -2135,6 +2240,24 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                   placeholder="Add notes for this workout..."
                 />
               </div>
+
+              {/* Recovery Notes (optional) */}
+              <div className="border-t border-zinc-700 pt-4">
+                <label className="text-xs text-zinc-500 uppercase tracking-wider mb-1 block flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                  Recovery Instructions
+                  <span className="text-zinc-600 text-[10px] font-normal normal-case">(optional)</span>
+                </label>
+                <textarea
+                  value={workout.recoveryNotes || ''}
+                  onChange={(e) => updateWorkout(workout.id, { recoveryNotes: e.target.value })}
+                  className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 resize-none"
+                  rows={2}
+                  placeholder="E.g., Stretch for 10 minutes, foam roll quads and hamstrings, take a cold shower..."
+                />
+              </div>
             </div>
           )}
                 </div>
@@ -2178,6 +2301,16 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
           onClose={() => setShowFinisherExerciseSelector(null)}
           allowSuperset={true}
           programType={workouts.find(w => w.id === showFinisherExerciseSelector)?.finisher?.category}
+        />
+      )}
+
+      {/* Warmup Exercise Selector Modal */}
+      {showWarmupSelector && (
+        <ExerciseSelector
+          onSelect={(exercise) => addWarmupExercise(showWarmupSelector, exercise)}
+          onClose={() => setShowWarmupSelector(null)}
+          allowSuperset={false}
+          programType="stretching" // Show mobility/stretching exercises by default
         />
       )}
 
