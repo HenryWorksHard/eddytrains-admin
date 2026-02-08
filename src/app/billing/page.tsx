@@ -382,13 +382,13 @@ function BillingContent() {
             </div>
             <div className="flex-1">
               <h2 className="text-lg font-semibold text-white mb-1">
-                Full Access Trial
+                Full Access Trial — <span className="text-yellow-400 capitalize">{organization.subscription_tier}</span> Plan
               </h2>
               <p className="text-zinc-300 text-sm mb-3">
-                You&apos;re experiencing all premium features. Explore everything, add clients, 
-                build programs — when you&apos;re ready, pick the plan that fits your needs.
+                You&apos;re on the <span className="text-yellow-400 font-medium capitalize">{organization.subscription_tier}</span> plan with full access to all features.
+                {!organization.stripe_subscription_id && ' Pick a plan before your trial ends to continue.'}
               </p>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-wrap">
                 <div className="flex items-center gap-2 text-blue-400">
                   <Clock className="w-4 h-4" />
                   <span className="font-medium">{trialDaysLeft} days remaining</span>
@@ -396,6 +396,11 @@ function BillingContent() {
                 {organization.stripe_subscription_id && organization.trial_ends_at && (
                   <div className="text-green-400 text-sm">
                     ✓ <span className="capitalize font-medium">{organization.subscription_tier}</span> plan selected — billing starts {new Date(organization.trial_ends_at).toLocaleDateString()}
+                  </div>
+                )}
+                {!organization.stripe_subscription_id && (
+                  <div className="text-yellow-400 text-sm">
+                    ⚠ No plan selected yet
                   </div>
                 )}
               </div>
