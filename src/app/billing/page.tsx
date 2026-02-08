@@ -395,7 +395,7 @@ function BillingContent() {
                 </div>
                 {organization.stripe_subscription_id && organization.trial_ends_at && (
                   <div className="text-green-400 text-sm">
-                    ✓ Plan selected — billing starts {new Date(organization.trial_ends_at).toLocaleDateString()}
+                    ✓ <span className="capitalize font-medium">{organization.subscription_tier}</span> plan selected — billing starts {new Date(organization.trial_ends_at).toLocaleDateString()}
                   </div>
                 )}
               </div>
@@ -609,15 +609,18 @@ function BillingContent() {
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {TIERS.map((tier) => {
-          const isCurrentTier = !isTrialing && organization?.subscription_tier === tier.id;
+          const isCurrentTier = organization?.subscription_tier === tier.id;
+          const isSelectedForTrial = isTrialing && isCurrentTier && organization?.stripe_subscription_id;
           const hasSubscription = !!organization?.stripe_subscription_id;
-          const isRecommended = isTrialing && tier.id === getRecommendedTier();
+          const isRecommended = isTrialing && !hasSubscription && tier.id === getRecommendedTier();
 
           return (
             <div
               key={tier.id}
               className={`bg-zinc-900 rounded-xl border p-6 relative ${
-                isCurrentTier 
+                isSelectedForTrial
+                  ? 'border-green-500'
+                  : isCurrentTier && !isTrialing
                   ? 'border-yellow-500' 
                   : isRecommended
                   ? 'border-green-500'
@@ -627,13 +630,18 @@ function BillingContent() {
               }`}
             >
               {/* Badges */}
-              {isRecommended && (
+              {isSelectedForTrial && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-green-500 text-black text-xs font-bold rounded-full flex items-center gap-1">
+                  ✓ Selected
+                </div>
+              )}
+              {isRecommended && !isSelectedForTrial && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-green-500 text-black text-xs font-bold rounded-full flex items-center gap-1">
                   <Crown className="w-3 h-3" />
                   Recommended
                 </div>
               )}
-              {tier.popular && !isRecommended && !isCurrentTier && (
+              {tier.popular && !isRecommended && !isCurrentTier && !isSelectedForTrial && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-blue-500 text-white text-xs font-bold rounded-full">
                   Most Popular
                 </div>
@@ -657,9 +665,11 @@ function BillingContent() {
 
               <button
                 onClick={() => handleSubscribe(tier.id)}
-                disabled={isCurrentTier || actionLoading}
+                disabled={(isSelectedForTrial || (isCurrentTier && !isTrialing)) || actionLoading}
                 className={`w-full mt-6 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
-                  isCurrentTier
+                  isSelectedForTrial
+                    ? 'bg-green-500/20 text-green-400 cursor-not-allowed border border-green-500/30'
+                    : isCurrentTier && !isTrialing
                     ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
                     : isRecommended
                     ? 'bg-green-500 hover:bg-green-400 text-black'
@@ -669,7 +679,9 @@ function BillingContent() {
                 {actionLoading && selectedTier === tier.id && (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 )}
-                {isCurrentTier
+                {isSelectedForTrial
+                  ? '✓ Selected'
+                  : isCurrentTier && !isTrialing
                   ? 'Current Plan'
                   : hasSubscription
                   ? 'Switch Plan'
