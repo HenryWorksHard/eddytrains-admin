@@ -128,7 +128,9 @@ export default function Sidebar() {
     router.refresh()
   }
 
-  const handleBackToPlatform = () => {
+  const handleBackToPlatform = async () => {
+    // Clear impersonation cookie via API
+    await fetch('/api/impersonate', { method: 'DELETE' })
     sessionStorage.removeItem('impersonating_org')
     router.push('/platform')
     router.refresh()

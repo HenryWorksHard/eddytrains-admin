@@ -28,30 +28,47 @@ export default function NutritionPage() {
     fetchPlans()
   }, [])
 
+  // Helper to get cookie value
+  const getCookie = (name: string): string | null => {
+    const value = `; ${document.cookie}`
+    const parts = value.split(`; ${name}=`)
+    if (parts.length === 2) return parts.pop()?.split(';').shift() || null
+    return null
+  }
+
   const fetchPlans = async () => {
-    // Get current trainer's organization_id
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      setLoading(false)
-      return
-    }
+    // Check for impersonation cookie first (for super admins viewing as trainers)
+    const impersonatingOrg = getCookie('impersonating_org')
+    
+    let orgId = impersonatingOrg
+    
+    if (!orgId) {
+      // Get current trainer's organization_id
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setLoading(false)
+        return
+      }
 
-    // Get trainer's organization_id from profile
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id')
-      .eq('id', user.id)
-      .single()
+      // Get trainer's organization_id from profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .single()
 
-    if (!profile?.organization_id) {
-      setLoading(false)
-      return
+      if (!profile?.organization_id) {
+        setLoading(false)
+        return
+      }
+      
+      orgId = profile.organization_id
     }
 
     const { data, error } = await supabase
       .from('nutrition_plans')
       .select('*')
-      .eq('organization_id', profile.organization_id)
+      .eq('organization_id', orgId)
       .order('created_at', { ascending: false })
 
     if (!error && data) {

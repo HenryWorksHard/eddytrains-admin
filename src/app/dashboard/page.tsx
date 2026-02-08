@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getEffectiveOrgId } from '@/lib/org-context'
 import Link from 'next/link'
 import { Users, Dumbbell, Calendar, Activity, TrendingUp, UserPlus, AlertTriangle, CheckCircle, Sparkles, Clock } from 'lucide-react'
 import OnboardingBanner from '@/components/OnboardingBanner'
@@ -8,21 +9,15 @@ export const dynamic = 'force-dynamic'
 
 async function getOrgInfo() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.organization_id) return null
+  
+  // Get effective organization (handles impersonation for super admins)
+  const orgId = await getEffectiveOrgId()
+  if (!orgId) return null
 
   const { data: org } = await supabase
     .from('organizations')
     .select('name, subscription_tier, subscription_status, trial_ends_at, logo_url')
-    .eq('id', profile.organization_id)
+    .eq('id', orgId)
     .single()
 
   if (!org) return null
@@ -41,7 +36,7 @@ async function getOrgInfo() {
     status: org.subscription_status,
     trialDaysRemaining,
     hasLogo: !!org.logo_url,
-    organizationId: profile.organization_id,
+    organizationId: orgId,
   }
 }
 
@@ -77,63 +72,90 @@ interface UserWithActivity {
   missedDays?: number
 }
 
-async function getStats() {
+async function getStats(orgId: string | null) {
+  if (!orgId) return { totalUsers: 0, totalPrograms: 0, totalSchedules: 0, activeToday: 0, weeklyCompletions: 0 }
+  
   const supabase = await createClient()
   
-  // Get counts
+  // Get counts for this organization
   const [usersResult, programsResult, schedulesResult] = await Promise.all([
-    supabase.from('profiles').select('id', { count: 'exact' }).eq('role', 'client'),
-    supabase.from('programs').select('id', { count: 'exact' }),
-    supabase.from('schedules').select('id', { count: 'exact' }),
+    supabase.from('profiles').select('id', { count: 'exact' }).eq('role', 'client').eq('organization_id', orgId),
+    supabase.from('programs').select('id', { count: 'exact' }).eq('organization_id', orgId),
+    supabase.from('schedules').select('id', { count: 'exact' }).eq('organization_id', orgId),
   ])
 
+  // Get client IDs for this org (for filtering workout completions)
+  const { data: orgClients } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('organization_id', orgId)
+    .eq('role', 'client')
+  
+  const clientIds = orgClients?.map(c => c.id) || []
+  
   // Get active users today (completed a workout today)
   const today = new Date().toISOString().split('T')[0]
-  const { data: activeToday } = await supabase
-    .from('workout_completions')
-    .select('client_id')
-    .eq('scheduled_date', today)
-  
-  const uniqueActiveToday = new Set(activeToday?.map(a => a.client_id) || []).size
+  let uniqueActiveToday = 0
+  if (clientIds.length > 0) {
+    const { data: activeToday } = await supabase
+      .from('workout_completions')
+      .select('client_id')
+      .eq('scheduled_date', today)
+      .in('client_id', clientIds)
+    
+    uniqueActiveToday = new Set(activeToday?.map(a => a.client_id) || []).size
+  }
 
   // Get completion rate for this week
   const weekAgo = new Date()
   weekAgo.setDate(weekAgo.getDate() - 7)
   
-  const { data: weekCompletions, count: completionCount } = await supabase
-    .from('workout_completions')
-    .select('*', { count: 'exact' })
-    .gte('scheduled_date', weekAgo.toISOString().split('T')[0])
+  let completionCount = 0
+  if (clientIds.length > 0) {
+    const { count } = await supabase
+      .from('workout_completions')
+      .select('*', { count: 'exact', head: true })
+      .gte('scheduled_date', weekAgo.toISOString().split('T')[0])
+      .in('client_id', clientIds)
+    
+    completionCount = count || 0
+  }
 
   return {
     totalUsers: usersResult.count || 0,
     totalPrograms: programsResult.count || 0,
     totalSchedules: schedulesResult.count || 0,
     activeToday: uniqueActiveToday,
-    weeklyCompletions: completionCount || 0,
+    weeklyCompletions: completionCount,
   }
 }
 
-async function getRecentUsers() {
+async function getRecentUsers(orgId: string | null) {
+  if (!orgId) return []
+  
   const supabase = await createClient()
   const { data } = await supabase
     .from('profiles')
     .select('id, email, full_name, created_at, is_active')
     .eq('role', 'client')
+    .eq('organization_id', orgId)
     .order('created_at', { ascending: false })
     .limit(5)
   
   return data || []
 }
 
-async function getUsersNeedingAttention() {
+async function getUsersNeedingAttention(orgId: string | null) {
+  if (!orgId) return []
+  
   const supabase = await createClient()
   
-  // Get all active clients
+  // Get all active clients for this organization
   const { data: users } = await supabase
     .from('profiles')
     .select('id, email, full_name, is_active')
     .eq('role', 'client')
+    .eq('organization_id', orgId)
     .eq('is_active', true)
   
   if (!users || users.length === 0) return []
@@ -188,8 +210,20 @@ async function getUsersNeedingAttention() {
   return usersNeedingAttention.sort((a, b) => (b.missedDays || 0) - (a.missedDays || 0)).slice(0, 5)
 }
 
-async function getTopPerformers() {
+async function getTopPerformers(orgId: string | null) {
+  if (!orgId) return []
+  
   const supabase = await createClient()
+  
+  // Get client IDs for this org
+  const { data: orgClients } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('organization_id', orgId)
+    .eq('role', 'client')
+  
+  const clientIds = orgClients?.map(c => c.id) || []
+  if (clientIds.length === 0) return []
   
   // Get users with most completions this week
   const weekAgo = new Date()
@@ -199,6 +233,7 @@ async function getTopPerformers() {
     .from('workout_completions')
     .select('client_id')
     .gte('scheduled_date', weekAgo.toISOString().split('T')[0])
+    .in('client_id', clientIds)
 
   // Count completions per user
   const counts = new Map<string, number>()
@@ -238,17 +273,21 @@ export default async function DashboardPage({
   const params = await searchParams
   const isWelcome = params.welcome === 'true'
   
-  const [stats, recentUsers, usersNeedingAttention, topPerformers, orgInfo] = await Promise.all([
-    getStats(),
-    getRecentUsers(),
-    getUsersNeedingAttention(),
-    getTopPerformers(),
-    getOrgInfo(),
+  // Get org info first to get the effective org ID
+  const orgInfo = await getOrgInfo()
+  const orgId = orgInfo?.organizationId || null
+  
+  // Now fetch data for that specific org
+  const [stats, recentUsers, usersNeedingAttention, topPerformers] = await Promise.all([
+    getStats(orgId),
+    getRecentUsers(orgId),
+    getUsersNeedingAttention(orgId),
+    getTopPerformers(orgId),
   ])
   
   // Get onboarding status for trialing users
-  const onboarding = orgInfo?.organizationId 
-    ? await getOnboardingStatus(orgInfo.organizationId)
+  const onboarding = orgId 
+    ? await getOnboardingStatus(orgId)
     : { hasProgram: false, hasClient: false }
   
   const onboardingComplete = orgInfo?.hasLogo && onboarding.hasProgram && onboarding.hasClient

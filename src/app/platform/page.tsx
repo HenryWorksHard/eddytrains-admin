@@ -211,10 +211,19 @@ export default function PlatformPage() {
   };
 
   const handleImpersonate = async (orgId: string) => {
-    // Store the impersonation in session storage
-    sessionStorage.setItem('impersonating_org', orgId);
-    router.push('/dashboard');
-    router.refresh();
+    // Set impersonation cookie via API
+    const res = await fetch('/api/impersonate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orgId }),
+    });
+    
+    if (res.ok) {
+      // Also store in sessionStorage for sidebar check (client-side)
+      sessionStorage.setItem('impersonating_org', orgId);
+      router.push('/dashboard');
+      router.refresh();
+    }
   };
 
   const handleDeleteTrainer = async (org: Organization) => {
