@@ -12,6 +12,7 @@ export async function GET() {
       .from('exercises')
       .select('*')
       .order('name')
+      .range(0, 1999) // Increase limit from default 1000
 
     if (error) {
       console.error('Error fetching exercises:', error)
