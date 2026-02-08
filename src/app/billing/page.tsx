@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Sidebar from '@/components/Sidebar';
-import { Crown, Sparkles, Clock, X } from 'lucide-react';
+import { Crown, Sparkles, Clock, X, Loader2 } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from '@stripe/react-stripe-js';
 
@@ -162,6 +162,7 @@ function BillingContent() {
       if (data.updated) {
         // Subscription was updated directly (trial case) - no checkout needed
         setMessage({ type: 'success', text: data.message || `Plan updated to ${tier}!` });
+        setSelectedTier(null);
         // Refresh organization data
         const { data: updatedOrg } = await supabase
           .from('organizations')
@@ -172,14 +173,16 @@ function BillingContent() {
       } else if (data.clientSecret) {
         setClientSecret(data.clientSecret);
         setShowCheckout(true);
+        // Keep selectedTier for modal header
       } else {
         setMessage({ type: 'error', text: data.error || 'Failed to start checkout' });
+        setSelectedTier(null);
       }
     } catch {
       setMessage({ type: 'error', text: 'Something went wrong' });
+      setSelectedTier(null);
     } finally {
       setActionLoading(false);
-      setSelectedTier(null);
     }
   };
   
@@ -307,8 +310,11 @@ function BillingContent() {
               <button
                 onClick={handleManageBilling}
                 disabled={actionLoading}
-                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
               >
+                {actionLoading && !selectedTier && (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                )}
                 Manage Billing
               </button>
             )}
@@ -393,7 +399,7 @@ function BillingContent() {
               <button
                 onClick={() => handleSubscribe(tier.id)}
                 disabled={isCurrentTier || actionLoading}
-                className={`w-full mt-6 py-2 rounded-lg font-medium transition-colors ${
+                className={`w-full mt-6 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
                   isCurrentTier
                     ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
                     : isRecommended
@@ -401,6 +407,9 @@ function BillingContent() {
                     : 'bg-yellow-500 hover:bg-yellow-400 text-zinc-900'
                 }`}
               >
+                {actionLoading && selectedTier === tier.id && (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                )}
                 {isCurrentTier
                   ? 'Current Plan'
                   : hasSubscription
