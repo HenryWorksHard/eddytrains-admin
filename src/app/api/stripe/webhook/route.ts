@@ -100,13 +100,29 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
     return;
   }
 
+  // Get the subscription to check if it has a trial
+  let subscriptionStatus = 'active';
+  if (subscriptionId) {
+    try {
+      const sub = await stripe.subscriptions.retrieve(subscriptionId);
+      // If subscription is in trial, keep status as trialing
+      if (sub.status === 'trialing') {
+        subscriptionStatus = 'trialing';
+      } else {
+        subscriptionStatus = sub.status;
+      }
+    } catch (err) {
+      console.error('Error retrieving subscription:', err);
+    }
+  }
+
   // Update organization with Stripe IDs
   const { error } = await supabase
     .from('organizations')
     .update({
       stripe_customer_id: customerId,
       stripe_subscription_id: subscriptionId,
-      subscription_status: 'active',
+      subscription_status: subscriptionStatus,
       updated_at: new Date().toISOString(),
     })
     .eq('id', organizationId);
@@ -114,7 +130,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
   if (error) {
     console.error('Error updating organization:', error);
   } else {
-    console.log(`Organization ${organizationId} linked to Stripe customer ${customerId}`);
+    console.log(`Organization ${organizationId} linked to Stripe customer ${customerId} (status: ${subscriptionStatus})`);
   }
 }
 
