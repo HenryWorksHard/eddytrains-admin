@@ -10,6 +10,7 @@ interface Client {
   full_name: string | null
   status: string
   created_at: string
+  trainer_id: string | null
   trainer_name: string | null
   trainer_email: string | null
 }
