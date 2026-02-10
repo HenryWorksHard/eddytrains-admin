@@ -415,7 +415,7 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
       {/* Workout Details Modal */}
       {selectedDate && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={closeModal}>
-          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-lg max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-lg max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-4 border-b border-zinc-800">
               <div>
                 <h3 className="text-lg font-semibold text-white">
@@ -430,7 +430,7 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
               </button>
             </div>
 
-            <div className="p-4 overflow-y-auto max-h-[60vh]">
+            <div className="p-4 overflow-y-auto flex-1">
               {loadingDetails ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-6 h-6 animate-spin text-yellow-400" />
