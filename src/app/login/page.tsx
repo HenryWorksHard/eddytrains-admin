@@ -38,7 +38,7 @@ export default function LoginPage() {
           .eq('id', data.user.id)
           .single()
 
-        const allowedRoles = ['admin', 'super_admin', 'trainer']
+        const allowedRoles = ['admin', 'super_admin', 'trainer', 'company_admin']
         if (!profile?.role || !allowedRoles.includes(profile.role)) {
           await supabase.auth.signOut()
           setError('Access denied. Admin privileges required.')
@@ -48,6 +48,8 @@ export default function LoginPage() {
         // Redirect based on role
         if (profile.role === 'super_admin') {
           router.push('/platform')
+        } else if (profile.role === 'company_admin') {
+          router.push('/dashboard')
         } else {
           router.push('/dashboard')
         }
