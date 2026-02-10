@@ -304,6 +304,7 @@ export default function CoachSessionPage() {
   }
 
   // Auto-fill to subsequent sets on blur (when user finishes typing)
+  // Ladder behaviour: always update ALL subsequent sets to match current value
   const autoFillSubsequentSets = (exerciseId: string, setNumber: number, field: 'weight_kg' | 'reps_completed', value: number | null, totalSets: number) => {
     if (value === null) return
     
@@ -312,10 +313,8 @@ export default function CoachSessionPage() {
       for (let i = setNumber + 1; i <= totalSets; i++) {
         const nextKey = getSetKey(exerciseId, i)
         const nextExisting = newMap.get(nextKey) || { set_number: i, weight_kg: null, reps_completed: null }
-        // Only auto-fill if the next set doesn't already have a value for this field
-        if (nextExisting[field] === null) {
-          newMap.set(nextKey, { ...nextExisting, [field]: value })
-        }
+        // Always cascade down - update all subsequent sets
+        newMap.set(nextKey, { ...nextExisting, [field]: value })
       }
       return newMap
     })
