@@ -72,45 +72,16 @@ export default function ProgressTab({ clientId }: ProgressTabProps) {
   async function fetchTonnage(period: TonnagePeriod) {
     setLoadingTonnage(true)
     
-    // Calculate date range based on period
-    const now = new Date()
-    let startDate: Date
-    
-    switch (period) {
-      case 'day':
-        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-        break
-      case 'week':
-        startDate = new Date(now)
-        startDate.setDate(now.getDate() - now.getDay()) // Start of week (Sunday)
-        startDate.setHours(0, 0, 0, 0)
-        break
-      case 'month':
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1)
-        break
-      case 'year':
-        startDate = new Date(now.getFullYear(), 0, 1)
-        break
-    }
-
-    // Fetch set logs with workout logs to calculate tonnage
-    const { data: volumeData } = await supabase
-      .from('set_logs')
-      .select(`
-        weight_kg,
-        reps_completed,
-        workout_log_id,
-        workout_logs!inner(client_id, completed_at)
-      `)
-      .eq('workout_logs.client_id', clientId)
-      .gte('workout_logs.completed_at', startDate.toISOString())
-
-    if (volumeData) {
-      const totalTonnage = volumeData.reduce((sum: number, set: any) => {
-        return sum + ((set.weight_kg || 0) * (set.reps_completed || 0))
-      }, 0)
-      setTonnage(Math.round(totalTonnage))
-    } else {
+    try {
+      const response = await fetch(`/api/users/${clientId}/tonnage?period=${period}`)
+      if (response.ok) {
+        const { tonnage: tonnageData } = await response.json()
+        setTonnage(tonnageData || 0)
+      } else {
+        setTonnage(0)
+      }
+    } catch (err) {
+      console.error('Failed to fetch tonnage:', err)
       setTonnage(0)
     }
 
