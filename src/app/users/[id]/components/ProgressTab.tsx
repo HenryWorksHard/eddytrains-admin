@@ -258,26 +258,6 @@ export default function ProgressTab({ clientId }: ProgressTabProps) {
         )}
       </div>
 
-      {/* 1RM Records */}
-      <div className="card p-6">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <Dumbbell className="w-5 h-5 text-blue-400" />
-          Current 1RMs
-        </h3>
-        {oneRMs.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {oneRMs.slice(0, 9).map((rm) => (
-              <div key={rm.exercise_name} className="bg-zinc-800 rounded-xl p-3">
-                <p className="text-sm text-zinc-400 truncate">{rm.exercise_name}</p>
-                <p className="text-xl font-bold text-blue-400">{rm.weight_kg} kg</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-zinc-500">No 1RM records yet</p>
-        )}
-      </div>
-
       {/* Personal Records */}
       <div className="card p-6">
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">

@@ -35,6 +35,7 @@ import UserSchedule from './UserSchedule'
 import UserProgressGallery from './UserProgressGallery'
 import ClientTabs, { TabType } from './components/ClientTabs'
 import ProgressTab from './components/ProgressTab'
+import ProfileTab from './components/ProfileTab'
 
 interface User {
   id: string
@@ -1995,16 +1996,6 @@ export default function UserProfilePage() {
           </div>
         )}
 
-        {clientPrograms.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-zinc-800">
-            <Link
-              href={`/schedules?client=${user.id}`}
-              className="text-sm text-yellow-400 hover:text-yellow-300 transition-colors"
-            >
-              View full schedule timeline →
-            </Link>
-          </div>
-        )}
       </div>
         </>
       )}
@@ -2012,6 +2003,11 @@ export default function UserProfilePage() {
       {/* PROGRESS TAB */}
       {activeTab === 'progress' && user && (
         <ProgressTab clientId={user.id} />
+      )}
+
+      {/* PROFILE TAB */}
+      {activeTab === 'profile' && user && (
+        <ProfileTab clientId={user.id} />
       )}
 
       {/* NUTRITION TAB */}

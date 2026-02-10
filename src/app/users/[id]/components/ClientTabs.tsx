@@ -1,8 +1,8 @@
 'use client'
 
-import { LayoutDashboard, Dumbbell, TrendingUp, Apple, Calendar } from 'lucide-react'
+import { LayoutDashboard, Dumbbell, TrendingUp, Apple, Calendar, User } from 'lucide-react'
 
-export type TabType = 'overview' | 'programs' | 'progress' | 'nutrition' | 'schedule'
+export type TabType = 'overview' | 'programs' | 'progress' | 'profile' | 'nutrition' | 'schedule'
 
 interface ClientTabsProps {
   activeTab: TabType
@@ -13,6 +13,7 @@ const tabs = [
   { id: 'overview' as TabType, label: 'Overview', icon: LayoutDashboard },
   { id: 'programs' as TabType, label: 'Programs', icon: Dumbbell },
   { id: 'progress' as TabType, label: 'Progress', icon: TrendingUp },
+  { id: 'profile' as TabType, label: 'Profile', icon: User },
   { id: 'nutrition' as TabType, label: 'Nutrition', icon: Apple },
   { id: 'schedule' as TabType, label: 'Schedule', icon: Calendar },
 ]
