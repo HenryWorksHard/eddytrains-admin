@@ -22,48 +22,72 @@ export async function GET(
     const { id: clientId } = await params
     const adminClient = getAdminClient()
     
-    // Get client's active programs
+    const exerciseMap = new Map<string, string>()
+
+    // 1. Get exercises from active programs
     const { data: clientPrograms } = await adminClient
       .from('client_programs')
       .select('program_id')
       .eq('client_id', clientId)
       .eq('is_active', true)
 
-    if (!clientPrograms || clientPrograms.length === 0) {
-      return NextResponse.json({ exercises: [] })
-    }
+    if (clientPrograms && clientPrograms.length > 0) {
+      const programIds = clientPrograms.map(cp => cp.program_id)
 
-    const programIds = clientPrograms.map(cp => cp.program_id)
+      const { data: programWorkouts } = await adminClient
+        .from('program_workouts')
+        .select('id')
+        .in('program_id', programIds)
 
-    // Get all workout exercises from these programs
-    const { data: programWorkouts } = await adminClient
-      .from('program_workouts')
-      .select('id')
-      .in('program_id', programIds)
+      if (programWorkouts && programWorkouts.length > 0) {
+        const workoutIds = programWorkouts.map(pw => pw.id)
 
-    if (!programWorkouts || programWorkouts.length === 0) {
-      return NextResponse.json({ exercises: [] })
-    }
+        const { data: workoutExercises } = await adminClient
+          .from('workout_exercises')
+          .select('id, exercise_name')
+          .in('workout_id', workoutIds)
 
-    const workoutIds = programWorkouts.map(pw => pw.id)
-
-    // Get unique exercise names from workout_exercises
-    const { data: workoutExercises } = await adminClient
-      .from('workout_exercises')
-      .select('id, exercise_name')
-      .in('workout_id', workoutIds)
-
-    if (!workoutExercises) {
-      return NextResponse.json({ exercises: [] })
-    }
-
-    // Get unique exercise names with their IDs
-    const exerciseMap = new Map<string, string>()
-    workoutExercises.forEach(we => {
-      if (!exerciseMap.has(we.exercise_name)) {
-        exerciseMap.set(we.exercise_name, we.id)
+        if (workoutExercises) {
+          workoutExercises.forEach(we => {
+            if (!exerciseMap.has(we.exercise_name)) {
+              exerciseMap.set(we.exercise_name, we.id)
+            }
+          })
+        }
       }
-    })
+    }
+
+    // 2. Get exercises from workout history (completed workouts)
+    const { data: workoutLogs } = await adminClient
+      .from('workout_logs')
+      .select('id')
+      .eq('client_id', clientId)
+
+    if (workoutLogs && workoutLogs.length > 0) {
+      const logIds = workoutLogs.map(wl => wl.id)
+
+      const { data: exerciseLogs } = await adminClient
+        .from('exercise_logs')
+        .select('exercise_id')
+        .in('workout_log_id', logIds)
+
+      if (exerciseLogs && exerciseLogs.length > 0) {
+        const exerciseIds = [...new Set(exerciseLogs.map(el => el.exercise_id))]
+
+        const { data: exercises } = await adminClient
+          .from('workout_exercises')
+          .select('id, exercise_name')
+          .in('id', exerciseIds)
+
+        if (exercises) {
+          exercises.forEach(ex => {
+            if (!exerciseMap.has(ex.exercise_name)) {
+              exerciseMap.set(ex.exercise_name, ex.id)
+            }
+          })
+        }
+      }
+    }
 
     const exercises = Array.from(exerciseMap.entries()).map(([name, id]) => ({
       id,

@@ -238,15 +238,6 @@ export default function ExportProgressModal({ isOpen, onClose, clientId, clientN
 
       // Exercise Progression Section
       if (options.progression && selectedExercises.length > 0) {
-        const periodMap: Record<DateRange, string> = {
-          'week': 'week',
-          'month': 'month',
-          '3months': 'month',
-          '6months': 'year',
-          'year': 'year',
-          'all': 'year'
-        }
-
         for (const exercise of selectedExercises) {
           try {
             // Check if we need a new page
@@ -255,7 +246,7 @@ export default function ExportProgressModal({ isOpen, onClose, clientId, clientN
               yPos = 20
             }
             
-            const res = await fetch(`/api/users/${clientId}/progression?exercise=${encodeURIComponent(exercise)}&period=${periodMap[dateRange]}`)
+            const res = await fetch(`/api/users/${clientId}/progression?exercise=${encodeURIComponent(exercise)}&period=${dateRange}`)
             const { progression } = await res.json()
             
             if (progression && progression.length > 0) {

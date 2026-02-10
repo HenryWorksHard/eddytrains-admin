@@ -37,20 +37,32 @@ export async function GET(
     switch (period) {
       case 'week':
         startDate = new Date(now)
-        const dayOfWeek = now.getDay()
-        const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1
-        startDate.setDate(now.getDate() - daysFromMonday)
-        startDate.setHours(0, 0, 0, 0)
+        startDate.setDate(now.getDate() - 7)
         break
       case 'month':
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+        startDate = new Date(now)
+        startDate.setMonth(now.getMonth() - 1)
+        break
+      case '3months':
+        startDate = new Date(now)
+        startDate.setMonth(now.getMonth() - 3)
+        break
+      case '6months':
+        startDate = new Date(now)
+        startDate.setMonth(now.getMonth() - 6)
         break
       case 'year':
-        startDate = new Date(now.getFullYear(), 0, 1)
+        startDate = new Date(now)
+        startDate.setFullYear(now.getFullYear() - 1)
+        break
+      case 'all':
+        startDate = new Date('2020-01-01')
         break
       default:
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+        startDate = new Date(now)
+        startDate.setMonth(now.getMonth() - 1)
     }
+    startDate.setHours(0, 0, 0, 0)
 
     // Get workout_logs for this client in the date range
     const { data: workoutLogs } = await adminClient
