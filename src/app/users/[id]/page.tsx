@@ -189,6 +189,15 @@ export default function UserProfilePage() {
     carbs: number
     fats: number
     notes?: string
+    created_by_type?: 'trainer' | 'client'
+  } | null>(null)
+  const [clientSelfNutrition, setClientSelfNutrition] = useState<{
+    id: string
+    calories: number
+    protein: number
+    carbs: number
+    fats: number
+    created_by_type: 'client'
   } | null>(null)
   const [availableNutritionPlans, setAvailableNutritionPlans] = useState<{
     id: string
@@ -361,7 +370,8 @@ export default function UserProfilePage() {
 
   const fetchClientNutrition = async (userUuid: string) => {
     try {
-      const { data, error } = await supabase
+      // Fetch trainer-assigned plan
+      const { data: trainerData, error: trainerError } = await supabase
         .from('client_nutrition')
         .select(`
           id,
@@ -371,28 +381,61 @@ export default function UserProfilePage() {
           custom_protein,
           custom_carbs,
           custom_fats,
+          created_by_type,
           nutrition_plans:plan_id (id, name, calories, protein, carbs, fats)
         `)
         .eq('client_id', userUuid)
         .eq('is_active', true)
+        .eq('created_by_type', 'trainer')
         .single()
       
-      if (error && error.code !== 'PGRST116') throw error // PGRST116 = no rows
+      if (trainerError && trainerError.code !== 'PGRST116') console.error(trainerError)
       
-      if (data) {
-        const plan = Array.isArray(data.nutrition_plans) ? data.nutrition_plans[0] : data.nutrition_plans
+      if (trainerData) {
+        const plan = Array.isArray(trainerData.nutrition_plans) ? trainerData.nutrition_plans[0] : trainerData.nutrition_plans
         setClientNutrition({
-          id: data.id,
-          plan_id: data.plan_id,
+          id: trainerData.id,
+          plan_id: trainerData.plan_id,
           plan_name: plan?.name || 'Custom Plan',
-          calories: data.custom_calories || plan?.calories || 0,
-          protein: data.custom_protein || plan?.protein || 0,
-          carbs: data.custom_carbs || plan?.carbs || 0,
-          fats: data.custom_fats || plan?.fats || 0,
-          notes: data.notes
+          calories: trainerData.custom_calories || plan?.calories || 0,
+          protein: trainerData.custom_protein || plan?.protein || 0,
+          carbs: trainerData.custom_carbs || plan?.carbs || 0,
+          fats: trainerData.custom_fats || plan?.fats || 0,
+          notes: trainerData.notes,
+          created_by_type: 'trainer'
         })
       } else {
         setClientNutrition(null)
+      }
+
+      // Fetch client-created plan
+      const { data: clientData, error: clientError } = await supabase
+        .from('client_nutrition')
+        .select(`
+          id,
+          custom_calories,
+          custom_protein,
+          custom_carbs,
+          custom_fats
+        `)
+        .eq('client_id', userUuid)
+        .eq('is_active', true)
+        .eq('created_by_type', 'client')
+        .single()
+      
+      if (clientError && clientError.code !== 'PGRST116') console.error(clientError)
+      
+      if (clientData) {
+        setClientSelfNutrition({
+          id: clientData.id,
+          calories: clientData.custom_calories || 0,
+          protein: clientData.custom_protein || 0,
+          carbs: clientData.custom_carbs || 0,
+          fats: clientData.custom_fats || 0,
+          created_by_type: 'client'
+        })
+      } else {
+        setClientSelfNutrition(null)
       }
     } catch (err) {
       console.error('Failed to fetch client nutrition:', err)
@@ -1972,12 +2015,45 @@ export default function UserProfilePage() {
           )}
         </div>
         
+        {/* Client Self-Created Plan */}
+        {clientSelfNutrition && (
+          <div className="bg-purple-500/5 border border-purple-500/20 rounded-xl p-4 mb-4">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 text-xs rounded-full">Created by client</span>
+                </div>
+                <p className="text-2xl font-bold text-purple-400">{clientSelfNutrition.calories} cal</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+                <p className="text-blue-400 font-bold">{clientSelfNutrition.protein}g</p>
+                <p className="text-zinc-500 text-xs">Protein</p>
+              </div>
+              <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+                <p className="text-yellow-400 font-bold">{clientSelfNutrition.carbs}g</p>
+                <p className="text-zinc-500 text-xs">Carbs</p>
+              </div>
+              <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+                <p className="text-red-400 font-bold">{clientSelfNutrition.fats}g</p>
+                <p className="text-zinc-500 text-xs">Fats</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Trainer-Assigned Plan */}
         {clientNutrition ? (
           <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-4">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h3 className="font-medium text-white">{clientNutrition.plan_name}</h3>
-                <p className="text-2xl font-bold text-green-400 mt-1">{clientNutrition.calories} cal</p>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded-full">Assigned by trainer</span>
+                  <span className="text-zinc-400 text-sm">{clientNutrition.plan_name}</span>
+                </div>
+                <p className="text-2xl font-bold text-green-400">{clientNutrition.calories} cal</p>
               </div>
               <button
                 onClick={removeNutritionPlan}
@@ -2007,7 +2083,7 @@ export default function UserProfilePage() {
               <p className="text-zinc-400 text-sm mt-3">{clientNutrition.notes}</p>
             )}
           </div>
-        ) : (
+        ) : !clientSelfNutrition ? (
           <div className="text-center py-8">
             <div className="w-14 h-14 rounded-xl bg-zinc-800 flex items-center justify-center mx-auto mb-3">
               <Apple className="w-7 h-7 text-zinc-600" />
@@ -2024,7 +2100,7 @@ export default function UserProfilePage() {
               Assign Nutrition Plan
             </button>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Nutrition Assignment Modal */}
