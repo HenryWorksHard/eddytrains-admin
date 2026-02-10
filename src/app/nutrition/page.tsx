@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Apple, Search, User, Edit2, Save, Loader2, Plus, Trash2 } from 'lucide-react'
+import BMRCalculator from '@/components/BMRCalculator'
 
 interface Client {
   id: string
@@ -403,51 +404,63 @@ export default function NutritionPage() {
 
               {/* Macros */}
               {editing ? (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm text-zinc-500 mb-1">Calories</label>
-                    <input
-                      type="number"
-                      value={editCalories}
-                      onChange={(e) => setEditCalories(parseInt(e.target.value) || 0)}
-                      className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-green-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-zinc-500 mb-1">Protein (g)</label>
-                    <input
-                      type="number"
-                      value={editProtein}
-                      onChange={(e) => setEditProtein(parseInt(e.target.value) || 0)}
-                      className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-green-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-zinc-500 mb-1">Carbs (g)</label>
-                    <input
-                      type="number"
-                      value={editCarbs}
-                      onChange={(e) => setEditCarbs(parseInt(e.target.value) || 0)}
-                      className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-green-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-zinc-500 mb-1">Fats (g)</label>
-                    <input
-                      type="number"
-                      value={editFats}
-                      onChange={(e) => setEditFats(parseInt(e.target.value) || 0)}
-                      className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-green-400"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="block text-sm text-zinc-500 mb-1">Notes</label>
-                    <textarea
-                      value={editNotes}
-                      onChange={(e) => setEditNotes(e.target.value)}
-                      rows={3}
-                      className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-green-400 resize-none"
-                    />
+                <div className="space-y-4">
+                  {/* BMR Calculator */}
+                  <BMRCalculator
+                    onApply={(result) => {
+                      setEditCalories(result.tdee)
+                      setEditProtein(result.protein)
+                      setEditCarbs(result.carbs)
+                      setEditFats(result.fats)
+                    }}
+                  />
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm text-zinc-500 mb-1">Calories</label>
+                      <input
+                        type="number"
+                        value={editCalories}
+                        onChange={(e) => setEditCalories(parseInt(e.target.value) || 0)}
+                        className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-green-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-zinc-500 mb-1">Protein (g)</label>
+                      <input
+                        type="number"
+                        value={editProtein}
+                        onChange={(e) => setEditProtein(parseInt(e.target.value) || 0)}
+                        className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-green-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-zinc-500 mb-1">Carbs (g)</label>
+                      <input
+                        type="number"
+                        value={editCarbs}
+                        onChange={(e) => setEditCarbs(parseInt(e.target.value) || 0)}
+                        className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-green-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-zinc-500 mb-1">Fats (g)</label>
+                      <input
+                        type="number"
+                        value={editFats}
+                        onChange={(e) => setEditFats(parseInt(e.target.value) || 0)}
+                        className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-green-400"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-sm text-zinc-500 mb-1">Notes</label>
+                      <textarea
+                        value={editNotes}
+                        onChange={(e) => setEditNotes(e.target.value)}
+                        rows={3}
+                        className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-green-400 resize-none"
+                      />
+                    </div>
                   </div>
                 </div>
               ) : (

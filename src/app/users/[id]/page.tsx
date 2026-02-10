@@ -36,6 +36,7 @@ import UserProgressGallery from './UserProgressGallery'
 import ClientTabs, { TabType } from './components/ClientTabs'
 import ProgressTab from './components/ProgressTab'
 import ProfileTab from './components/ProfileTab'
+import BMRCalculator from '@/components/BMRCalculator'
 
 interface User {
   id: string
@@ -229,6 +230,11 @@ export default function UserProfilePage() {
   const [selectedNutritionPlan, setSelectedNutritionPlan] = useState<string | null>(null)
   const [nutritionNotes, setNutritionNotes] = useState('')
   const [assigningNutrition, setAssigningNutrition] = useState(false)
+  const [customNutritionMode, setCustomNutritionMode] = useState(false)
+  const [customCalories, setCustomCalories] = useState(2000)
+  const [customProtein, setCustomProtein] = useState(150)
+  const [customCarbs, setCustomCarbs] = useState(200)
+  const [customFats, setCustomFats] = useState(70)
 
   // Clone User State
   const [showCloneModal, setShowCloneModal] = useState(false)
@@ -488,21 +494,48 @@ export default function UserProfilePage() {
         .update({ is_active: false })
         .eq('client_id', user.id)
       
-      // Create new assignment (upsert to handle unique constraint on client_id)
-      const { error } = await supabase
-        .from('client_nutrition')
-        .upsert({
-          client_id: user.id,
-          plan_id: selectedNutritionPlan,
-          notes: nutritionNotes || null,
-          is_active: true
-        }, { onConflict: 'client_id' })
-      
-      if (error) throw error
+      // Create new assignment
+      if (customNutritionMode) {
+        // Custom nutrition - save to client_nutrition with custom values
+        const { error } = await supabase
+          .from('client_nutrition')
+          .upsert({
+            client_id: user.id,
+            plan_id: null,
+            custom_calories: customCalories,
+            custom_protein: customProtein,
+            custom_carbs: customCarbs,
+            custom_fats: customFats,
+            notes: nutritionNotes || null,
+            created_by_type: 'trainer',
+            is_active: true
+          }, { onConflict: 'client_id' })
+        
+        if (error) throw error
+      } else {
+        // Template-based assignment
+        const selectedPlan = availableNutritionPlans.find(p => p.id === selectedNutritionPlan)
+        const { error } = await supabase
+          .from('client_nutrition')
+          .upsert({
+            client_id: user.id,
+            plan_id: selectedNutritionPlan,
+            custom_calories: selectedPlan?.calories || 2000,
+            custom_protein: selectedPlan?.protein || 150,
+            custom_carbs: selectedPlan?.carbs || 200,
+            custom_fats: selectedPlan?.fats || 70,
+            notes: nutritionNotes || null,
+            created_by_type: 'trainer',
+            is_active: true
+          }, { onConflict: 'client_id' })
+        
+        if (error) throw error
+      }
       
       setShowNutritionModal(false)
       setSelectedNutritionPlan(null)
       setNutritionNotes('')
+      setCustomNutritionMode(false)
       fetchClientNutrition(user.id)
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
@@ -2186,47 +2219,125 @@ export default function UserProfilePage() {
       {/* Nutrition Assignment Modal */}
       {showNutritionModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-md">
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
             <div className="flex items-center justify-between p-6 border-b border-zinc-800">
               <h3 className="text-xl font-semibold text-white">Assign Nutrition Plan</h3>
-              <button onClick={() => setShowNutritionModal(false)} className="p-2 hover:bg-zinc-800 rounded-lg transition-colors">
+              <button onClick={() => { setShowNutritionModal(false); setCustomNutritionMode(false) }} className="p-2 hover:bg-zinc-800 rounded-lg transition-colors">
                 <X className="w-5 h-5 text-zinc-400" />
               </button>
             </div>
             
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-2">Select Plan</label>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {availableNutritionPlans.map(plan => (
-                    <div
-                      key={plan.id}
-                      onClick={() => setSelectedNutritionPlan(plan.id)}
-                      className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                        selectedNutritionPlan === plan.id
-                          ? 'border-green-400 bg-green-400/10'
-                          : 'border-zinc-700 hover:border-zinc-600 bg-zinc-800/50'
-                      }`}
-                    >
-                      <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                        <Apple className="w-5 h-5 text-green-400" />
+            {/* Mode Toggle */}
+            <div className="flex gap-2 p-4 border-b border-zinc-800">
+              <button
+                onClick={() => { setCustomNutritionMode(false); setSelectedNutritionPlan(null) }}
+                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                  !customNutritionMode
+                    ? 'bg-green-500 text-white'
+                    : 'bg-zinc-800 text-zinc-400 hover:text-white'
+                }`}
+              >
+                From Template
+              </button>
+              <button
+                onClick={() => { setCustomNutritionMode(true); setSelectedNutritionPlan(null) }}
+                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                  customNutritionMode
+                    ? 'bg-green-500 text-white'
+                    : 'bg-zinc-800 text-zinc-400 hover:text-white'
+                }`}
+              >
+                Custom Plan
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
+              {!customNutritionMode ? (
+                /* Template Selection */
+                <div>
+                  <label className="block text-sm font-medium text-zinc-400 mb-2">Select Plan</label>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {availableNutritionPlans.map(plan => (
+                      <div
+                        key={plan.id}
+                        onClick={() => setSelectedNutritionPlan(plan.id)}
+                        className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                          selectedNutritionPlan === plan.id
+                            ? 'border-green-400 bg-green-400/10'
+                            : 'border-zinc-700 hover:border-zinc-600 bg-zinc-800/50'
+                        }`}
+                      >
+                        <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                          <Apple className="w-5 h-5 text-green-400" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-white">{plan.name}</p>
+                          <p className="text-xs text-zinc-400">
+                            {plan.calories} cal • P:{plan.protein}g • C:{plan.carbs}g • F:{plan.fats}g
+                          </p>
+                        </div>
+                        {selectedNutritionPlan === plan.id && (
+                          <Check className="w-5 h-5 text-green-400" />
+                        )}
                       </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-white">{plan.name}</p>
-                        <p className="text-xs text-zinc-400">
-                          {plan.calories} cal • P:{plan.protein}g • C:{plan.carbs}g • F:{plan.fats}g
-                        </p>
-                      </div>
-                      {selectedNutritionPlan === plan.id && (
-                        <Check className="w-5 h-5 text-green-400" />
-                      )}
-                    </div>
-                  ))}
-                  {availableNutritionPlans.length === 0 && (
-                    <p className="text-zinc-500 text-center py-4">No nutrition plans available. Create one first.</p>
-                  )}
+                    ))}
+                    {availableNutritionPlans.length === 0 && (
+                      <p className="text-zinc-500 text-center py-4">No nutrition plans available. Create one first.</p>
+                    )}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                /* Custom Plan with Calculator */
+                <div className="space-y-4">
+                  <BMRCalculator
+                    onApply={(result) => {
+                      setCustomCalories(result.tdee)
+                      setCustomProtein(result.protein)
+                      setCustomCarbs(result.carbs)
+                      setCustomFats(result.fats)
+                    }}
+                  />
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-zinc-500 mb-1">Calories</label>
+                      <input
+                        type="number"
+                        value={customCalories}
+                        onChange={(e) => setCustomCalories(parseInt(e.target.value) || 0)}
+                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-zinc-500 mb-1">Protein (g)</label>
+                      <input
+                        type="number"
+                        value={customProtein}
+                        onChange={(e) => setCustomProtein(parseInt(e.target.value) || 0)}
+                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-zinc-500 mb-1">Carbs (g)</label>
+                      <input
+                        type="number"
+                        value={customCarbs}
+                        onChange={(e) => setCustomCarbs(parseInt(e.target.value) || 0)}
+                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-zinc-500 mb-1">Fats (g)</label>
+                      <input
+                        type="number"
+                        value={customFats}
+                        onChange={(e) => setCustomFats(parseInt(e.target.value) || 0)}
+                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-400"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
               
               <div>
                 <label className="block text-sm font-medium text-zinc-400 mb-2">
@@ -2236,7 +2347,7 @@ export default function UserProfilePage() {
                   value={nutritionNotes}
                   onChange={(e) => setNutritionNotes(e.target.value)}
                   placeholder="Any special instructions for this client..."
-                  rows={3}
+                  rows={2}
                   className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-400 resize-none"
                 />
               </div>
@@ -2244,14 +2355,14 @@ export default function UserProfilePage() {
             
             <div className="flex justify-end gap-3 p-6 border-t border-zinc-800">
               <button
-                onClick={() => setShowNutritionModal(false)}
+                onClick={() => { setShowNutritionModal(false); setCustomNutritionMode(false) }}
                 className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={assignNutritionPlan}
-                disabled={!selectedNutritionPlan || assigningNutrition}
+                disabled={(!customNutritionMode && !selectedNutritionPlan) || assigningNutrition}
                 className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-green-500/50 text-white font-medium rounded-xl transition-colors"
               >
                 {assigningNutrition ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
