@@ -80,6 +80,7 @@ export default function EditProgramPage({ params }: PageProps) {
           emomInterval: w.emom_interval || null,
           warmupExercises: w.warmup_exercises || [],
           recoveryNotes: w.recovery_notes || '',
+          weekNumber: w.week_number || 1,
           exercises: (w.workout_exercises || [])
             .sort((a: any, b: any) => a.order_index - b.order_index)
             .map((ex: any) => ({

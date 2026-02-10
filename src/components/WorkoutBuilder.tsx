@@ -186,6 +186,8 @@ export interface Workout {
   // Warmup & Recovery (optional)
   warmupExercises?: WorkoutExercise[]
   recoveryNotes?: string
+  // Week number for multi-week programs
+  weekNumber: number
 }
 
 interface WorkoutBuilderProps {
@@ -365,6 +367,67 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
   const [replaceExercise, setReplaceExercise] = useState<{ workoutId: string; exerciseId: string } | null>(null)
   // State for template modal: { mode: 'save' | 'load', workoutId: string }
   const [templateModal, setTemplateModal] = useState<{ mode: 'save' | 'load'; workoutId: string } | null>(null)
+  // Week selection state
+  const [selectedWeek, setSelectedWeek] = useState(1)
+
+  // Get all unique weeks from workouts
+  const allWeeks = useMemo(() => {
+    const weeks = workouts.map(w => w.weekNumber || 1)
+    const uniqueWeeks = [...new Set(weeks)].sort((a, b) => a - b)
+    return uniqueWeeks.length > 0 ? uniqueWeeks : [1]
+  }, [workouts])
+
+  // Get workouts for the selected week
+  const workoutsForSelectedWeek = useMemo(() => {
+    return workouts.filter(w => (w.weekNumber || 1) === selectedWeek)
+  }, [workouts, selectedWeek])
+
+  // Add a new week
+  const addWeek = () => {
+    const maxWeek = Math.max(...allWeeks)
+    const newWeek = maxWeek + 1
+    setSelectedWeek(newWeek)
+  }
+
+  // Duplicate a week (copy all workouts to a new week)
+  const duplicateWeek = (fromWeek: number) => {
+    const maxWeek = Math.max(...allWeeks)
+    const toWeek = maxWeek + 1
+    const workoutsToDuplicate = workouts.filter(w => (w.weekNumber || 1) === fromWeek)
+    
+    const duplicatedWorkouts: Workout[] = workoutsToDuplicate.map(w => ({
+      ...w,
+      id: generateId(),
+      weekNumber: toWeek,
+      exercises: w.exercises.map(ex => ({
+        ...ex,
+        id: generateId(),
+        sets: ex.sets.map(s => ({ ...s, id: generateId() })),
+      })),
+      finisher: w.finisher ? {
+        ...w.finisher,
+        id: generateId(),
+        exercises: w.finisher.exercises.map(ex => ({
+          ...ex,
+          id: generateId(),
+          sets: ex.sets.map(s => ({ ...s, id: generateId() })),
+        })),
+      } : undefined,
+    }))
+    
+    onChange([...workouts, ...duplicatedWorkouts])
+    setSelectedWeek(toWeek)
+  }
+
+  // Delete a week (remove all workouts for that week)
+  const deleteWeek = (week: number) => {
+    if (allWeeks.length <= 1) return // Don't delete the last week
+    const remainingWorkouts = workouts.filter(w => (w.weekNumber || 1) !== week)
+    onChange(remainingWorkouts)
+    if (selectedWeek === week) {
+      setSelectedWeek(allWeeks.find(w => w !== week) || 1)
+    }
+  }
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -381,11 +444,12 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
   const addWorkout = () => {
     const newWorkout: Workout = {
       id: generateId(),
-      name: `Workout ${workouts.length + 1}`,
+      name: `Workout ${workoutsForSelectedWeek.length + 1}`,
       dayOfWeek: null,
-      order: workouts.length,
+      order: workoutsForSelectedWeek.length,
       exercises: [],
       notes: '',
+      weekNumber: selectedWeek,
     }
     onChange([...workouts, newWorkout])
     setExpandedWorkouts(prev => new Set([...prev, newWorkout.id]))
@@ -396,12 +460,22 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
       ...workout,
       id: generateId(),
       name: `${workout.name} (Copy)`,
-      order: workouts.length,
+      order: workoutsForSelectedWeek.length,
+      weekNumber: selectedWeek,
       exercises: workout.exercises.map(ex => ({
         ...ex,
         id: generateId(),
         sets: ex.sets.map(s => ({ ...s, id: generateId() })),
       })),
+      finisher: workout.finisher ? {
+        ...workout.finisher,
+        id: generateId(),
+        exercises: workout.finisher.exercises.map(ex => ({
+          ...ex,
+          id: generateId(),
+          sets: ex.sets.map(s => ({ ...s, id: generateId() })),
+        })),
+      } : undefined,
     }
     onChange([...workouts, newWorkout])
     setExpandedWorkouts(prev => new Set([...prev, newWorkout.id]))
@@ -1677,13 +1751,16 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
   // Day names for grouping
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
-  // Group workouts by day
+  // Group workouts by day (filtered by selected week)
   // Memoize the day grouping structure (only recalculate when workout IDs or days change)
   const dayStructure = useMemo(() => {
     const structure: { day: number | null; dayName: string; workoutIds: string[] }[] = []
     const dayMap = new Map<number | null, string[]>()
 
-    workouts.forEach(w => {
+    // Filter workouts by selected week
+    const weekWorkouts = workouts.filter(w => (w.weekNumber || 1) === selectedWeek)
+
+    weekWorkouts.forEach(w => {
       const existing = dayMap.get(w.dayOfWeek)
       if (existing) {
         existing.push(w.id)
@@ -1711,7 +1788,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
     })
 
     return structure
-  }, [workouts.map(w => `${w.id}:${w.dayOfWeek}:${w.order}`).join(',')])
+  }, [workouts.map(w => `${w.id}:${w.dayOfWeek}:${w.order}:${w.weekNumber}`).join(','), selectedWeek])
 
   // Get actual workout objects for rendering (always fresh)
   const getWorkoutById = (id: string) => workouts.find(w => w.id === id)
@@ -1745,6 +1822,67 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
   // Sortable wrapper for workout items
   return (
     <div className="space-y-6">
+      {/* Week Selector */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Program Weeks</h3>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => duplicateWeek(selectedWeek)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium rounded-lg transition-colors"
+              title="Duplicate current week"
+            >
+              <Copy className="w-3.5 h-3.5" />
+              Duplicate Week
+            </button>
+            <button
+              onClick={addWeek}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-400 hover:bg-yellow-500 text-black text-xs font-bold rounded-lg transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add Week
+            </button>
+          </div>
+        </div>
+        
+        <div className="flex flex-wrap gap-2">
+          {allWeeks.map((week) => (
+            <button
+              key={week}
+              onClick={() => setSelectedWeek(week)}
+              className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                selectedWeek === week
+                  ? 'bg-yellow-400 text-black'
+                  : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+              }`}
+            >
+              Week {week}
+              <span className="ml-1.5 text-xs opacity-70">
+                ({workouts.filter(w => (w.weekNumber || 1) === week).length})
+              </span>
+            </button>
+          ))}
+        </div>
+        
+        {allWeeks.length > 1 && (
+          <div className="mt-3 pt-3 border-t border-zinc-800 flex items-center justify-between">
+            <p className="text-xs text-zinc-500">
+              Viewing Week {selectedWeek} • {workoutsForSelectedWeek.length} workout{workoutsForSelectedWeek.length !== 1 ? 's' : ''}
+            </p>
+            <button
+              onClick={() => {
+                if (confirm(`Delete Week ${selectedWeek} and all its workouts?`)) {
+                  deleteWeek(selectedWeek)
+                }
+              }}
+              className="text-xs text-red-400 hover:text-red-300 transition-colors"
+            >
+              Delete Week {selectedWeek}
+            </button>
+          </div>
+        )}
+      </div>
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}

@@ -68,6 +68,7 @@ export async function POST(request: NextRequest) {
             emom_interval: workout.emomInterval || null,
             warmup_exercises: workout.warmupExercises || [],
             recovery_notes: workout.recoveryNotes || null,
+            week_number: workout.weekNumber || 1,
           })
           .select()
           .single()
