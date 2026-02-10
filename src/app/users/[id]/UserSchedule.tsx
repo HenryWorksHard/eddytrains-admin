@@ -20,10 +20,12 @@ interface WorkoutLogDetails {
   rating: number | null
   trainer_name: string | null
   sets: {
+    exercise_id?: string
     exercise_name: string
     set_number: number
     weight_kg: number | null
     reps_completed: number | null
+    target_reps?: string
   }[]
   scheduled?: boolean
   workoutId?: string
@@ -46,6 +48,9 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [workoutDetails, setWorkoutDetails] = useState<WorkoutLogDetails | null>(null)
   const [loadingDetails, setLoadingDetails] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editedSets, setEditedSets] = useState<Map<string, { weight_kg: number | null; reps_completed: number | null }>>(new Map())
+  const [savingEdits, setSavingEdits] = useState(false)
   const supabase = createClient()
   const today = new Date()
   
@@ -127,6 +132,59 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
   const closeModal = () => {
     setSelectedDate(null)
     setWorkoutDetails(null)
+    setIsEditing(false)
+    setEditedSets(new Map())
+  }
+
+  const handleEditSet = (exerciseId: string, setNumber: number, field: 'weight_kg' | 'reps_completed', value: number | null) => {
+    const key = `${exerciseId}-${setNumber}`
+    setEditedSets(prev => {
+      const newMap = new Map(prev)
+      const existing = newMap.get(key) || { weight_kg: null, reps_completed: null }
+      newMap.set(key, { ...existing, [field]: value })
+      return newMap
+    })
+  }
+
+  const saveEdits = async () => {
+    if (!workoutDetails?.id) return
+    setSavingEdits(true)
+    
+    try {
+      const setsToUpdate = workoutDetails.sets.map(set => {
+        const key = `${set.exercise_id}-${set.set_number}`
+        const edited = editedSets.get(key)
+        return {
+          exercise_id: set.exercise_id,
+          set_number: set.set_number,
+          weight_kg: edited?.weight_kg ?? set.weight_kg,
+          reps_completed: edited?.reps_completed ?? set.reps_completed
+        }
+      }).filter(s => s.weight_kg !== null || s.reps_completed !== null)
+
+      const response = await fetch('/api/coaching/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workoutLogId: workoutDetails.id,
+          sets: setsToUpdate
+        })
+      })
+
+      if (!response.ok) throw new Error('Failed to save')
+      
+      // Refresh the details
+      if (selectedDate) {
+        await fetchWorkoutDetails(selectedDate)
+      }
+      setIsEditing(false)
+      setEditedSets(new Map())
+    } catch (err) {
+      console.error('Failed to save edits:', err)
+      alert('Failed to save changes')
+    } finally {
+      setSavingEdits(false)
+    }
   }
 
   // Format date to YYYY-MM-DD in local timezone (not UTC)
@@ -458,6 +516,36 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
                     </div>
                   )}
 
+                  {/* Edit button */}
+                  {workoutDetails.id && !workoutDetails.scheduled && (
+                    <div className="flex justify-end">
+                      {isEditing ? (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => { setIsEditing(false); setEditedSets(new Map()) }}
+                            className="px-3 py-1 text-sm text-zinc-400 hover:text-white"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={saveEdits}
+                            disabled={savingEdits}
+                            className="px-3 py-1 text-sm bg-yellow-400 hover:bg-yellow-500 text-black font-medium rounded-lg disabled:opacity-50"
+                          >
+                            {savingEdits ? 'Saving...' : 'Save'}
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setIsEditing(true)}
+                          className="px-3 py-1 text-sm text-yellow-400 hover:text-yellow-300"
+                        >
+                          Edit
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                   {/* Exercises and sets */}
                   {(() => {
                     // Group sets by exercise
@@ -473,15 +561,43 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
                           <Dumbbell className="w-4 h-4 text-yellow-400" />
                           <h4 className="font-medium text-white">{exerciseName}</h4>
                         </div>
-                        <div className="space-y-1">
-                          {sets.map(set => (
-                            <div key={set.set_number} className="flex items-center justify-between text-sm">
-                              <span className="text-zinc-500">Set {set.set_number}</span>
-                              <span className="text-white font-medium">
-                                {set.weight_kg ? `${set.weight_kg}kg` : '—'} × {set.reps_completed ?? '—'}
-                              </span>
-                            </div>
-                          ))}
+                        <div className="space-y-2">
+                          {sets.map(set => {
+                            const key = `${set.exercise_id}-${set.set_number}`
+                            const edited = editedSets.get(key)
+                            const currentWeight = edited?.weight_kg ?? set.weight_kg
+                            const currentReps = edited?.reps_completed ?? set.reps_completed
+                            
+                            return (
+                              <div key={set.set_number} className="flex items-center justify-between text-sm">
+                                <span className="text-zinc-500">Set {set.set_number}</span>
+                                {isEditing ? (
+                                  <div className="flex items-center gap-1">
+                                    <input
+                                      type="number"
+                                      step="0.5"
+                                      value={currentWeight ?? ''}
+                                      onChange={(e) => handleEditSet(set.exercise_id!, set.set_number, 'weight_kg', e.target.value ? parseFloat(e.target.value) : null)}
+                                      className="w-16 px-2 py-1 bg-zinc-700 border border-zinc-600 rounded text-white text-center text-sm"
+                                      placeholder="kg"
+                                    />
+                                    <span className="text-zinc-500">×</span>
+                                    <input
+                                      type="number"
+                                      value={currentReps ?? ''}
+                                      onChange={(e) => handleEditSet(set.exercise_id!, set.set_number, 'reps_completed', e.target.value ? parseInt(e.target.value) : null)}
+                                      className="w-14 px-2 py-1 bg-zinc-700 border border-zinc-600 rounded text-white text-center text-sm"
+                                      placeholder="reps"
+                                    />
+                                  </div>
+                                ) : (
+                                  <span className="text-white font-medium">
+                                    {set.weight_kg !== null ? `${set.weight_kg}kg` : '—'} × {set.reps_completed ?? '—'}
+                                  </span>
+                                )}
+                              </div>
+                            )
+                          })}
                         </div>
                       </div>
                     ))

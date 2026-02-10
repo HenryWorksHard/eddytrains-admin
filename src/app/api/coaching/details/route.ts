@@ -129,6 +129,7 @@ export async function GET(request: NextRequest) {
         const logged = loggedData.get(key)
         
         sets.push({
+          exercise_id: exercise.id,
           exercise_name: exercise.exercise_name,
           set_number: set.set_number,
           weight_kg: logged?.weight_kg ?? null,
