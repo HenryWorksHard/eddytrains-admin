@@ -118,13 +118,13 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
             set_number,
             weight_kg,
             reps_completed,
-            workout_exercise_id
+            exercise_id
           `)
           .eq('workout_log_id', workoutLog.id)
           .order('set_number')
 
         // Get exercise names for each set
-        const exerciseIds = [...new Set(setLogs?.map(s => s.workout_exercise_id) || [])]
+        const exerciseIds = [...new Set(setLogs?.map(s => s.exercise_id) || [])]
         const { data: exercises } = await supabase
           .from('workout_exercises')
           .select('id, exercise_name')
@@ -140,7 +140,7 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
           rating: workoutLog.rating,
           trainer_name: trainerName,
           sets: (setLogs || []).map(s => ({
-            exercise_name: exerciseMap.get(s.workout_exercise_id) || 'Exercise',
+            exercise_name: exerciseMap.get(s.exercise_id) || 'Exercise',
             set_number: s.set_number,
             weight_kg: s.weight_kg,
             reps_completed: s.reps_completed

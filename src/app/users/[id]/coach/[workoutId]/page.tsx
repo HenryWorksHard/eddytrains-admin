@@ -232,14 +232,14 @@ export default function CoachSessionPage() {
     if (lastWorkoutLog) {
       const { data: lastSets } = await supabase
         .from('set_logs')
-        .select('workout_exercise_id, set_number, weight_kg')
+        .select('exercise_id, set_number, weight_kg')
         .eq('workout_log_id', lastWorkoutLog.id)
 
       if (lastSets) {
         const weightsMap = new Map<string, number>()
         lastSets.forEach(set => {
           if (set.weight_kg) {
-            weightsMap.set(`${set.workout_exercise_id}-${set.set_number}`, set.weight_kg)
+            weightsMap.set(`${set.exercise_id}-${set.set_number}`, set.weight_kg)
           }
         })
         setLastWeights(weightsMap)
