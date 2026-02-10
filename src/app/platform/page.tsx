@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import Sidebar from '@/components/Sidebar';
 import { Users, Building2, DollarSign, TrendingUp, Eye, Search, Plus, X, Trash2, Activity, UserPlus, CreditCard, UserMinus, ChevronDown, ChevronRight, UserCheck } from 'lucide-react';
 
 interface Organization {
@@ -474,11 +473,9 @@ export default function PlatformPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen bg-zinc-950">
-        <Sidebar />
-        <main className="flex-1 p-8 ml-64">
-          <div className="animate-pulse">Loading...</div>
-        </main>
+      <div className="animate-pulse">
+        <div className="h-8 w-64 bg-zinc-800 rounded mb-4"></div>
+        <div className="h-4 w-48 bg-zinc-800 rounded"></div>
       </div>
     );
   }
@@ -486,10 +483,8 @@ export default function PlatformPage() {
   if (!isSuperAdmin) return null;
 
   return (
-    <div className="flex min-h-screen bg-zinc-950">
-      <Sidebar />
-      <main className="flex-1 p-8 ml-64">
-        <div className="max-w-6xl">
+    <>
+    <div className="max-w-6xl">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-2xl font-bold text-white mb-2">Platform Management</h1>
@@ -766,7 +761,7 @@ export default function PlatformPage() {
             </div>
           </div>
         </div>
-      </main>
+      </>
 
       {/* Add Trainer Modal */}
       {showAddTrainer && (
@@ -1111,6 +1106,6 @@ export default function PlatformPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
