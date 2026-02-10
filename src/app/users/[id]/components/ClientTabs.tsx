@@ -20,8 +20,8 @@ const tabs = [
 
 export default function ClientTabs({ activeTab, setActiveTab }: ClientTabsProps) {
   return (
-    <div className="overflow-x-auto mb-6 -mx-2 px-2">
-      <div className="flex gap-1 p-1 bg-zinc-900 rounded-xl border border-zinc-800 min-w-max">
+    <div className="mb-6">
+      <div className="flex gap-1 p-1 bg-zinc-900 rounded-xl border border-zinc-800">
         {tabs.map((tab) => {
           const Icon = tab.icon
           const isActive = activeTab === tab.id
@@ -29,14 +29,15 @@ export default function ClientTabs({ activeTab, setActiveTab }: ClientTabsProps)
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+              title={tab.label}
+              className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all flex-1 ${
                 isActive
                   ? 'bg-yellow-400 text-black'
                   : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
               }`}
             >
               <Icon className="w-4 h-4 flex-shrink-0" />
-              <span>{tab.label}</span>
+              <span className="hidden xl:inline">{tab.label}</span>
             </button>
           )
         })}
