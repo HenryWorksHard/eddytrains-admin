@@ -1,14 +1,30 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Calendar, ChevronLeft, ChevronRight, Loader2, Play } from 'lucide-react'
+import { Calendar, ChevronLeft, ChevronRight, Loader2, Play, X, Dumbbell } from 'lucide-react'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 
 interface WorkoutSchedule {
   dayOfWeek: number
   workoutId: string
   workoutName: string
   programName: string
+}
+
+interface WorkoutLogDetails {
+  id: string
+  workout_name: string
+  completed_at: string
+  notes: string | null
+  rating: number | null
+  trainer_name: string | null
+  sets: {
+    exercise_name: string
+    set_number: number
+    weight_kg: number | null
+    reps_completed: number | null
+  }[]
 }
 
 interface UserScheduleProps {
@@ -20,6 +36,10 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
   const [scheduleByDay, setScheduleByDay] = useState<Record<number, WorkoutSchedule>>({})
   const [completionsByDate, setCompletionsByDate] = useState<Record<string, string>>({})
   const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [workoutDetails, setWorkoutDetails] = useState<WorkoutLogDetails | null>(null)
+  const [loadingDetails, setLoadingDetails] = useState(false)
+  const supabase = createClient()
   const today = new Date()
   
   const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -47,6 +67,99 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Fetch workout details for a specific date
+  const fetchWorkoutDetails = async (date: Date) => {
+    setLoadingDetails(true)
+    setSelectedDate(date)
+    
+    const dateStr = formatDateLocal(date)
+    
+    try {
+      // Get workout log for this date
+      const { data: workoutLog } = await supabase
+        .from('workout_logs')
+        .select(`
+          id,
+          workout_id,
+          completed_at,
+          notes,
+          rating,
+          trainer_id
+        `)
+        .eq('client_id', userId)
+        .eq('scheduled_date', dateStr)
+        .single()
+
+      if (workoutLog) {
+        // Get workout name
+        const { data: workout } = await supabase
+          .from('program_workouts')
+          .select('name')
+          .eq('id', workoutLog.workout_id)
+          .single()
+
+        // Get trainer name if exists
+        let trainerName = null
+        if (workoutLog.trainer_id) {
+          const { data: trainer } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', workoutLog.trainer_id)
+            .single()
+          trainerName = trainer?.full_name
+        }
+
+        // Get set logs with exercise names
+        const { data: setLogs } = await supabase
+          .from('set_logs')
+          .select(`
+            set_number,
+            weight_kg,
+            reps_completed,
+            workout_exercise_id
+          `)
+          .eq('workout_log_id', workoutLog.id)
+          .order('set_number')
+
+        // Get exercise names for each set
+        const exerciseIds = [...new Set(setLogs?.map(s => s.workout_exercise_id) || [])]
+        const { data: exercises } = await supabase
+          .from('workout_exercises')
+          .select('id, exercise_name')
+          .in('id', exerciseIds)
+
+        const exerciseMap = new Map(exercises?.map(e => [e.id, e.exercise_name]) || [])
+
+        setWorkoutDetails({
+          id: workoutLog.id,
+          workout_name: workout?.name || 'Workout',
+          completed_at: workoutLog.completed_at,
+          notes: workoutLog.notes,
+          rating: workoutLog.rating,
+          trainer_name: trainerName,
+          sets: (setLogs || []).map(s => ({
+            exercise_name: exerciseMap.get(s.workout_exercise_id) || 'Exercise',
+            set_number: s.set_number,
+            weight_kg: s.weight_kg,
+            reps_completed: s.reps_completed
+          }))
+        })
+      } else {
+        setWorkoutDetails(null)
+      }
+    } catch (err) {
+      console.error('Failed to fetch workout details:', err)
+      setWorkoutDetails(null)
+    } finally {
+      setLoadingDetails(false)
+    }
+  }
+
+  const closeModal = () => {
+    setSelectedDate(null)
+    setWorkoutDetails(null)
   }
 
   // Format date to YYYY-MM-DD in local timezone (not UTC)
@@ -288,14 +401,16 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
               const status = getDateStatus(date)
               const hasWorkout = scheduleByDay[date.getDay()]
               
+              const isCompleted = status === 'completed'
               return (
                 <div
                   key={date.toISOString()}
+                  onClick={() => isCompleted && fetchWorkoutDetails(date)}
                   className={`aspect-square rounded-lg flex flex-col items-center justify-center text-xs transition-all ${
                     hasWorkout
                       ? getStatusColor(status)
                       : 'text-zinc-600'
-                  } ${hasWorkout ? 'border' : ''} ${isToday ? 'font-bold' : ''}`}
+                  } ${hasWorkout ? 'border' : ''} ${isToday ? 'font-bold' : ''} ${isCompleted ? 'cursor-pointer hover:ring-2 hover:ring-white/30' : ''}`}
                 >
                   <span className={isToday && !hasWorkout ? 'text-white' : ''}>{date.getDate()}</span>
                   {/* Today indicator - white dot */}
@@ -326,8 +441,99 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
               <span className="text-zinc-400 text-xs">Today</span>
             </div>
           </div>
+          <p className="text-center text-zinc-500 text-xs mt-2">Click completed workouts to view details</p>
         </div>
       </div>
+
+      {/* Workout Details Modal */}
+      {selectedDate && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={closeModal}>
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-lg max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+              <div>
+                <h3 className="text-lg font-semibold text-white">
+                  {selectedDate.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
+                </h3>
+                {workoutDetails && (
+                  <p className="text-sm text-zinc-400">{workoutDetails.workout_name}</p>
+                )}
+              </div>
+              <button onClick={closeModal} className="p-2 hover:bg-zinc-800 rounded-lg transition-colors">
+                <X className="w-5 h-5 text-zinc-400" />
+              </button>
+            </div>
+
+            <div className="p-4 overflow-y-auto max-h-[60vh]">
+              {loadingDetails ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-yellow-400" />
+                </div>
+              ) : workoutDetails ? (
+                <div className="space-y-4">
+                  {/* Meta info */}
+                  <div className="flex flex-wrap gap-3 text-sm">
+                    {workoutDetails.trainer_name && (
+                      <span className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded">
+                        Coach: {workoutDetails.trainer_name}
+                      </span>
+                    )}
+                    {workoutDetails.rating && (
+                      <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded">
+                        {'★'.repeat(workoutDetails.rating)}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Notes */}
+                  {workoutDetails.notes && (
+                    <div className="p-3 bg-zinc-800/50 rounded-xl">
+                      <p className="text-sm text-zinc-400">{workoutDetails.notes}</p>
+                    </div>
+                  )}
+
+                  {/* Exercises and sets */}
+                  {(() => {
+                    // Group sets by exercise
+                    const exerciseGroups = workoutDetails.sets.reduce((acc, set) => {
+                      if (!acc[set.exercise_name]) acc[set.exercise_name] = []
+                      acc[set.exercise_name].push(set)
+                      return acc
+                    }, {} as Record<string, typeof workoutDetails.sets>)
+
+                    return Object.entries(exerciseGroups).map(([exerciseName, sets]) => (
+                      <div key={exerciseName} className="bg-zinc-800/30 rounded-xl p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Dumbbell className="w-4 h-4 text-yellow-400" />
+                          <h4 className="font-medium text-white">{exerciseName}</h4>
+                        </div>
+                        <div className="space-y-1">
+                          {sets.map(set => (
+                            <div key={set.set_number} className="flex items-center justify-between text-sm">
+                              <span className="text-zinc-500">Set {set.set_number}</span>
+                              <span className="text-white font-medium">
+                                {set.weight_kg ? `${set.weight_kg}kg` : '—'} × {set.reps_completed ?? '—'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  })()}
+
+                  {workoutDetails.sets.length === 0 && (
+                    <p className="text-zinc-500 text-center py-4">No set data recorded</p>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Dumbbell className="w-10 h-10 text-zinc-600 mx-auto mb-2" />
+                  <p className="text-zinc-400">No workout data found for this date</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
