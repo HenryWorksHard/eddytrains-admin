@@ -5,12 +5,93 @@
  * If we ever add a monorepo, these would move to @eddytrains/types
  */
 
+// =============================================
+// ORGANIZATION TYPES (Multi-tenant)
+// =============================================
+
+export type OrgMemberRole = 'owner' | 'admin' | 'trainer'
+
+export interface Organization {
+  id: string
+  name: string
+  slug: string
+  logo_url: string | null
+  // Billing
+  stripe_customer_id: string | null
+  stripe_subscription_id: string | null
+  subscription_status: 'active' | 'canceled' | 'past_due' | 'trialing'
+  // Custom limits
+  max_trainers: number
+  max_clients: number
+  // Settings
+  settings: Record<string, unknown>
+  is_active: boolean
+  // Timestamps
+  created_at: string
+  updated_at: string
+  // Joined
+  members?: OrganizationMember[]
+  member_count?: number
+  client_count?: number
+}
+
+export interface OrganizationMember {
+  id: string
+  organization_id: string
+  user_id: string
+  role: OrgMemberRole
+  invited_by: string | null
+  invited_at: string | null
+  joined_at: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  // Joined
+  profile?: Profile
+  organization?: Organization
+}
+
+export interface OrganizationInvite {
+  id: string
+  organization_id: string
+  email: string
+  role: OrgMemberRole
+  invited_by: string | null
+  token: string
+  expires_at: string
+  accepted_at: string | null
+  created_at: string
+  // Joined
+  organization?: Organization
+  inviter?: Profile
+}
+
+export interface TrainerClient {
+  id: string
+  trainer_id: string
+  client_id: string
+  organization_id: string
+  is_active: boolean
+  assigned_at: string
+  created_at: string
+  updated_at: string
+  // Joined
+  trainer?: Profile
+  client?: Profile
+  organization?: Organization
+}
+
+// =============================================
+// USER TYPES
+// =============================================
+
 export interface Profile {
   id: string
   slug: string | null
   email: string | null
   full_name: string | null
   role: 'super_admin' | 'admin' | 'trainer' | 'client' | 'user'
+  is_super_admin: boolean
   is_active: boolean
   status: 'pending' | 'active' | null
   temp_password: string | null
@@ -26,7 +107,13 @@ export interface Profile {
   // Timestamps
   created_at: string
   updated_at: string
+  // Joined
+  organization_member?: OrganizationMember
 }
+
+// =============================================
+// FITNESS TYPES
+// =============================================
 
 export interface Client1RM {
   id: string
@@ -186,4 +273,17 @@ export interface PersonalRecord {
   achieved_at: string
   // Joined
   profiles?: Profile
+}
+
+// =============================================
+// PLATFORM STATS (Super Admin Dashboard)
+// =============================================
+
+export interface PlatformStats {
+  total_organizations: number
+  total_trainers: number
+  total_clients: number
+  active_subscriptions: number
+  mrr: number // Monthly Recurring Revenue
+  organizations_by_status: Record<string, number>
 }

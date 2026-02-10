@@ -29,6 +29,7 @@ const trainerNavItems = [
   { name: 'Programs', href: '/programs', icon: Dumbbell },
   { name: 'Nutrition', href: '/nutrition', icon: Apple },
   { name: 'Schedules', href: '/schedules', icon: Calendar },
+  { name: 'Team', href: '/organization/trainers', icon: Users },
   { name: 'Organization', href: '/organization', icon: Building2 },
   { name: 'Billing', href: '/billing', icon: CreditCard },
   { name: 'Settings', href: '/settings', icon: Settings },
