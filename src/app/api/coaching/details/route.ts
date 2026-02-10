@@ -84,7 +84,22 @@ export async function GET(request: NextRequest) {
       trainerName = trainer?.full_name
     }
 
-    // Get set logs with exercise names
+    // Get ALL exercises for this workout (not just logged ones)
+    const { data: allExercises } = await supabaseAdmin
+      .from('workout_exercises')
+      .select(`
+        id,
+        exercise_name,
+        order_index,
+        exercise_sets (
+          set_number,
+          reps
+        )
+      `)
+      .eq('workout_id', workoutLog.workout_id)
+      .order('order_index')
+
+    // Get logged set data
     const { data: setLogs } = await supabaseAdmin
       .from('set_logs')
       .select(`
@@ -96,18 +111,32 @@ export async function GET(request: NextRequest) {
       .eq('workout_log_id', workoutLog.id)
       .order('set_number')
 
-    // Get exercise names for each set
-    const exerciseIds = [...new Set(setLogs?.map(s => s.exercise_id) || [])]
-    let exerciseMap = new Map()
-    
-    if (exerciseIds.length > 0) {
-      const { data: exercises } = await supabaseAdmin
-        .from('workout_exercises')
-        .select('id, exercise_name')
-        .in('id', exerciseIds)
+    // Create a map of logged data by exercise_id and set_number
+    const loggedData = new Map()
+    setLogs?.forEach(log => {
+      const key = `${log.exercise_id}-${log.set_number}`
+      loggedData.set(key, { weight_kg: log.weight_kg, reps_completed: log.reps_completed })
+    })
+
+    // Build sets array with ALL exercises, showing empty for unlogged
+    const sets: any[] = []
+    allExercises?.forEach(exercise => {
+      const exerciseSets = exercise.exercise_sets || []
+      exerciseSets.sort((a: any, b: any) => a.set_number - b.set_number)
       
-      exerciseMap = new Map(exercises?.map(e => [e.id, e.exercise_name]) || [])
-    }
+      exerciseSets.forEach((set: any) => {
+        const key = `${exercise.id}-${set.set_number}`
+        const logged = loggedData.get(key)
+        
+        sets.push({
+          exercise_name: exercise.exercise_name,
+          set_number: set.set_number,
+          weight_kg: logged?.weight_kg ?? null,
+          reps_completed: logged?.reps_completed ?? null,
+          target_reps: set.reps
+        })
+      })
+    })
 
     return NextResponse.json({
       workoutLog: {
@@ -117,12 +146,7 @@ export async function GET(request: NextRequest) {
         notes: workoutLog.notes,
         rating: workoutLog.rating,
         trainer_name: trainerName,
-        sets: (setLogs || []).map(s => ({
-          exercise_name: exerciseMap.get(s.exercise_id) || 'Exercise',
-          set_number: s.set_number,
-          weight_kg: s.weight_kg,
-          reps_completed: s.reps_completed
-        }))
+        sets
       }
     })
   } catch (err: any) {
