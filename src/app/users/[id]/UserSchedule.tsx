@@ -80,8 +80,11 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
     const dateStr = formatDateLocal(date)
     
     try {
-      // Get workout log for this date
-      const { data: workoutLog } = await supabase
+      // Get workout log for this date - try scheduled_date first, then completed_at
+      let workoutLog = null
+      
+      // First try by scheduled_date
+      const { data: byScheduled } = await supabase
         .from('workout_logs')
         .select(`
           id,
@@ -94,6 +97,33 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
         .eq('client_id', userId)
         .eq('scheduled_date', dateStr)
         .single()
+      
+      if (byScheduled) {
+        workoutLog = byScheduled
+      } else {
+        // Fallback: check by completed_at date
+        const startOfDay = new Date(date)
+        startOfDay.setHours(0, 0, 0, 0)
+        const endOfDay = new Date(date)
+        endOfDay.setHours(23, 59, 59, 999)
+        
+        const { data: byCompleted } = await supabase
+          .from('workout_logs')
+          .select(`
+            id,
+            workout_id,
+            completed_at,
+            notes,
+            rating,
+            trainer_id
+          `)
+          .eq('client_id', userId)
+          .gte('completed_at', startOfDay.toISOString())
+          .lte('completed_at', endOfDay.toISOString())
+          .single()
+        
+        workoutLog = byCompleted
+      }
 
       if (workoutLog) {
         // Get workout name
@@ -545,20 +575,26 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
                     <p className="text-zinc-500 text-center py-4">No set data recorded</p>
                   )}
 
-                  {/* Show Coach Session button for scheduled/upcoming workouts */}
+                  {/* Show Coach Session button for scheduled/upcoming workouts (not past) */}
                   {workoutDetails.scheduled && workoutDetails.workoutId && (
                     <div className="text-center py-4">
                       <p className="text-zinc-400 mb-3">
                         {workoutDetails.programName && <span className="text-zinc-500">{workoutDetails.programName}</span>}
                       </p>
-                      <p className="text-zinc-500 text-sm mb-4">This workout hasn't been completed yet</p>
-                      <Link
-                        href={`/users/${userId}/coach/${workoutDetails.workoutId}`}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-xl transition-colors"
-                      >
-                        <Play className="w-4 h-4" />
-                        Start Coaching Session
-                      </Link>
+                      {selectedDate && selectedDate >= new Date(new Date().setHours(0,0,0,0)) ? (
+                        <>
+                          <p className="text-zinc-500 text-sm mb-4">This workout hasn't been completed yet</p>
+                          <Link
+                            href={`/users/${userId}/coach/${workoutDetails.workoutId}`}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-xl transition-colors"
+                          >
+                            <Play className="w-4 h-4" />
+                            Start Coaching Session
+                          </Link>
+                        </>
+                      ) : (
+                        <p className="text-zinc-500 text-sm">This workout was not completed</p>
+                      )}
                     </div>
                   )}
                 </div>
