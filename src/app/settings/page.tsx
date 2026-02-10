@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
-import { Settings, User, Bell, Database, Shield, Image as ImageIcon } from 'lucide-react'
+import { Settings, User, Bell, Database, Shield, Image as ImageIcon, Building2 } from 'lucide-react'
 import DangerZone from '@/components/DangerZone'
 import LogoUpload from '@/components/LogoUpload'
+import TrainerVisibilityToggle from '@/components/TrainerVisibilityToggle'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,7 +25,7 @@ export default async function SettingsPage() {
   // First check if user owns an org (solo trainer or company admin)
   const { data: ownedOrg } = await supabase
     .from('organizations')
-    .select('id, name, logo_url, organization_type')
+    .select('id, name, logo_url, organization_type, trainer_visibility')
     .eq('owner_id', user?.id)
     .single()
 
@@ -35,7 +36,7 @@ export default async function SettingsPage() {
     // Trainer under a company - get the company's org
     const { data: companyOrg } = await supabase
       .from('organizations')
-      .select('id, name, logo_url, organization_type')
+      .select('id, name, logo_url, organization_type, trainer_visibility')
       .eq('id', profile.organization_id)
       .single()
     
@@ -132,6 +133,21 @@ export default async function SettingsPage() {
                 </div>
               </div>
             )}
+          </section>
+        )}
+
+        {/* Company Settings - Only for company admins */}
+        {organization?.organization_type === 'company' && profile?.role === 'company_admin' && (
+          <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <Building2 className="w-5 h-5 text-zinc-400" />
+              <h2 className="text-lg font-semibold text-white">Company Settings</h2>
+            </div>
+            
+            <TrainerVisibilityToggle 
+              organizationId={organization.id}
+              currentVisibility={organization.trainer_visibility || 'team'}
+            />
           </section>
         )}
 

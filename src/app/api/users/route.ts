@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { createClient as createServerClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { getEffectiveOrgId, IMPERSONATION_COOKIE } from '@/lib/org-context'
@@ -15,6 +16,21 @@ function getAdminClient() {
       }
     }
   )
+}
+
+// Get current user's profile info
+async function getCurrentUserProfile() {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, role, organization_id, company_id')
+    .eq('id', user.id)
+    .single()
+  
+  return profile
 }
 
 // Generate a random temp password
@@ -127,13 +143,37 @@ export async function GET() {
       return NextResponse.json({ users: [] })
     }
     
-    // Get only client profiles for this organization
-    const { data: profiles, error } = await adminClient
+    // Get current user's profile to check role
+    const currentUser = await getCurrentUserProfile()
+    
+    // Get organization's visibility settings
+    const { data: org } = await adminClient
+      .from('organizations')
+      .select('trainer_visibility, organization_type')
+      .eq('id', organizationId)
+      .single()
+    
+    // Build the query
+    let query = adminClient
       .from('profiles')
       .select('*')
       .eq('role', 'client')
-      .eq('organization_id', organizationId)
-      .order('created_at', { ascending: false })
+    
+    // Apply visibility filter:
+    // - If user is a trainer AND org visibility is 'assigned', show only their clients
+    // - Otherwise show all clients in the organization
+    if (
+      currentUser?.role === 'trainer' && 
+      org?.trainer_visibility === 'assigned'
+    ) {
+      // Trainer can only see clients assigned to them
+      query = query.eq('trainer_id', currentUser.id)
+    } else {
+      // Team visibility OR user is admin/company_admin - show all org clients
+      query = query.eq('organization_id', organizationId)
+    }
+    
+    const { data: profiles, error } = await query.order('created_at', { ascending: false })
     
     if (error) throw error
 
@@ -224,7 +264,7 @@ async function generateSlug(adminClient: ReturnType<typeof getAdminClient>, name
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, full_name, permissions, organization_id } = await request.json()
+    const { email, full_name, permissions, organization_id, trainer_id } = await request.json()
     
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 })
@@ -277,6 +317,20 @@ export async function POST(request: NextRequest) {
     // Generate unique slug
     const slug = await generateSlug(adminClient, full_name, email)
     
+    // Get current user to auto-assign trainer_id if applicable
+    const currentUser = await getCurrentUserProfile()
+    let assignedTrainerId = trainer_id || null
+    let assignedCompanyId = null
+    
+    // If current user is a trainer and no trainer_id provided, auto-assign to them
+    if (currentUser?.role === 'trainer' && !trainer_id) {
+      assignedTrainerId = currentUser.id
+      assignedCompanyId = currentUser.company_id
+    } else if (currentUser?.role === 'company_admin') {
+      // Company admin adding a client - set company_id
+      assignedCompanyId = currentUser.company_id || currentUser.organization_id
+    }
+    
     // Create user with service role (bypasses email confirmation)
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
       email,
@@ -302,6 +356,8 @@ export async function POST(request: NextRequest) {
         full_name: full_name || email.split('@')[0],
         role: 'client',
         organization_id: organization_id || null,
+        trainer_id: assignedTrainerId,
+        company_id: assignedCompanyId,
         is_active: true,
         must_change_password: true,
         password_changed: false,
