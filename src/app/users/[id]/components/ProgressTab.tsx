@@ -55,14 +55,16 @@ export default function ProgressTab({ clientId }: ProgressTabProps) {
 
     if (rmData) setOneRMs(rmData)
 
-    // Fetch Streak from client_streaks table
-    const { data: streakData } = await supabase
-      .from('client_streaks')
-      .select('current_streak, longest_streak, last_workout_date')
-      .eq('client_id', clientId)
-      .single()
-
-    if (streakData) setStreak(streakData)
+    // Fetch Streak via API (bypasses RLS)
+    try {
+      const streakResponse = await fetch(`/api/users/${clientId}/streak`)
+      if (streakResponse.ok) {
+        const { streak: streakData } = await streakResponse.json()
+        if (streakData) setStreak(streakData)
+      }
+    } catch (err) {
+      console.error('Failed to fetch streak:', err)
+    }
 
     setLoading(false)
   }
