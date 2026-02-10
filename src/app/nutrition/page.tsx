@@ -36,6 +36,8 @@ interface NutritionTemplate {
 export default function NutritionPage() {
   const [clients, setClients] = useState<Client[]>([])
   const [selectedClientId, setSelectedClientId] = useState<string>('')
+  const [clientSearch, setClientSearch] = useState('')
+  const [showClientDropdown, setShowClientDropdown] = useState(false)
   const [nutrition, setNutrition] = useState<NutritionPlan | null>(null)
   const [templates, setTemplates] = useState<NutritionTemplate[]>([])
   const [loading, setLoading] = useState(true)
@@ -123,10 +125,10 @@ export default function NutritionPage() {
         id,
         client_id,
         plan_id,
-        calories,
-        protein,
-        carbs,
-        fats,
+        custom_calories,
+        custom_protein,
+        custom_carbs,
+        custom_fats,
         notes,
         created_by_type,
         nutrition_plans(name)
@@ -140,10 +142,10 @@ export default function NutritionPage() {
         client_id: data.client_id,
         plan_id: data.plan_id,
         plan_name: (data.nutrition_plans as any)?.name || null,
-        calories: data.calories,
-        protein: data.protein,
-        carbs: data.carbs,
-        fats: data.fats,
+        calories: data.custom_calories,
+        protein: data.custom_protein,
+        carbs: data.custom_carbs,
+        fats: data.custom_fats,
         notes: data.notes,
         created_by_type: data.created_by_type
       }
@@ -177,10 +179,10 @@ export default function NutritionPage() {
 
     const nutritionData = {
       client_id: selectedClientId,
-      calories: editCalories,
-      protein: editProtein,
-      carbs: editCarbs,
-      fats: editFats,
+      custom_calories: editCalories,
+      custom_protein: editProtein,
+      custom_carbs: editCarbs,
+      custom_fats: editFats,
       notes: editNotes || null,
       created_by_type: 'trainer' as const,
       updated_at: new Date().toISOString()
@@ -214,10 +216,10 @@ export default function NutritionPage() {
     const nutritionData = {
       client_id: selectedClientId,
       plan_id: template.id,
-      calories: template.calories,
-      protein: template.protein,
-      carbs: template.carbs,
-      fats: template.fats,
+      custom_calories: template.calories,
+      custom_protein: template.protein,
+      custom_carbs: template.carbs,
+      custom_fats: template.fats,
       created_by_type: 'trainer' as const,
       updated_at: new Date().toISOString()
     }
@@ -265,23 +267,81 @@ export default function NutritionPage() {
         </div>
       </div>
 
-      {/* Client Selector */}
+      {/* Client Selector - Searchable */}
       <div className="card p-6 mb-6">
         <label className="block text-sm font-medium text-zinc-400 mb-2">
           Select Client
         </label>
-        <select
-          value={selectedClientId}
-          onChange={(e) => setSelectedClientId(e.target.value)}
-          className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-green-400"
-        >
-          <option value="">Choose a client...</option>
-          {clients.map(client => (
-            <option key={client.id} value={client.id}>
-              {client.full_name || client.email}
-            </option>
-          ))}
-        </select>
+        <div className="relative">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+            <input
+              type="text"
+              placeholder="Search clients..."
+              value={clientSearch}
+              onChange={(e) => {
+                setClientSearch(e.target.value)
+                setShowClientDropdown(true)
+              }}
+              onFocus={() => setShowClientDropdown(true)}
+              className="w-full pl-12 pr-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-400"
+            />
+          </div>
+          
+          {showClientDropdown && (
+            <div className="absolute z-10 w-full mt-2 bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl max-h-64 overflow-y-auto">
+              {clients
+                .filter(c => 
+                  (c.full_name?.toLowerCase() || '').includes(clientSearch.toLowerCase()) ||
+                  c.email.toLowerCase().includes(clientSearch.toLowerCase())
+                )
+                .map(client => (
+                  <button
+                    key={client.id}
+                    onClick={() => {
+                      setSelectedClientId(client.id)
+                      setClientSearch(client.full_name || client.email)
+                      setShowClientDropdown(false)
+                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-800 transition-colors text-left ${
+                      selectedClientId === client.id ? 'bg-zinc-800' : ''
+                    }`}
+                  >
+                    {client.profile_picture_url ? (
+                      <img
+                        src={client.profile_picture_url}
+                        alt=""
+                        className="w-8 h-8 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-lg bg-zinc-700 flex items-center justify-center">
+                        <User className="w-4 h-4 text-zinc-500" />
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-white font-medium">{client.full_name || 'Unnamed'}</p>
+                      <p className="text-xs text-zinc-500">{client.email}</p>
+                    </div>
+                  </button>
+                ))
+              }
+              {clients.filter(c => 
+                (c.full_name?.toLowerCase() || '').includes(clientSearch.toLowerCase()) ||
+                c.email.toLowerCase().includes(clientSearch.toLowerCase())
+              ).length === 0 && (
+                <div className="px-4 py-3 text-zinc-500 text-center">No clients found</div>
+              )}
+            </div>
+          )}
+        </div>
+        
+        {/* Click outside to close */}
+        {showClientDropdown && (
+          <div 
+            className="fixed inset-0 z-0" 
+            onClick={() => setShowClientDropdown(false)}
+          />
+        )}
       </div>
 
       {/* Nutrition Display/Edit */}
