@@ -83,6 +83,16 @@ export default function PlatformPage() {
     slug: '',
     customMonthlyPrice: '',
     maxTrainers: '5',
+    adminEmail: '',
+    adminPassword: '',
+    adminFullName: '',
+  });
+  const [editingCompany, setEditingCompany] = useState<Organization | null>(null);
+  const [editCompanyData, setEditCompanyData] = useState({
+    name: '',
+    slug: '',
+    customMonthlyPrice: '',
+    maxTrainers: '',
   });
   const [deletingOrgId, setDeletingOrgId] = useState<string | null>(null);
   const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
@@ -385,27 +395,80 @@ export default function PlatformPage() {
     setAddingCompany(true);
 
     try {
-      const { error } = await supabase.from('organizations').insert({
-        name: newCompany.name,
-        slug: newCompany.slug.toLowerCase().replace(/\s+/g, '-'),
-        organization_type: 'company',
-        custom_monthly_price: newCompany.customMonthlyPrice ? parseInt(newCompany.customMonthlyPrice) : null,
-        max_trainers: parseInt(newCompany.maxTrainers) || 5,
-        subscription_status: 'active',
-        subscription_tier: 'gym',
-        client_limit: -1,
+      const response = await fetch('/api/companies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newCompany),
       });
 
-      if (error) throw error;
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.error || 'Failed to create company');
+        return;
+      }
 
       setShowAddCompany(false);
-      setNewCompany({ name: '', slug: '', customMonthlyPrice: '', maxTrainers: '5' });
+      setNewCompany({ name: '', slug: '', customMonthlyPrice: '', maxTrainers: '5', adminEmail: '', adminPassword: '', adminFullName: '' });
       loadData();
+      alert(`Company created! Admin can login with: ${newCompany.adminEmail}`);
     } catch (error) {
       console.error('Error creating company:', error);
       alert('Failed to create company');
     } finally {
       setAddingCompany(false);
+    }
+  };
+
+  const handleEditCompany = (company: Organization) => {
+    setEditingCompany(company);
+    setEditCompanyData({
+      name: company.name,
+      slug: company.slug,
+      customMonthlyPrice: company.custom_monthly_price?.toString() || '',
+      maxTrainers: company.max_trainers?.toString() || '5',
+    });
+  };
+
+  const handleSaveCompany = async () => {
+    if (!editingCompany) return;
+
+    try {
+      const response = await fetch('/api/companies', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingCompany.id,
+          ...editCompanyData,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.error || 'Failed to update company');
+        return;
+      }
+
+      setEditingCompany(null);
+      loadData();
+    } catch (error) {
+      console.error('Error updating company:', error);
+      alert('Failed to update company');
+    }
+  };
+
+  const handleImpersonateCompany = async (companyId: string) => {
+    const res = await fetch('/api/impersonate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orgId: companyId }),
+    });
+    
+    if (res.ok) {
+      sessionStorage.setItem('impersonating_org', companyId);
+      router.push('/dashboard');
+      router.refresh();
     }
   };
 
@@ -643,7 +706,18 @@ export default function PlatformPage() {
                         <p className="text-zinc-500 text-xs">Price</p>
                       </div>
                       <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                        <button className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg text-sm">Edit</button>
+                        <button 
+                          onClick={() => handleEditCompany(company)}
+                          className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg text-sm"
+                        >
+                          Edit
+                        </button>
+                        <button 
+                          onClick={() => handleImpersonateCompany(company.id)}
+                          className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm"
+                        >
+                          View
+                        </button>
                         <button 
                           onClick={() => handleDeleteCompany(company)} 
                           disabled={deletingOrgId === company.id}
@@ -804,15 +878,19 @@ export default function PlatformPage() {
       {/* Add Company Modal */}
       {showAddCompany && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-md max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-zinc-800">
               <h2 className="text-xl font-semibold text-white">Add Company</h2>
               <button onClick={() => setShowAddCompany(false)} className="text-zinc-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleAddCompany} className="space-y-4">
+            <form onSubmit={handleAddCompany} className="flex-1 overflow-y-auto p-6 space-y-4">
+              <div className="pb-2 border-b border-zinc-800">
+                <p className="text-xs text-zinc-500 uppercase tracking-wider">Company Details</p>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-zinc-300 mb-2">Company Name</label>
                 <input
@@ -841,26 +919,66 @@ export default function PlatformPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-2">Monthly Price ($)</label>
-                <input
-                  type="number"
-                  value={newCompany.customMonthlyPrice}
-                  onChange={(e) => setNewCompany({ ...newCompany, customMonthlyPrice: e.target.value })}
-                  className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white"
-                  placeholder="500"
-                />
-                <p className="text-xs text-zinc-500 mt-1">Custom price you invoice them</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-2">Monthly Price ($)</label>
+                  <input
+                    type="number"
+                    value={newCompany.customMonthlyPrice}
+                    onChange={(e) => setNewCompany({ ...newCompany, customMonthlyPrice: e.target.value })}
+                    className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white"
+                    placeholder="500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-2">Max Trainers</label>
+                  <input
+                    type="number"
+                    value={newCompany.maxTrainers}
+                    onChange={(e) => setNewCompany({ ...newCompany, maxTrainers: e.target.value })}
+                    className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white"
+                    placeholder="5"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 pb-2 border-b border-zinc-800">
+                <p className="text-xs text-zinc-500 uppercase tracking-wider">Admin Account</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-2">Max Trainers</label>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Admin Full Name</label>
                 <input
-                  type="number"
-                  value={newCompany.maxTrainers}
-                  onChange={(e) => setNewCompany({ ...newCompany, maxTrainers: e.target.value })}
+                  type="text"
+                  value={newCompany.adminFullName}
+                  onChange={(e) => setNewCompany({ ...newCompany, adminFullName: e.target.value })}
                   className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white"
-                  placeholder="5"
+                  placeholder="John Smith"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Admin Email</label>
+                <input
+                  type="email"
+                  value={newCompany.adminEmail}
+                  onChange={(e) => setNewCompany({ ...newCompany, adminEmail: e.target.value })}
+                  className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white"
+                  placeholder="admin@adelaidefitness.com"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Admin Password</label>
+                <input
+                  type="password"
+                  value={newCompany.adminPassword}
+                  onChange={(e) => setNewCompany({ ...newCompany, adminPassword: e.target.value })}
+                  className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white"
+                  placeholder="••••••••"
+                  required
+                  minLength={6}
                 />
               </div>
 
@@ -871,6 +989,69 @@ export default function PlatformPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Company Modal */}
+      {editingCompany && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-white">Edit Company</h2>
+              <button onClick={() => setEditingCompany(null)} className="text-zinc-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Company Name</label>
+                <input
+                  type="text"
+                  value={editCompanyData.name}
+                  onChange={(e) => setEditCompanyData({ ...editCompanyData, name: e.target.value })}
+                  className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">URL Slug</label>
+                <input
+                  type="text"
+                  value={editCompanyData.slug}
+                  onChange={(e) => setEditCompanyData({ ...editCompanyData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
+                  className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-2">Monthly Price ($)</label>
+                  <input
+                    type="number"
+                    value={editCompanyData.customMonthlyPrice}
+                    onChange={(e) => setEditCompanyData({ ...editCompanyData, customMonthlyPrice: e.target.value })}
+                    className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white"
+                    placeholder="500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-2">Max Trainers</label>
+                  <input
+                    type="number"
+                    value={editCompanyData.maxTrainers}
+                    onChange={(e) => setEditCompanyData({ ...editCompanyData, maxTrainers: e.target.value })}
+                    className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setEditingCompany(null)} className="flex-1 px-4 py-3 bg-zinc-800 text-white rounded-xl">Cancel</button>
+              <button onClick={handleSaveCompany} className="flex-1 px-4 py-3 bg-blue-500 text-white rounded-xl font-medium">Save Changes</button>
+            </div>
           </div>
         </div>
       )}
