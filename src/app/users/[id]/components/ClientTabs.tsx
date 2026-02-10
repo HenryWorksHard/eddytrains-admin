@@ -10,10 +10,10 @@ interface ClientTabsProps {
 }
 
 const tabs = [
+  { id: 'profile' as TabType, label: 'Profile', icon: User },
   { id: 'overview' as TabType, label: 'Overview', icon: LayoutDashboard },
   { id: 'programs' as TabType, label: 'Programs', icon: Dumbbell },
   { id: 'progress' as TabType, label: 'Progress', icon: TrendingUp },
-  { id: 'profile' as TabType, label: 'Profile', icon: User },
   { id: 'nutrition' as TabType, label: 'Nutrition', icon: Apple },
   { id: 'schedule' as TabType, label: 'Schedule', icon: Calendar },
 ]

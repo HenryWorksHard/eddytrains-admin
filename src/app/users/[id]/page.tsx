@@ -148,7 +148,7 @@ export default function UserProfilePage() {
   const router = useRouter()
   const params = useParams()
   const searchParams = useSearchParams()
-  const initialTab = (searchParams.get('tab') as TabType) || 'overview'
+  const initialTab = (searchParams.get('tab') as TabType) || 'profile'
   const rawId = params.id as string
   const userId = decodeURIComponent(rawId)
   const supabase = createClient()

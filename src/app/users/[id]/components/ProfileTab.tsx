@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Weight, Save, Loader2, Edit2, Camera } from 'lucide-react'
+import { Weight, Save, Loader2, Edit2, Camera, User } from 'lucide-react'
 import UserProgressGallery from '../UserProgressGallery'
 
 interface ProfileTabProps {
@@ -14,9 +14,17 @@ interface Client1RM {
   weight_kg: number
 }
 
+interface ClientProfile {
+  full_name: string | null
+  email: string
+  profile_picture_url: string | null
+  created_at: string
+}
+
 export default function ProfileTab({ clientId }: ProfileTabProps) {
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
+  const [profile, setProfile] = useState<ClientProfile | null>(null)
   const [client1RMs, setClient1RMs] = useState<Client1RM[]>([])
   const [editing1RM, setEditing1RM] = useState(false)
   const [saving1RM, setSaving1RM] = useState(false)
@@ -28,6 +36,16 @@ export default function ProfileTab({ clientId }: ProfileTabProps) {
   async function fetchData() {
     setLoading(true)
     
+    // Fetch profile info
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('full_name, email, profile_picture_url, created_at')
+      .eq('id', clientId)
+      .single()
+    
+    if (profileData) setProfile(profileData)
+    
+    // Fetch 1RMs
     const { data } = await supabase
       .from('client_1rms')
       .select('exercise_name, weight_kg')
@@ -76,6 +94,39 @@ export default function ProfileTab({ clientId }: ProfileTabProps) {
 
   return (
     <div className="space-y-6">
+      {/* Profile Picture */}
+      <div className="card p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <User className="w-5 h-5 text-blue-400" />
+          <h3 className="text-lg font-semibold text-white">Profile Picture</h3>
+        </div>
+        
+        <div className="flex items-center gap-6">
+          {profile?.profile_picture_url ? (
+            <img
+              src={profile.profile_picture_url}
+              alt={profile.full_name || 'Client'}
+              className="w-32 h-32 rounded-2xl object-cover"
+            />
+          ) : (
+            <div className="w-32 h-32 rounded-2xl bg-zinc-800 flex items-center justify-center">
+              <User className="w-12 h-12 text-zinc-600" />
+            </div>
+          )}
+          <div>
+            <p className="text-zinc-400 text-sm">
+              {profile?.profile_picture_url 
+                ? 'Profile picture uploaded by client'
+                : 'No profile picture uploaded yet'
+              }
+            </p>
+            <p className="text-zinc-500 text-xs mt-1">
+              Clients can update their profile picture in the app
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* 1RM Board */}
       <div className="card p-6">
         <div className="flex items-center justify-between mb-4">
