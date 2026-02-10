@@ -33,6 +33,8 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import UserSchedule from './UserSchedule'
 import UserProgressGallery from './UserProgressGallery'
+import ClientTabs, { TabType } from './components/ClientTabs'
+import ProgressTab from './components/ProgressTab'
 
 interface User {
   id: string
@@ -199,6 +201,9 @@ export default function UserProfilePage() {
     fats: number
     created_by_type: 'client'
   } | null>(null)
+  
+  // Tab navigation
+  const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [availableNutritionPlans, setAvailableNutritionPlans] = useState<{
     id: string
     name: string
@@ -1707,12 +1712,18 @@ export default function UserProfilePage() {
         </div>
       </div>
 
-      {/* Quick Stats Card */}
-      <div className="card p-6 mb-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Calendar className="w-5 h-5 text-yellow-400" />
-          <h2 className="text-lg font-semibold text-white">Quick Stats</h2>
-        </div>
+      {/* Tab Navigation */}
+      <ClientTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+
+      {/* OVERVIEW TAB */}
+      {activeTab === 'overview' && (
+        <>
+          {/* Quick Stats Card */}
+          <div className="card p-6 mb-6">
+            <div className="flex items-center gap-3 mb-4">
+              <Calendar className="w-5 h-5 text-yellow-400" />
+              <h2 className="text-lg font-semibold text-white">Quick Stats</h2>
+            </div>
         
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="bg-zinc-800/50 rounded-xl p-4 text-center">
@@ -1791,11 +1802,13 @@ export default function UserProfilePage() {
           })}
         </div>
       </div>
+        </>
+      )}
 
-      {/* Training Schedule */}
-      <UserSchedule userId={user.id} />
-
-      {/* 1RM Board */}
+      {/* PROGRAMS TAB */}
+      {activeTab === 'programs' && (
+        <>
+          {/* Assigned Programs */}
       <div className="card p-6 mt-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -1993,8 +2006,18 @@ export default function UserProfilePage() {
           </div>
         )}
       </div>
+        </>
+      )}
 
-      {/* Nutrition Plan */}
+      {/* PROGRESS TAB */}
+      {activeTab === 'progress' && user && (
+        <ProgressTab clientId={user.id} />
+      )}
+
+      {/* NUTRITION TAB */}
+      {activeTab === 'nutrition' && (
+        <>
+          {/* Nutrition Plan */}
       <div className="card p-6 mt-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -2181,9 +2204,16 @@ export default function UserProfilePage() {
           </div>
         </div>
       )}
+        </>
+      )}
 
-      {/* Workout History */}
-      <div className="card p-6 mt-6">
+      {/* SCHEDULE TAB */}
+      {activeTab === 'schedule' && user && (
+        <UserSchedule userId={user.id} />
+      )}
+
+      {/* Workout History - HIDDEN (now in Progress tab) */}
+      {false && <div className="card p-6 mt-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-white flex items-center gap-2">
             <Clock className="w-5 h-5 text-green-400" />
@@ -2258,9 +2288,9 @@ export default function UserProfilePage() {
             <p className="text-zinc-500 text-sm mt-1">Completed workouts will appear here</p>
           </div>
         )}
-      </div>
+      </div>}
 
-      {/* Danger Zone */}
+      {/* Danger Zone - Always visible */}
       <div className="card p-6 border-red-500/20 mt-6">
         <h2 className="text-lg font-semibold text-red-400 mb-4">Danger Zone</h2>
         <p className="text-zinc-400 text-sm mb-4">
