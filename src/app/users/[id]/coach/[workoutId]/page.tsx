@@ -346,51 +346,15 @@ export default function CoachSessionPage() {
     setSaving(true)
 
     try {
-      const today = new Date().toISOString().split('T')[0]
-
-      // Create workout log first (with trainer_id and scheduled_date)
-      const { data: workoutLog, error: logError } = await supabase
-        .from('workout_logs')
-        .insert({
-          client_id: clientId,
-          workout_id: workoutId,
-          completed_at: new Date().toISOString(),
-          notes: sessionNotes.trim() || null,
-          trainer_id: trainerId,
-          scheduled_date: today
-        })
-        .select()
-        .single()
-
-      if (logError) throw logError
-
-      // Create workout completion record (linked to workout_log)
-      const { data: completion, error: completionError } = await supabase
-        .from('workout_completions')
-        .insert({
-          client_id: clientId,
-          workout_id: workoutId,
-          client_program_id: clientProgramId,
-          scheduled_date: today,
-          completed_at: new Date().toISOString(),
-          workout_log_id: workoutLog.id
-        })
-        .select()
-        .single()
-
-      if (completionError) throw completionError
-
-      // Save all set logs
-      const setLogsToInsert: any[] = []
-      
+      // Build set logs array
+      const setLogsArray: any[] = []
       for (const exercise of exercises) {
         for (const set of exercise.exercise_sets) {
           const key = getSetKey(exercise.id, set.set_number)
           const log = setLogs.get(key)
           
           if (log && (log.weight_kg !== null || log.reps_completed !== null)) {
-            setLogsToInsert.push({
-              workout_log_id: workoutLog.id,
+            setLogsArray.push({
               exercise_id: exercise.id,
               set_number: set.set_number,
               weight_kg: log.weight_kg,
@@ -400,48 +364,30 @@ export default function CoachSessionPage() {
         }
       }
 
-      if (setLogsToInsert.length > 0) {
-        const { error: setsError } = await supabase
-          .from('set_logs')
-          .insert(setLogsToInsert)
+      // Call API to save session (uses admin client to bypass RLS)
+      const response = await fetch('/api/coaching/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId,
+          workoutId,
+          clientProgramId,
+          sessionNotes: sessionNotes.trim() || null,
+          setLogs: setLogsArray,
+          exercises: exercises.map(e => ({ id: e.id, exercise_name: e.exercise_name }))
+        })
+      })
 
-        if (setsError) throw setsError
-      }
-
-      // Update client's 1RMs if any new PRs
-      for (const exercise of exercises) {
-        const exerciseLogs = Array.from(setLogs.entries())
-          .filter(([key]) => key.startsWith(exercise.id))
-          .map(([_, log]) => log)
-          .filter(log => log.weight_kg && log.reps_completed)
-
-        if (exerciseLogs.length > 0) {
-          const bestSet = exerciseLogs.reduce((best, log) => {
-            const estimated1RM = (log.weight_kg || 0) * (1 + (log.reps_completed || 0) / 30)
-            const bestEstimated = (best.weight_kg || 0) * (1 + (best.reps_completed || 0) / 30)
-            return estimated1RM > bestEstimated ? log : best
-          })
-
-          const current1RM = client1RMs.get(exercise.exercise_name) || 0
-          const newEstimated1RM = (bestSet.weight_kg || 0) * (1 + (bestSet.reps_completed || 0) / 30)
-
-          if (newEstimated1RM > current1RM) {
-            await supabase
-              .from('client_1rms')
-              .upsert({
-                client_id: clientId,
-                exercise_name: exercise.exercise_name,
-                weight_kg: Math.round(newEstimated1RM * 2) / 2,
-                updated_at: new Date().toISOString()
-              }, { onConflict: 'client_id,exercise_name' })
-          }
-        }
+      const result = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to save session')
       }
 
       setSessionComplete(true)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save session:', err)
-      alert('Failed to save session. Please try again.')
+      alert(`Failed to save session: ${err?.message || 'Unknown error'}`)
     } finally {
       setSaving(false)
     }
