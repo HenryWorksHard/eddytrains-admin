@@ -291,7 +291,7 @@ export default function ProgressTab({ clientId }: ProgressTabProps) {
       <div className="card p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <TrendingUp className="w-5 h-5 text-orange-400" />
+            <TrendingUp className="w-5 h-5 text-yellow-400" />
             <h3 className="text-lg font-semibold text-white">Exercise Progression</h3>
           </div>
           <div className="flex items-center gap-2">
@@ -346,10 +346,10 @@ export default function ProgressTab({ clientId }: ProgressTabProps) {
           </div>
         </div>
         
-        <div className="bg-orange-500/5 border border-orange-500/20 rounded-xl p-4">
+        <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-4">
           {loadingProgression ? (
             <div className="h-64 flex items-center justify-center">
-              <Loader2 className="w-8 h-8 animate-spin text-orange-400" />
+              <Loader2 className="w-8 h-8 animate-spin text-yellow-400" />
             </div>
           ) : progressionData.length > 0 ? (
             <div className="h-64">
@@ -357,8 +357,8 @@ export default function ProgressTab({ clientId }: ProgressTabProps) {
                 <AreaChart data={progressionData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#f97316" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#f97316" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#facc15" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#facc15" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -395,18 +395,18 @@ export default function ProgressTab({ clientId }: ProgressTabProps) {
                   <Area 
                     type="monotone" 
                     dataKey="weight" 
-                    stroke="#f97316" 
+                    stroke="#facc15" 
                     strokeWidth={2}
                     fill="url(#colorWeight)"
-                    dot={{ fill: '#f97316', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, fill: '#f97316' }}
+                    dot={{ fill: '#facc15', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: '#facc15' }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           ) : (
             <div className="h-64 flex flex-col items-center justify-center text-zinc-500">
-              <TrendingUp className="w-12 h-12 mb-2 opacity-50" />
+              <TrendingUp className="w-12 h-12 mb-2 text-yellow-400/30" />
               <p>No progression data yet</p>
               <p className="text-sm">Complete workouts to see your progress</p>
             </div>
