@@ -56,13 +56,11 @@ export default function CompanyClientsPage() {
         name: t.full_name || t.email
       })))
 
-      // Get all clients for these trainers
-      const trainerIds = trainersData.map(t => t.id)
-      
+      // Get ALL clients in this company (visible to all trainers)
       const { data: clientsData } = await supabase
         .from('profiles')
         .select('id, email, full_name, status, created_at, trainer_id')
-        .in('trainer_id', trainerIds)
+        .eq('company_id', profile.company_id)
         .eq('role', 'client')
         .order('created_at', { ascending: false })
 
