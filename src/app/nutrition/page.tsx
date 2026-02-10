@@ -243,12 +243,23 @@ export default function NutritionPage() {
   }
 
   const removeNutrition = async () => {
-    if (!nutrition?.id) return
+    if (!nutrition?.id) {
+      console.error('No nutrition id to delete')
+      return
+    }
     
-    await supabase
+    if (!confirm('Remove this nutrition plan?')) return
+    
+    const { error } = await supabase
       .from('client_nutrition')
       .delete()
       .eq('id', nutrition.id)
+    
+    if (error) {
+      console.error('Failed to delete nutrition:', error)
+      alert('Failed to remove nutrition plan')
+      return
+    }
     
     setNutrition(null)
   }
