@@ -363,3 +363,12 @@ input, select, textarea {
 .badge-info {
   @apply bg-blue-500/10 text-blue-400 border border-blue-500/20;
 }
+
+/* Hide scrollbar but allow scrolling */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
