@@ -28,6 +28,10 @@ interface WorkoutLogDetails {
   scheduled?: boolean
   workoutId?: string
   programName?: string
+  preview?: {
+    name: string
+    sets: { set_number: number; reps: string; intensity: string }[]
+  }[]
 }
 
 interface UserScheduleProps {
@@ -87,10 +91,14 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
       if (data.workoutLog) {
         setWorkoutDetails(data.workoutLog)
       } else {
-        // No completion yet - show scheduled workout info
+        // No completion yet - show scheduled workout info with preview
         const dayOfWeek = date.getDay()
         const scheduledWorkout = scheduleByDay[dayOfWeek]
         if (scheduledWorkout) {
+          // Fetch workout preview (exercises, sets)
+          const previewResponse = await fetch(`/api/coaching/preview?workoutId=${scheduledWorkout.workoutId}`)
+          const previewData = await previewResponse.json()
+          
           setWorkoutDetails({
             id: null,
             workout_name: scheduledWorkout.workoutName,
@@ -101,7 +109,8 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
             sets: [],
             scheduled: true,
             workoutId: scheduledWorkout.workoutId,
-            programName: scheduledWorkout.programName
+            programName: scheduledWorkout.programName,
+            preview: previewData.workout?.exercises || []
           })
         } else {
           setWorkoutDetails(null)
@@ -482,26 +491,62 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
                     <p className="text-zinc-500 text-center py-4">No set data recorded</p>
                   )}
 
-                  {/* Show Coach Session button for scheduled/upcoming workouts (not past) */}
+                  {/* Show workout preview and coaching button for scheduled workouts */}
                   {workoutDetails.scheduled && workoutDetails.workoutId && (
-                    <div className="text-center py-4">
-                      <p className="text-zinc-400 mb-3">
-                        {workoutDetails.programName && <span className="text-zinc-500">{workoutDetails.programName}</span>}
-                      </p>
-                      {selectedDate && selectedDate >= new Date(new Date().setHours(0,0,0,0)) ? (
-                        <>
-                          <p className="text-zinc-500 text-sm mb-4">This workout hasn't been completed yet</p>
-                          <Link
-                            href={`/users/${userId}/coach/${workoutDetails.workoutId}`}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-xl transition-colors"
-                          >
-                            <Play className="w-4 h-4" />
-                            Start Coaching Session
-                          </Link>
-                        </>
-                      ) : (
-                        <p className="text-zinc-500 text-sm">This workout was not completed</p>
+                    <div className="space-y-4">
+                      {workoutDetails.programName && (
+                        <p className="text-zinc-500 text-sm text-center">{workoutDetails.programName}</p>
                       )}
+                      
+                      {/* Workout Preview - show exercises and sets */}
+                      {workoutDetails.preview && workoutDetails.preview.length > 0 && (
+                        <div className="space-y-3">
+                          {workoutDetails.preview.map((exercise, idx) => (
+                            <div key={idx} className="bg-zinc-800/30 rounded-xl p-3">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Dumbbell className="w-4 h-4 text-yellow-400" />
+                                <h4 className="font-medium text-white">{exercise.name}</h4>
+                              </div>
+                              <div className="text-sm text-zinc-400">
+                                {exercise.sets.length} sets × {exercise.sets[0]?.reps || '—'} reps
+                                {exercise.sets[0]?.intensity && ` @ ${exercise.sets[0].intensity}`}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Show Start Coaching Session ONLY on today */}
+                      {selectedDate && (() => {
+                        const todayStart = new Date()
+                        todayStart.setHours(0, 0, 0, 0)
+                        const todayEnd = new Date()
+                        todayEnd.setHours(23, 59, 59, 999)
+                        const isToday = selectedDate >= todayStart && selectedDate <= todayEnd
+                        const isPast = selectedDate < todayStart
+                        
+                        if (isToday) {
+                          return (
+                            <div className="text-center pt-2">
+                              <Link
+                                href={`/users/${userId}/coach/${workoutDetails.workoutId}`}
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-xl transition-colors"
+                              >
+                                <Play className="w-4 h-4" />
+                                Start Coaching Session
+                              </Link>
+                            </div>
+                          )
+                        } else if (isPast) {
+                          return (
+                            <p className="text-zinc-500 text-sm text-center pt-2">This workout was not completed</p>
+                          )
+                        } else {
+                          return (
+                            <p className="text-zinc-500 text-sm text-center pt-2">Scheduled for {selectedDate.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</p>
+                          )
+                        }
+                      })()}
                     </div>
                   )}
                 </div>
