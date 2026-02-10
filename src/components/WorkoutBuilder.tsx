@@ -1828,6 +1828,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
           <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Program Weeks</h3>
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={() => duplicateWeek(selectedWeek)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium rounded-lg transition-colors"
               title="Duplicate current week"
@@ -1836,6 +1837,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
               Duplicate Week
             </button>
             <button
+              type="button"
               onClick={addWeek}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-400 hover:bg-yellow-500 text-black text-xs font-bold rounded-lg transition-colors"
             >
@@ -1848,6 +1850,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
         <div className="flex flex-wrap gap-2">
           {allWeeks.map((week) => (
             <button
+              type="button"
               key={week}
               onClick={() => setSelectedWeek(week)}
               className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
@@ -1870,6 +1873,7 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
               Viewing Week {selectedWeek} • {workoutsForSelectedWeek.length} workout{workoutsForSelectedWeek.length !== 1 ? 's' : ''}
             </p>
             <button
+              type="button"
               onClick={() => {
                 if (confirm(`Delete Week ${selectedWeek} and all its workouts?`)) {
                   deleteWeek(selectedWeek)

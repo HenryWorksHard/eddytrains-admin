@@ -32,6 +32,7 @@ export default function CreateProgramPage() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [difficulty, setDifficulty] = useState('intermediate')
+  const [durationWeeks, setDurationWeeks] = useState(4)
   const [isActive, setIsActive] = useState(true)
 
   // Workouts
@@ -64,6 +65,7 @@ export default function CreateProgramPage() {
           description,
           category,
           difficulty,
+          durationWeeks,
           isActive,
           workouts,
         }),
@@ -218,6 +220,25 @@ export default function CreateProgramPage() {
               >
                 {difficulties.map(diff => (
                   <option key={diff.value} value={diff.value}>{diff.label}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Duration */}
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-2">
+              Duration (weeks)
+            </label>
+            <div className="relative">
+              <select
+                value={durationWeeks}
+                onChange={(e) => setDurationWeeks(parseInt(e.target.value))}
+                className="w-full appearance-none px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 pr-10"
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 16].map(w => (
+                  <option key={w} value={w}>{w} week{w !== 1 ? 's' : ''}</option>
                 ))}
               </select>
               <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 pointer-events-none" />

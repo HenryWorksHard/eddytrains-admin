@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, description, category, difficulty, isActive, workouts } = body
+    const { name, description, category, difficulty, durationWeeks, isActive, workouts } = body
 
     // 1. Create the program with organization_id
     const { data: program, error: programError } = await supabaseAdmin
@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
         description: description?.trim() || null,
         category,
         difficulty,
+        duration_weeks: durationWeeks || 4,
         is_active: isActive,
         organization_id: profile.organization_id,
       })
