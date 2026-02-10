@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Users, Search, UserCheck } from 'lucide-react'
+import { Users, Search, UserCheck, ChevronRight } from 'lucide-react'
+import Link from 'next/link'
 
 interface Client {
   id: string
@@ -164,21 +165,22 @@ export default function CompanyClientsPage() {
                 <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-6 py-4">Trainer</th>
                 <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-6 py-4">Status</th>
                 <th className="text-left text-xs font-medium text-zinc-400 uppercase tracking-wider px-6 py-4">Joined</th>
+                <th className="w-10"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
               {filteredClients.map((client) => (
-                <tr key={client.id} className="hover:bg-zinc-800/30 transition-colors">
+                <tr key={client.id} className="hover:bg-zinc-800/30 transition-colors cursor-pointer group">
                   <td className="px-6 py-4">
-                    <div>
-                      <p className="font-medium text-white">{client.full_name || 'No name'}</p>
+                    <Link href={`/users/${client.id}`} className="block">
+                      <p className="font-medium text-white group-hover:text-yellow-400 transition-colors">{client.full_name || 'No name'}</p>
                       <p className="text-sm text-zinc-500">{client.email}</p>
-                    </div>
+                    </Link>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       <UserCheck className="w-4 h-4 text-blue-400" />
-                      <span className="text-zinc-300">{client.trainer_name || client.trainer_email}</span>
+                      <span className="text-zinc-300">{client.trainer_name || client.trainer_email || 'Unassigned'}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -194,6 +196,11 @@ export default function CompanyClientsPage() {
                   </td>
                   <td className="px-6 py-4 text-zinc-400">
                     {new Date(client.created_at).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4">
+                    <Link href={`/users/${client.id}`}>
+                      <ChevronRight className="w-5 h-5 text-zinc-600 group-hover:text-yellow-400 transition-colors" />
+                    </Link>
                   </td>
                 </tr>
               ))}
