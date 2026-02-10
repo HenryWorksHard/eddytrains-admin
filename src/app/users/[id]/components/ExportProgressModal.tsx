@@ -22,6 +22,15 @@ interface ExportOptions {
 
 type DateRange = 'week' | 'month' | '3months' | '6months' | 'year' | 'all'
 
+const PROGRESSION_EXERCISES = [
+  'Barbell Bench Press',
+  'Barbell Squats',
+  'Romanian Deadlifts',
+  'Lat Pulldowns',
+  'Shoulder Press',
+  'Leg Press',
+]
+
 export default function ExportProgressModal({ isOpen, onClose, clientId, clientName }: ExportProgressModalProps) {
   const [options, setOptions] = useState<ExportOptions>({
     streak: true,
@@ -32,7 +41,26 @@ export default function ExportProgressModal({ isOpen, onClose, clientId, clientN
   })
   const [dateRange, setDateRange] = useState<DateRange>('month')
   const [exporting, setExporting] = useState(false)
-  const [selectedExercise, setSelectedExercise] = useState('Barbell Bench Press')
+  const [selectedExercises, setSelectedExercises] = useState<string[]>(PROGRESSION_EXERCISES)
+
+  const allSelected = selectedExercises.length === PROGRESSION_EXERCISES.length
+  const noneSelected = selectedExercises.length === 0
+
+  const toggleExercise = (exercise: string) => {
+    setSelectedExercises(prev => 
+      prev.includes(exercise) 
+        ? prev.filter(e => e !== exercise)
+        : [...prev, exercise]
+    )
+  }
+
+  const toggleAllExercises = () => {
+    if (allSelected) {
+      setSelectedExercises([])
+    } else {
+      setSelectedExercises([...PROGRESSION_EXERCISES])
+    }
+  }
 
   if (!isOpen) return null
 
@@ -196,42 +224,50 @@ export default function ExportProgressModal({ isOpen, onClose, clientId, clientN
       }
 
       // Exercise Progression Section
-      if (options.progression) {
-        try {
-          const periodMap: Record<DateRange, string> = {
-            'week': 'week',
-            'month': 'month',
-            '3months': 'month',
-            '6months': 'year',
-            'year': 'year',
-            'all': 'year'
-          }
-          
-          const res = await fetch(`/api/users/${clientId}/progression?exercise=${encodeURIComponent(selectedExercise)}&period=${periodMap[dateRange]}`)
-          const { progression } = await res.json()
-          
-          if (progression && progression.length > 0) {
-            doc.setFontSize(16)
-            doc.setFont('helvetica', 'bold')
-            doc.text(`Exercise Progression: ${selectedExercise}`, 14, yPos)
-            yPos += 8
+      if (options.progression && selectedExercises.length > 0) {
+        const periodMap: Record<DateRange, string> = {
+          'week': 'week',
+          'month': 'month',
+          '3months': 'month',
+          '6months': 'year',
+          'year': 'year',
+          'all': 'year'
+        }
 
-            autoTable(doc, {
-              startY: yPos,
-              head: [['Date', 'Weight (kg)', 'Reps']],
-              body: progression.map((p: any) => [
-                formatDate(new Date(p.date)),
-                p.weight,
-                p.reps
-              ]),
-              theme: 'grid',
-              headStyles: { fillColor: [99, 102, 241], textColor: [255, 255, 255], fontStyle: 'bold' },
-              margin: { left: 14, right: 14 }
-            })
-            yPos = (doc as any).lastAutoTable.finalY + 15
+        for (const exercise of selectedExercises) {
+          try {
+            // Check if we need a new page
+            if (yPos > 200) {
+              doc.addPage()
+              yPos = 20
+            }
+            
+            const res = await fetch(`/api/users/${clientId}/progression?exercise=${encodeURIComponent(exercise)}&period=${periodMap[dateRange]}`)
+            const { progression } = await res.json()
+            
+            if (progression && progression.length > 0) {
+              doc.setFontSize(16)
+              doc.setFont('helvetica', 'bold')
+              doc.text(`Exercise Progression: ${exercise}`, 14, yPos)
+              yPos += 8
+
+              autoTable(doc, {
+                startY: yPos,
+                head: [['Date', 'Weight (kg)', 'Reps']],
+                body: progression.map((p: any) => [
+                  formatDate(new Date(p.date)),
+                  p.weight,
+                  p.reps
+                ]),
+                theme: 'grid',
+                headStyles: { fillColor: [99, 102, 241], textColor: [255, 255, 255], fontStyle: 'bold' },
+                margin: { left: 14, right: 14 }
+              })
+              yPos = (doc as any).lastAutoTable.finalY + 15
+            }
+          } catch (err) {
+            console.error(`Failed to fetch progression for ${exercise}:`, err)
           }
-        } catch (err) {
-          console.error('Failed to fetch progression:', err)
         }
       }
 
@@ -262,7 +298,8 @@ export default function ExportProgressModal({ isOpen, onClose, clientId, clientN
     setOptions(prev => ({ ...prev, [key]: !prev[key] }))
   }
 
-  const hasAnyOption = Object.values(options).some(v => v)
+  const hasAnyOption = Object.values(options).some(v => v) && 
+    (!options.progression || selectedExercises.length > 0)
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
@@ -353,19 +390,50 @@ export default function ExportProgressModal({ isOpen, onClose, clientId, clientN
           {/* Exercise Selection for Progression */}
           {options.progression && (
             <div>
-              <label className="text-sm font-medium text-zinc-400 mb-2 block">Progression Exercise</label>
-              <select
-                value={selectedExercise}
-                onChange={(e) => setSelectedExercise(e.target.value)}
-                className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              >
-                <option value="Barbell Bench Press">Barbell Bench Press</option>
-                <option value="Barbell Squats">Barbell Squats</option>
-                <option value="Romanian Deadlifts">Romanian Deadlifts</option>
-                <option value="Lat Pulldowns">Lat Pulldowns</option>
-                <option value="Shoulder Press">Shoulder Press</option>
-                <option value="Leg Press">Leg Press</option>
-              </select>
+              <label className="text-sm font-medium text-zinc-400 mb-2 block">Progression Exercises</label>
+              <div className="space-y-2">
+                {/* Select All */}
+                <label
+                  className={`flex items-center gap-3 p-3 rounded-xl border transition-colors cursor-pointer ${
+                    allSelected
+                      ? 'bg-indigo-400/10 border-indigo-400/30'
+                      : 'bg-zinc-800/50 border-zinc-700 hover:border-zinc-600'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleAllExercises}
+                    className="w-4 h-4 rounded border-zinc-600 text-indigo-400 focus:ring-indigo-400 focus:ring-offset-0 bg-zinc-700"
+                  />
+                  <div className="flex-1">
+                    <p className="text-white font-medium text-sm">Select All</p>
+                    <p className="text-zinc-500 text-xs">{selectedExercises.length} of {PROGRESSION_EXERCISES.length} selected</p>
+                  </div>
+                </label>
+
+                {/* Individual Exercises */}
+                <div className="max-h-48 overflow-y-auto space-y-1.5 rounded-lg">
+                  {PROGRESSION_EXERCISES.map((exercise) => (
+                    <label
+                      key={exercise}
+                      className={`flex items-center gap-3 p-2.5 rounded-lg border transition-colors cursor-pointer ${
+                        selectedExercises.includes(exercise)
+                          ? 'bg-indigo-400/10 border-indigo-400/30'
+                          : 'bg-zinc-800/50 border-zinc-700 hover:border-zinc-600'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedExercises.includes(exercise)}
+                        onChange={() => toggleExercise(exercise)}
+                        className="w-4 h-4 rounded border-zinc-600 text-indigo-400 focus:ring-indigo-400 focus:ring-offset-0 bg-zinc-700"
+                      />
+                      <span className="text-white text-sm">{exercise}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>
