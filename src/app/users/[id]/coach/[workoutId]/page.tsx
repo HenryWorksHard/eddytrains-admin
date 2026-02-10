@@ -74,6 +74,7 @@ export default function CoachSessionPage() {
   const [sessionStarted, setSessionStarted] = useState(false)
   const [sessionComplete, setSessionComplete] = useState(false)
   const [clientProgramId, setClientProgramId] = useState<string | null>(null)
+  const [sessionNotes, setSessionNotes] = useState('')
 
   useEffect(() => {
     fetchData()
@@ -261,7 +262,7 @@ export default function CoachSessionPage() {
           client_id: clientId,
           workout_id: workoutId,
           completed_at: new Date().toISOString(),
-          notes: 'Coached session'
+          notes: sessionNotes.trim() || null
         })
         .select()
         .single()
@@ -524,6 +525,20 @@ export default function CoachSessionPage() {
               </div>
             )
           })}
+
+          {/* Session Notes */}
+          <div className="card p-4">
+            <label className="block text-sm font-medium text-zinc-400 mb-2">
+              Session Notes (optional)
+            </label>
+            <textarea
+              value={sessionNotes}
+              onChange={(e) => setSessionNotes(e.target.value)}
+              placeholder="Add notes about this workout session..."
+              rows={3}
+              className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 resize-none"
+            />
+          </div>
 
           {/* Complete Session Button */}
           <button
