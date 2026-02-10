@@ -80,105 +80,12 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
     const dateStr = formatDateLocal(date)
     
     try {
-      // Get workout log for this date - try scheduled_date first, then completed_at
-      let workoutLog = null
+      // Use API to fetch workout details (bypasses RLS)
+      const response = await fetch(`/api/coaching/details?clientId=${userId}&date=${dateStr}`)
+      const data = await response.json()
       
-      // First try by scheduled_date
-      const { data: byScheduled } = await supabase
-        .from('workout_logs')
-        .select(`
-          id,
-          workout_id,
-          completed_at,
-          notes,
-          rating,
-          trainer_id
-        `)
-        .eq('client_id', userId)
-        .eq('scheduled_date', dateStr)
-        .single()
-      
-      if (byScheduled) {
-        workoutLog = byScheduled
-      } else {
-        // Fallback: check by completed_at date
-        const startOfDay = new Date(date)
-        startOfDay.setHours(0, 0, 0, 0)
-        const endOfDay = new Date(date)
-        endOfDay.setHours(23, 59, 59, 999)
-        
-        const { data: byCompleted } = await supabase
-          .from('workout_logs')
-          .select(`
-            id,
-            workout_id,
-            completed_at,
-            notes,
-            rating,
-            trainer_id
-          `)
-          .eq('client_id', userId)
-          .gte('completed_at', startOfDay.toISOString())
-          .lte('completed_at', endOfDay.toISOString())
-          .single()
-        
-        workoutLog = byCompleted
-      }
-
-      if (workoutLog) {
-        // Get workout name
-        const { data: workout } = await supabase
-          .from('program_workouts')
-          .select('name')
-          .eq('id', workoutLog.workout_id)
-          .single()
-
-        // Get trainer name if exists
-        let trainerName = null
-        if (workoutLog.trainer_id) {
-          const { data: trainer } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('id', workoutLog.trainer_id)
-            .single()
-          trainerName = trainer?.full_name
-        }
-
-        // Get set logs with exercise names
-        const { data: setLogs } = await supabase
-          .from('set_logs')
-          .select(`
-            set_number,
-            weight_kg,
-            reps_completed,
-            exercise_id
-          `)
-          .eq('workout_log_id', workoutLog.id)
-          .order('set_number')
-
-        // Get exercise names for each set
-        const exerciseIds = [...new Set(setLogs?.map(s => s.exercise_id) || [])]
-        const { data: exercises } = await supabase
-          .from('workout_exercises')
-          .select('id, exercise_name')
-          .in('id', exerciseIds)
-
-        const exerciseMap = new Map(exercises?.map(e => [e.id, e.exercise_name]) || [])
-
-        setWorkoutDetails({
-          id: workoutLog.id,
-          workout_name: workout?.name || 'Workout',
-          completed_at: workoutLog.completed_at,
-          notes: workoutLog.notes,
-          rating: workoutLog.rating,
-          trainer_name: trainerName,
-          sets: (setLogs || []).map(s => ({
-            exercise_name: exerciseMap.get(s.exercise_id) || 'Exercise',
-            set_number: s.set_number,
-            weight_kg: s.weight_kg,
-            reps_completed: s.reps_completed
-          }))
-        })
+      if (data.workoutLog) {
+        setWorkoutDetails(data.workoutLog)
       } else {
         // No completion yet - show scheduled workout info
         const dayOfWeek = date.getDay()
