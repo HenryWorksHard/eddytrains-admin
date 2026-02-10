@@ -49,11 +49,11 @@ export default function NutritionPage() {
       return
     }
 
-    // Get all clients for this trainer
+    // Get all clients in this organization
     const { data: clientsData } = await supabase
       .from('profiles')
       .select('id, full_name, email, profile_picture_url')
-      .eq('trainer_id', user.id)
+      .eq('organization_id', profile.organization_id)
       .eq('role', 'client')
       .order('full_name')
 
