@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Calendar, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
+import { Calendar, ChevronLeft, ChevronRight, Loader2, Play } from 'lucide-react'
+import Link from 'next/link'
 
 interface WorkoutSchedule {
   dayOfWeek: number
@@ -174,6 +175,36 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
         <Calendar className="w-5 h-5 text-yellow-400" />
         <h2 className="text-lg font-semibold text-white">Training Schedule</h2>
       </div>
+
+      {/* Today's Workout - Coach Session */}
+      {(() => {
+        const todayDayOfWeek = today.getDay()
+        const todayWorkout = scheduleByDay[todayDayOfWeek]
+        const todayStr = formatDateLocal(today)
+        const isCompleted = completionsByDate[todayStr]
+        
+        if (todayWorkout && !isCompleted) {
+          return (
+            <div className="mb-6 p-4 bg-yellow-400/10 border border-yellow-400/30 rounded-xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-yellow-400 text-xs font-medium uppercase tracking-wider mb-1">Today's Workout</p>
+                  <p className="text-white font-semibold">{todayWorkout.workoutName}</p>
+                  <p className="text-zinc-400 text-sm">{todayWorkout.programName}</p>
+                </div>
+                <Link
+                  href={`/users/${userId}/coach/${todayWorkout.workoutId}`}
+                  className="flex items-center gap-2 px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-xl transition-colors"
+                >
+                  <Play className="w-4 h-4" />
+                  Coach Session
+                </Link>
+              </div>
+            </div>
+          )
+        }
+        return null
+      })()}
 
       {/* Weekly View */}
       <div className="mb-6">
