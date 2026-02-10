@@ -17,12 +17,33 @@ export default async function SettingsPage() {
     .eq('id', user?.id)
     .single()
 
-  // Get organization for trainers
-  const { data: organization } = await supabase
+  // Get organization - either owned by user OR user belongs to
+  let organization = null
+  let canEditLogo = false
+
+  // First check if user owns an org (solo trainer or company admin)
+  const { data: ownedOrg } = await supabase
     .from('organizations')
-    .select('id, name, logo_url')
+    .select('id, name, logo_url, organization_type')
     .eq('owner_id', user?.id)
     .single()
+
+  if (ownedOrg) {
+    organization = ownedOrg
+    canEditLogo = true // Owner can always edit
+  } else if (profile?.organization_id) {
+    // Trainer under a company - get the company's org
+    const { data: companyOrg } = await supabase
+      .from('organizations')
+      .select('id, name, logo_url, organization_type')
+      .eq('id', profile.organization_id)
+      .single()
+    
+    if (companyOrg) {
+      organization = companyOrg
+      canEditLogo = false // Trainers under company can't edit logo
+    }
+  }
 
   // Get some stats for the data section
   const [usersCount, programsCount, completionsCount] = await Promise.all([
@@ -76,7 +97,7 @@ export default async function SettingsPage() {
           </div>
         </section>
 
-        {/* Branding - Logo Upload (trainers only) */}
+        {/* Branding - Logo Upload or Display */}
         {organization && (profile?.role === 'trainer' || profile?.role === 'company_admin') && (
           <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
             <div className="flex items-center gap-3 mb-6">
@@ -84,10 +105,33 @@ export default async function SettingsPage() {
               <h2 className="text-lg font-semibold text-white">Branding</h2>
             </div>
             
-            <LogoUpload 
-              organizationId={organization.id} 
-              currentLogoUrl={organization.logo_url} 
-            />
+            {canEditLogo ? (
+              <LogoUpload 
+                organizationId={organization.id} 
+                currentLogoUrl={organization.logo_url} 
+              />
+            ) : (
+              /* Read-only logo display for trainers under a company */
+              <div className="flex items-start gap-6">
+                <div className="w-24 h-24 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center overflow-hidden">
+                  {organization.logo_url ? (
+                    <img
+                      src={organization.logo_url}
+                      alt="Organization logo"
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <ImageIcon className="w-8 h-8 text-zinc-600" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className="text-white font-medium">{organization.name}</p>
+                  <p className="text-sm text-zinc-500 mt-1">
+                    Logo is managed by your organization admin
+                  </p>
+                </div>
+              </div>
+            )}
           </section>
         )}
 
