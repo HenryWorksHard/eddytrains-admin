@@ -312,6 +312,8 @@ export default function CoachSessionPage() {
     setSelectedHistoryDate(date)
     
     const dateStr = formatDateLocal(date)
+    const dayOfWeek = date.getDay()
+    const scheduledWorkout = scheduleByDay[dayOfWeek]
     
     try {
       const response = await fetch(`/api/coaching/details?clientId=${clientId}&date=${dateStr}`)
@@ -319,6 +321,15 @@ export default function CoachSessionPage() {
       
       if (data.workoutLog) {
         setHistoryDetails(data.workoutLog)
+      } else if (scheduledWorkout) {
+        // No completion yet - show scheduled workout info
+        setHistoryDetails({
+          workout_name: scheduledWorkout.workoutName,
+          program_name: scheduledWorkout.programName,
+          notes: null,
+          sets: [],
+          scheduled: true
+        })
       } else {
         setHistoryDetails(null)
       }
@@ -782,7 +793,18 @@ export default function CoachSessionPage() {
                     </div>
                   ) : historyDetails ? (
                     <div className="space-y-4">
-                      <p className="text-zinc-400 text-sm">{historyDetails.workout_name}</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-zinc-400 text-sm">{historyDetails.workout_name}</p>
+                        {historyDetails.scheduled && (
+                          <span className="px-2 py-1 text-xs bg-yellow-500/20 text-yellow-400 rounded-lg">
+                            Not completed
+                          </span>
+                        )}
+                      </div>
+                      
+                      {historyDetails.program_name && (
+                        <p className="text-zinc-500 text-xs">{historyDetails.program_name}</p>
+                      )}
                       
                       {historyDetails.notes && (
                         <div className="p-3 bg-zinc-800/50 rounded-xl">
@@ -791,39 +813,41 @@ export default function CoachSessionPage() {
                         </div>
                       )}
                       
-                      {(() => {
-                        const groups = historyDetails.sets.reduce((acc: any, s: any) => {
-                          if (!acc[s.exercise_name]) acc[s.exercise_name] = []
-                          acc[s.exercise_name].push(s)
-                          return acc
-                        }, {} as Record<string, any[]>)
-                        
-                        return Object.entries(groups).map(([name, sets]: [string, any[]]) => (
-                          <div key={name} className="bg-zinc-800/30 rounded-xl p-3">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Dumbbell className="w-4 h-4 text-yellow-400" />
-                              <h4 className="font-medium text-white">{name}</h4>
+                      {historyDetails.sets && historyDetails.sets.length > 0 ? (
+                        (() => {
+                          const groups = historyDetails.sets.reduce((acc: any, s: any) => {
+                            if (!acc[s.exercise_name]) acc[s.exercise_name] = []
+                            acc[s.exercise_name].push(s)
+                            return acc
+                          }, {} as Record<string, any[]>)
+                          
+                          return Object.entries(groups).map(([name, sets]: [string, any[]]) => (
+                            <div key={name} className="bg-zinc-800/30 rounded-xl p-3">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Dumbbell className="w-4 h-4 text-yellow-400" />
+                                <h4 className="font-medium text-white">{name}</h4>
+                              </div>
+                              <div className="space-y-1">
+                                {sets.map((s: any) => (
+                                  <div key={s.set_number} className="flex justify-between text-sm">
+                                    <span className="text-zinc-500">Set {s.set_number}</span>
+                                    <span className="text-white font-medium">
+                                      {s.weight_kg !== null ? `${s.weight_kg}kg` : '—'} × {s.reps_completed ?? '—'}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                            <div className="space-y-1">
-                              {sets.map((s: any) => (
-                                <div key={s.set_number} className="flex justify-between text-sm">
-                                  <span className="text-zinc-500">Set {s.set_number}</span>
-                                  <span className="text-white font-medium">
-                                    {s.weight_kg !== null ? `${s.weight_kg}kg` : '—'} × {s.reps_completed ?? '—'}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))
-                      })()}
-                      
-                      {historyDetails.sets.length === 0 && (
-                        <p className="text-zinc-500 text-center py-4">No set data recorded</p>
+                          ))
+                        })()
+                      ) : (
+                        <p className="text-zinc-500 text-center py-4">
+                          {historyDetails.scheduled ? 'Workout not yet completed' : 'No set data recorded'}
+                        </p>
                       )}
                     </div>
                   ) : (
-                    <p className="text-zinc-500 text-center py-8">No workout data for this date</p>
+                    <p className="text-zinc-500 text-center py-8">No workout scheduled for this date</p>
                   )}
                 </div>
               ) : (
@@ -868,15 +892,14 @@ export default function CoachSessionPage() {
                         const isToday = date.toDateString() === today.toDateString()
                         const status = getDateStatus(date)
                         const hasWorkout = scheduleByDay[date.getDay()]
-                        const isCompleted = status === 'completed'
                         
                         return (
                           <div
                             key={date.toISOString()}
-                            onClick={() => isCompleted && fetchHistoryDetails(date)}
+                            onClick={() => hasWorkout && fetchHistoryDetails(date)}
                             className={`aspect-square rounded-lg flex flex-col items-center justify-center text-xs transition-all ${
                               hasWorkout
-                                ? `${getStatusColor(status)} ${isCompleted ? 'cursor-pointer hover:ring-2 hover:ring-white/30' : ''}`
+                                ? `${getStatusColor(status)} cursor-pointer hover:ring-2 hover:ring-white/30`
                                 : 'text-zinc-600'
                             } ${hasWorkout ? 'border' : ''} ${isToday ? 'font-bold ring-2 ring-yellow-400' : ''}`}
                           >
@@ -895,8 +918,12 @@ export default function CoachSessionPage() {
                         <div className="w-2 h-2 rounded-full bg-red-500" />
                         <span className="text-zinc-400 text-xs">Missed</span>
                       </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                        <span className="text-zinc-400 text-xs">Upcoming</span>
+                      </div>
                     </div>
-                    <p className="text-center text-zinc-500 text-xs mt-2">Click completed workouts to view details</p>
+                    <p className="text-center text-zinc-500 text-xs mt-2">Click any workout day to view details</p>
                   </div>
                 </div>
               )}
