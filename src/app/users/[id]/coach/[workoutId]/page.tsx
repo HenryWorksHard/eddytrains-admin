@@ -692,9 +692,12 @@ export default function CoachSessionPage() {
                             </div>
 
                             {/* Set info */}
-                            <div className="text-right text-xs text-zinc-500 w-16">
+                            <div className="text-right text-xs text-zinc-500 w-20">
                               {set.intensity_type === 'percentage' && `${set.intensity_value}%`}
                               {set.intensity_type === 'rpe' && `RPE ${set.intensity_value}`}
+                              {set.intensity_type === 'rir' && `RIR ${set.intensity_value}`}
+                              {set.intensity_type === 'time' && `${set.intensity_value}s`}
+                              {set.intensity_type === 'failure' && 'To Failure'}
                             </div>
                           </div>
                         )

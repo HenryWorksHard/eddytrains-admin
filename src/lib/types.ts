@@ -181,7 +181,7 @@ export interface ExerciseSet {
   workout_exercise_id: string
   set_number: number
   reps: string
-  intensity_type: 'rir' | 'rpe' | 'percentage'
+  intensity_type: 'rir' | 'rpe' | 'percentage' | 'time' | 'failure'
   intensity_value: string
   rest_bracket: string | null
   rest_seconds: number | null

@@ -939,7 +939,7 @@ function SchedulesPageContent() {
                                       {/* Intensity */}
                                       <div>
                                         <label className="block text-xs text-zinc-500 mb-1">Intensity</label>
-                                        <div className="flex gap-1">
+                                        <div className="flex gap-1 items-center">
                                           <select
                                             value={custom?.intensity_type || 'rir'}
                                             onChange={(e) => updateExerciseCustomization(exercise.id, 'intensity_type', e.target.value)}
@@ -948,14 +948,23 @@ function SchedulesPageContent() {
                                             <option value="rir">RIR</option>
                                             <option value="rpe">RPE</option>
                                             <option value="percentage">%</option>
+                                            <option value="time">Time</option>
+                                            <option value="failure">Failure</option>
                                           </select>
-                                          <input
-                                            type="text"
-                                            value={custom?.intensity_value || ''}
-                                            onChange={(e) => updateExerciseCustomization(exercise.id, 'intensity_value', e.target.value)}
-                                            placeholder="2"
-                                            className="w-14 px-2 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                                          />
+                                          {custom?.intensity_type !== 'failure' && (
+                                            <>
+                                              <input
+                                                type="text"
+                                                value={custom?.intensity_value || ''}
+                                                onChange={(e) => updateExerciseCustomization(exercise.id, 'intensity_value', e.target.value)}
+                                                placeholder={custom?.intensity_type === 'time' ? '30' : '2'}
+                                                className="w-14 px-2 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                                              />
+                                              {custom?.intensity_type === 'time' && (
+                                                <span className="text-xs text-zinc-500">sec</span>
+                                              )}
+                                            </>
+                                          )}
                                         </div>
                                       </div>
                                       

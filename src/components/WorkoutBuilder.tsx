@@ -1571,22 +1571,32 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
                 <select
                   value={firstSet?.intensityType || 'rir'}
                   onChange={(e) => updateAllSets(workout.id, exercise.id, { 
-                    intensityType: e.target.value as ExerciseSet['intensityType'] 
+                    intensityType: e.target.value as ExerciseSet['intensityType'],
+                    // Set sensible defaults when switching types
+                    intensityValue: e.target.value === 'time' ? '30' : 
+                                   e.target.value === 'percentage' ? '70' : '2'
                   })}
                   className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
                 >
                   <option value="rir">RIR</option>
                   <option value="rpe">RPE</option>
                   <option value="percentage">% 1RM</option>
+                  <option value="time">Time</option>
                   <option value="failure">Failure</option>
                 </select>
                 {firstSet?.intensityType !== 'failure' && (
-                  <input
-                    type="text"
-                    value={firstSet?.intensityValue || '2'}
-                    onChange={(e) => updateAllSets(workout.id, exercise.id, { intensityValue: e.target.value })}
-                    className="w-12 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                  />
+                  <div className="flex items-center">
+                    <input
+                      type="text"
+                      value={firstSet?.intensityValue || (firstSet?.intensityType === 'time' ? '30' : '2')}
+                      onChange={(e) => updateAllSets(workout.id, exercise.id, { intensityValue: e.target.value })}
+                      placeholder={firstSet?.intensityType === 'time' ? '30' : '2'}
+                      className={`${firstSet?.intensityType === 'time' ? 'w-14' : 'w-12'} px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400`}
+                    />
+                    {firstSet?.intensityType === 'time' && (
+                      <span className="text-xs text-zinc-500 ml-1">sec</span>
+                    )}
+                  </div>
                 )}
               </div>
 
