@@ -54,11 +54,17 @@ html.light-mode body {
 }
 
 .light-mode .bg-zinc-800 {
-  background-color: #fafafa !important;
+  background-color: #e4e4e7 !important;
 }
 
 .light-mode .bg-zinc-800\/50 {
-  background-color: rgba(244, 244, 245, 0.5) !important;
+  background-color: rgba(228, 228, 231, 0.7) !important;
+  border: 1px solid rgba(212, 212, 216, 0.5);
+}
+
+.light-mode .bg-zinc-800\/30 {
+  background-color: rgba(212, 212, 216, 0.5) !important;
+  border: 1px solid rgba(161, 161, 170, 0.3);
 }
 
 .light-mode .bg-zinc-700 {
