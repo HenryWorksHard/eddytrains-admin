@@ -430,7 +430,7 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
                 </button>
               </div>
 
-              <div className="p-4" style={{ overflowY: 'scroll', maxHeight: '60vh' }}>
+              <div className="p-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-zinc-600 [&::-webkit-scrollbar-track]:bg-zinc-800" style={{ overflowY: 'scroll', maxHeight: '400px' }}>
               {loadingDetails ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-6 h-6 animate-spin text-yellow-400" />
