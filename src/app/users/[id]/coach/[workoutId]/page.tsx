@@ -68,6 +68,7 @@ export default function CoachSessionPage() {
   const [workout, setWorkout] = useState<{ name: string; programName: string } | null>(null)
   const [exercises, setExercises] = useState<WorkoutExercise[]>([])
   const [client1RMs, setClient1RMs] = useState<Map<string, number>>(new Map())
+  const [lastWeights, setLastWeights] = useState<Map<string, number>>(new Map()) // key: exerciseId-setNumber
   const [clientName, setClientName] = useState('')
   const [expandedExercise, setExpandedExercise] = useState<string | null>(null)
   const [setLogs, setSetLogs] = useState<Map<string, SetLog>>(new Map()) // key: exerciseId-setNumber
@@ -216,6 +217,33 @@ export default function CoachSessionPage() {
     if (rmData) {
       const rmMap = new Map(rmData.map(rm => [rm.exercise_name, rm.weight_kg]))
       setClient1RMs(rmMap)
+    }
+
+    // Get last weights used for this workout
+    const { data: lastWorkoutLog } = await supabase
+      .from('workout_logs')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('workout_id', workoutId)
+      .order('completed_at', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (lastWorkoutLog) {
+      const { data: lastSets } = await supabase
+        .from('set_logs')
+        .select('workout_exercise_id, set_number, weight_kg')
+        .eq('workout_log_id', lastWorkoutLog.id)
+
+      if (lastSets) {
+        const weightsMap = new Map<string, number>()
+        lastSets.forEach(set => {
+          if (set.weight_kg) {
+            weightsMap.set(`${set.workout_exercise_id}-${set.set_number}`, set.weight_kg)
+          }
+        })
+        setLastWeights(weightsMap)
+      }
     }
 
     // Get client's active program assignment for this workout
@@ -550,6 +578,11 @@ export default function CoachSessionPage() {
                                   onChange={(e) => updateSetLog(exercise.id, set.set_number, 'weight_kg', e.target.value ? parseFloat(e.target.value) : null)}
                                   className="w-full mt-1 px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg text-foreground text-center font-bold focus:outline-none focus:ring-2 focus:ring-yellow-400"
                                 />
+                                {lastWeights.get(`${exercise.id}-${set.set_number}`) && (
+                                  <p className="text-[10px] text-zinc-500 text-center mt-1">
+                                    Last: {lastWeights.get(`${exercise.id}-${set.set_number}`)}kg
+                                  </p>
+                                )}
                               </div>
                               
                               {/* Reps Input */}
