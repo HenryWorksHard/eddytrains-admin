@@ -414,23 +414,24 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
 
       {/* Workout Details Modal */}
       {selectedDate && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 overflow-hidden" onClick={closeModal}>
-          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-lg max-h-[80vh]" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b border-zinc-800">
-              <div>
-                <h3 className="text-lg font-semibold text-white">
-                  {selectedDate.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
-                </h3>
-                {workoutDetails && (
-                  <p className="text-sm text-zinc-400">{workoutDetails.workout_name}</p>
-                )}
+        <div className="fixed inset-0 bg-black/70 z-50 overflow-y-auto" onClick={closeModal}>
+          <div className="min-h-full flex items-center justify-center p-4">
+            <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-lg my-8" onClick={e => e.stopPropagation()}>
+              <div className="sticky top-0 bg-zinc-900 rounded-t-2xl flex items-center justify-between p-4 border-b border-zinc-800 z-10">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">
+                    {selectedDate.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
+                  </h3>
+                  {workoutDetails && (
+                    <p className="text-sm text-zinc-400">{workoutDetails.workout_name}</p>
+                  )}
+                </div>
+                <button onClick={closeModal} className="p-2 hover:bg-zinc-800 rounded-lg transition-colors">
+                  <X className="w-5 h-5 text-zinc-400" />
+                </button>
               </div>
-              <button onClick={closeModal} className="p-2 hover:bg-zinc-800 rounded-lg transition-colors">
-                <X className="w-5 h-5 text-zinc-400" />
-              </button>
-            </div>
 
-            <div className="p-4 overflow-y-auto" style={{ maxHeight: 'calc(80vh - 80px)' }}>
+              <div className="p-4">
               {loadingDetails ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-6 h-6 animate-spin text-yellow-400" />
@@ -557,6 +558,7 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
                 </div>
               )}
             </div>
+          </div>
           </div>
         </div>
       )}
