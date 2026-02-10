@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { TrendingUp, Flame, Weight, Save, Loader2, Edit2, Camera, ChevronDown } from 'lucide-react'
+import { TrendingUp, Flame, Weight, Save, Loader2, Edit2, Camera, ChevronDown, Download } from 'lucide-react'
+import ExportProgressModal from './ExportProgressModal'
 import UserProgressGallery from '../UserProgressGallery'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts'
 
 interface ProgressTabProps {
   clientId: string
+  clientName?: string
 }
 
 interface OneRMRecord {
@@ -36,9 +38,10 @@ interface ProgressionPoint {
 type TonnagePeriod = 'day' | 'week' | 'month' | 'year'
 type ProgressionPeriod = 'week' | 'month' | 'year'
 
-export default function ProgressTab({ clientId }: ProgressTabProps) {
+export default function ProgressTab({ clientId, clientName = 'Client' }: ProgressTabProps) {
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
+  const [showExportModal, setShowExportModal] = useState(false)
   const [oneRMs, setOneRMs] = useState<OneRMRecord[]>([])
   const [streak, setStreak] = useState<Streak | null>(null)
   const [tonnage, setTonnage] = useState<number>(0)
@@ -220,6 +223,25 @@ export default function ProgressTab({ clientId }: ProgressTabProps) {
 
   return (
     <div className="space-y-6">
+      {/* Export Button */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => setShowExportModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-colors border border-zinc-700"
+        >
+          <Download className="w-4 h-4" />
+          Export Report
+        </button>
+      </div>
+
+      {/* Export Modal */}
+      <ExportProgressModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        clientId={clientId}
+        clientName={clientName}
+      />
+
       {/* Streak Card */}
       <div className="card p-6">
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">

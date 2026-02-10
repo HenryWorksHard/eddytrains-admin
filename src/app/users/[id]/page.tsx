@@ -2096,7 +2096,7 @@ export default function UserProfilePage() {
 
       {/* PROGRESS TAB */}
       {activeTab === 'progress' && user && (
-        <ProgressTab clientId={user.id} />
+        <ProgressTab clientId={user.id} clientName={user.full_name || user.email || 'Client'} />
       )}
 
       {/* PROFILE TAB */}
