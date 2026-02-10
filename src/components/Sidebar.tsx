@@ -38,31 +38,22 @@ const companyAdminNavItems = [
   { name: 'Trainers', href: '/company/trainers', icon: UserCheck },
   { name: 'All Clients', href: '/company/clients', icon: Users },
   { name: 'Programs', href: '/programs', icon: Dumbbell },
-  { name: 'Organisation', href: '/organisation', icon: Building2 },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
-// Trainer nav (solo or under company)
+// Trainer nav (under company - no billing)
 const trainerNavItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Alerts', href: '/alerts', icon: Bell },
   { name: 'Clients', href: '/users', icon: Users },
   { name: 'Programs', href: '/programs', icon: Dumbbell },
-  { name: 'Nutrition', href: '/nutrition', icon: Apple },
-  { name: 'Schedules', href: '/schedules', icon: Calendar },
-  { name: 'Organisation', href: '/organisation', icon: Building2 },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
 // Solo trainer gets billing option
 const soloTrainerNavItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Alerts', href: '/alerts', icon: Bell },
   { name: 'Clients', href: '/users', icon: Users },
   { name: 'Programs', href: '/programs', icon: Dumbbell },
-  { name: 'Nutrition', href: '/nutrition', icon: Apple },
-  { name: 'Schedules', href: '/schedules', icon: Calendar },
-  { name: 'Organisation', href: '/organisation', icon: Building2 },
   { name: 'Billing', href: '/billing', icon: CreditCard },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
