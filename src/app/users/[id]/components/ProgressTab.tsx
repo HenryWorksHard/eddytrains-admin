@@ -383,10 +383,7 @@ export default function ProgressTab({ clientId }: ProgressTabProps) {
                       borderRadius: '8px',
                       color: '#fff'
                     }}
-                    formatter={(value: number, name: string) => [
-                      `${value} kg`,
-                      'Weight'
-                    ]}
+                    formatter={(value) => [`${value} kg`, 'Weight']}
                     labelFormatter={(label) => {
                       const date = new Date(label)
                       return date.toLocaleDateString()
