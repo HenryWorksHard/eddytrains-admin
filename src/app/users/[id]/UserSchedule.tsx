@@ -414,9 +414,9 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
 
       {/* Workout Details Modal */}
       {selectedDate && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={closeModal}>
-            <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-lg max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
-              <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-zinc-800">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center" onClick={closeModal}>
+            <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-lg max-h-[80vh] overflow-hidden mx-4" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between p-4 border-b border-zinc-800">
                 <div>
                   <h3 className="text-lg font-semibold text-white">
                     {selectedDate.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
@@ -430,7 +430,7 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
                 </button>
               </div>
 
-              <div className="p-4 overflow-y-scroll flex-1" style={{ overscrollBehavior: 'contain' }}>
+              <div className="p-4 overflow-y-auto max-h-[60vh]">
               {loadingDetails ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-6 h-6 animate-spin text-yellow-400" />
