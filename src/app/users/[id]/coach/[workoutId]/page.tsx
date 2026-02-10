@@ -293,25 +293,30 @@ export default function CoachSessionPage() {
 
   const getSetKey = (exerciseId: string, setNumber: number) => `${exerciseId}-${setNumber}`
 
-  const updateSetLog = (exerciseId: string, setNumber: number, field: 'weight_kg' | 'reps_completed', value: number | null, totalSets?: number) => {
+  const updateSetLog = (exerciseId: string, setNumber: number, field: 'weight_kg' | 'reps_completed', value: number | null) => {
     const key = getSetKey(exerciseId, setNumber)
     setSetLogs(prev => {
       const newMap = new Map(prev)
       const existing = newMap.get(key) || { set_number: setNumber, weight_kg: null, reps_completed: null }
       newMap.set(key, { ...existing, [field]: value })
-      
-      // Auto-fill weight/reps to subsequent sets
-      if (value !== null && totalSets) {
-        for (let i = setNumber + 1; i <= totalSets; i++) {
-          const nextKey = getSetKey(exerciseId, i)
-          const nextExisting = newMap.get(nextKey) || { set_number: i, weight_kg: null, reps_completed: null }
-          // Only auto-fill if the next set doesn't already have a value for this field
-          if (nextExisting[field] === null) {
-            newMap.set(nextKey, { ...nextExisting, [field]: value })
-          }
+      return newMap
+    })
+  }
+
+  // Auto-fill to subsequent sets on blur (when user finishes typing)
+  const autoFillSubsequentSets = (exerciseId: string, setNumber: number, field: 'weight_kg' | 'reps_completed', value: number | null, totalSets: number) => {
+    if (value === null) return
+    
+    setSetLogs(prev => {
+      const newMap = new Map(prev)
+      for (let i = setNumber + 1; i <= totalSets; i++) {
+        const nextKey = getSetKey(exerciseId, i)
+        const nextExisting = newMap.get(nextKey) || { set_number: i, weight_kg: null, reps_completed: null }
+        // Only auto-fill if the next set doesn't already have a value for this field
+        if (nextExisting[field] === null) {
+          newMap.set(nextKey, { ...nextExisting, [field]: value })
         }
       }
-      
       return newMap
     })
   }
@@ -588,7 +593,8 @@ export default function CoachSessionPage() {
                                   step="0.5"
                                   placeholder={suggested?.toString() || '0'}
                                   value={log.weight_kg ?? ''}
-                                  onChange={(e) => updateSetLog(exercise.id, set.set_number, 'weight_kg', e.target.value ? parseFloat(e.target.value) : null, exercise.exercise_sets.length)}
+                                  onChange={(e) => updateSetLog(exercise.id, set.set_number, 'weight_kg', e.target.value ? parseFloat(e.target.value) : null)}
+                                  onBlur={(e) => autoFillSubsequentSets(exercise.id, set.set_number, 'weight_kg', e.target.value ? parseFloat(e.target.value) : null, exercise.exercise_sets.length)}
                                   className="w-full mt-1 px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg text-foreground text-center font-bold focus:outline-none focus:ring-2 focus:ring-yellow-400"
                                 />
                                 {lastWeights.get(`${exercise.id}-${set.set_number}`) && (
@@ -606,7 +612,8 @@ export default function CoachSessionPage() {
                                   inputMode="numeric"
                                   placeholder={set.reps}
                                   value={log.reps_completed ?? ''}
-                                  onChange={(e) => updateSetLog(exercise.id, set.set_number, 'reps_completed', e.target.value ? parseInt(e.target.value) : null, exercise.exercise_sets.length)}
+                                  onChange={(e) => updateSetLog(exercise.id, set.set_number, 'reps_completed', e.target.value ? parseInt(e.target.value) : null)}
+                                  onBlur={(e) => autoFillSubsequentSets(exercise.id, set.set_number, 'reps_completed', e.target.value ? parseInt(e.target.value) : null, exercise.exercise_sets.length)}
                                   className="w-full mt-1 px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg text-foreground text-center font-bold focus:outline-none focus:ring-2 focus:ring-yellow-400"
                                 />
                               </div>
