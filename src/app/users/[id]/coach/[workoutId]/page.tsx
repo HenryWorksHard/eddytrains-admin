@@ -821,14 +821,14 @@ export default function CoachSessionPage() {
                             return acc
                           }, {} as Record<string, any[]>)
                           
-                          return Object.entries(groups).map(([name, sets]: [string, any[]]) => (
+                          return Object.entries(groups).map(([name, sets]) => (
                             <div key={name} className="bg-zinc-800/30 rounded-xl p-3">
                               <div className="flex items-center gap-2 mb-2">
                                 <Dumbbell className="w-4 h-4 text-yellow-400" />
                                 <h4 className="font-medium text-white">{name}</h4>
                               </div>
                               <div className="space-y-1">
-                                {sets.map((s: any) => (
+                                {(sets as any[]).map((s: any) => (
                                   <div key={s.set_number} className="flex justify-between text-sm">
                                     <span className="text-zinc-500">Set {s.set_number}</span>
                                     <span className="text-white font-medium">
