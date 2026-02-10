@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
-import { Settings, User, Bell, Database, Shield } from 'lucide-react'
+import { Settings, User, Bell, Database, Shield, Image as ImageIcon } from 'lucide-react'
 import DangerZone from '@/components/DangerZone'
+import LogoUpload from '@/components/LogoUpload'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,6 +15,13 @@ export default async function SettingsPage() {
     .from('profiles')
     .select('*')
     .eq('id', user?.id)
+    .single()
+
+  // Get organization for trainers
+  const { data: organization } = await supabase
+    .from('organizations')
+    .select('id, name, logo_url')
+    .eq('owner_id', user?.id)
     .single()
 
   // Get some stats for the data section
@@ -67,6 +75,21 @@ export default async function SettingsPage() {
             </div>
           </div>
         </section>
+
+        {/* Branding - Logo Upload (trainers only) */}
+        {organization && (profile?.role === 'trainer' || profile?.role === 'company_admin') && (
+          <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <ImageIcon className="w-5 h-5 text-zinc-400" />
+              <h2 className="text-lg font-semibold text-white">Branding</h2>
+            </div>
+            
+            <LogoUpload 
+              organizationId={organization.id} 
+              currentLogoUrl={organization.logo_url} 
+            />
+          </section>
+        )}
 
         {/* Notification Settings */}
         <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
