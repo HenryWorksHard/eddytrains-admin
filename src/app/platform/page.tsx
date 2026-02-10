@@ -761,7 +761,6 @@ export default function PlatformPage() {
             </div>
           </div>
         </div>
-      </>
 
       {/* Add Trainer Modal */}
       {showAddTrainer && (
