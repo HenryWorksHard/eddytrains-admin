@@ -76,6 +76,56 @@ export default function CoachSessionPage() {
   const [sessionComplete, setSessionComplete] = useState(false)
   const [clientProgramId, setClientProgramId] = useState<string | null>(null)
   const [sessionNotes, setSessionNotes] = useState('')
+  const [lastSaved, setLastSaved] = useState<Date | null>(null)
+
+  // Local storage key for this workout session
+  const storageKey = `coach-session-${clientId}-${workoutId}`
+
+  // Restore from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(storageKey)
+    if (saved) {
+      try {
+        const data = JSON.parse(saved)
+        if (data.setLogs) {
+          setSetLogs(new Map(Object.entries(data.setLogs)))
+        }
+        if (data.completedExercises) {
+          setCompletedExercises(new Set(data.completedExercises))
+        }
+        if (data.sessionNotes) {
+          setSessionNotes(data.sessionNotes)
+        }
+        if (data.sessionStarted) {
+          setSessionStarted(true)
+        }
+      } catch (e) {
+        console.error('Failed to restore session:', e)
+      }
+    }
+  }, [storageKey])
+
+  // Auto-save to localStorage whenever data changes
+  useEffect(() => {
+    if (!sessionStarted) return
+    
+    const data = {
+      setLogs: Object.fromEntries(setLogs),
+      completedExercises: Array.from(completedExercises),
+      sessionNotes,
+      sessionStarted,
+      savedAt: new Date().toISOString()
+    }
+    localStorage.setItem(storageKey, JSON.stringify(data))
+    setLastSaved(new Date())
+  }, [setLogs, completedExercises, sessionNotes, sessionStarted, storageKey])
+
+  // Clear localStorage when session is complete
+  useEffect(() => {
+    if (sessionComplete) {
+      localStorage.removeItem(storageKey)
+    }
+  }, [sessionComplete, storageKey])
 
   useEffect(() => {
     fetchData()
@@ -395,23 +445,6 @@ export default function CoachSessionPage() {
         )}
       </div>
 
-      {/* Session Notes - Always visible during session */}
-      {sessionStarted && (
-        <div className="card p-4 mb-4">
-          <div className="flex items-center gap-2 mb-2">
-            <FileText className="w-4 h-4 text-yellow-400" />
-            <label className="text-sm font-medium text-foreground">Session Notes</label>
-          </div>
-          <textarea
-            value={sessionNotes}
-            onChange={(e) => setSessionNotes(e.target.value)}
-            placeholder="Add notes throughout the session..."
-            rows={2}
-            className="w-full px-4 py-3 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl text-foreground placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 resize-none"
-          />
-        </div>
-      )}
-
       {/* Start Session Button */}
       {!sessionStarted && (
         <div className="card p-8 text-center mb-6">
@@ -543,6 +576,28 @@ export default function CoachSessionPage() {
               </div>
             )
           })}
+
+          {/* Session Notes */}
+          <div className="card p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-yellow-400" />
+                <label className="text-sm font-medium text-foreground">Session Notes</label>
+              </div>
+              {lastSaved && (
+                <span className="text-xs text-zinc-500">
+                  Auto-saved {lastSaved.toLocaleTimeString()}
+                </span>
+              )}
+            </div>
+            <textarea
+              value={sessionNotes}
+              onChange={(e) => setSessionNotes(e.target.value)}
+              placeholder="Add notes throughout the session..."
+              rows={3}
+              className="w-full px-4 py-3 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl text-foreground placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 resize-none"
+            />
+          </div>
 
           {/* Complete Session Button */}
           <button
