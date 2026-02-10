@@ -19,9 +19,29 @@ import {
   CreditCard,
   Building2,
   Shield,
+  UserCheck,
 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { ArrowLeft } from 'lucide-react'
 
-// Trainer nav items (what trainers see)
+// Super Admin nav (Louis only - platform control)
+const superAdminNavItems = [
+  { name: 'Platform', href: '/platform', icon: Shield },
+  { name: 'Companies', href: '/platform/companies', icon: Building2 },
+  { name: 'Trainers', href: '/platform/trainers', icon: UserCheck },
+  { name: 'Settings', href: '/settings', icon: Settings },
+]
+
+// Company Admin nav (gym owners - no billing, just management)
+const companyAdminNavItems = [
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Trainers', href: '/company/trainers', icon: UserCheck },
+  { name: 'All Clients', href: '/company/clients', icon: Users },
+  { name: 'Programs', href: '/programs', icon: Dumbbell },
+  { name: 'Settings', href: '/settings', icon: Settings },
+]
+
+// Trainer nav (solo or under company)
 const trainerNavItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Alerts', href: '/alerts', icon: Bell },
@@ -29,20 +49,15 @@ const trainerNavItems = [
   { name: 'Programs', href: '/programs', icon: Dumbbell },
   { name: 'Nutrition', href: '/nutrition', icon: Apple },
   { name: 'Schedules', href: '/schedules', icon: Calendar },
-  { name: 'Team', href: '/organization/trainers', icon: Users },
-  { name: 'Organization', href: '/organization', icon: Building2 },
+  { name: 'Settings', href: '/settings', icon: Settings },
+]
+
+// Solo trainer gets billing option
+const soloTrainerNavItems = [
+  ...trainerNavItems.slice(0, -1), // Everything except Settings
   { name: 'Billing', href: '/billing', icon: CreditCard },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
-
-// Super admin nav items (platform management only)
-const superAdminNavItems = [
-  { name: 'Platform', href: '/platform', icon: Shield },
-  { name: 'Settings', href: '/settings', icon: Settings },
-]
-
-import { useState, useEffect } from 'react'
-import { ArrowLeft } from 'lucide-react'
 
 export default function Sidebar() {
   const pathname = usePathname()
@@ -50,7 +65,8 @@ export default function Sidebar() {
   const supabase = createClient()
   const { theme, toggleTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
+  const [userRole, setUserRole] = useState<string>('trainer')
+  const [isSoloTrainer, setIsSoloTrainer] = useState(false)
   const [orgName, setOrgName] = useState<string>('CMPD')
   const [isImpersonating, setIsImpersonating] = useState(false)
   const [impersonatedOrgName, setImpersonatedOrgName] = useState<string>('')
@@ -66,7 +82,6 @@ export default function Sidebar() {
     const impersonatingOrgId = sessionStorage.getItem('impersonating_org')
     if (impersonatingOrgId) {
       setIsImpersonating(true)
-      // Fetch the impersonated org name
       supabase
         .from('organizations')
         .select('name')
@@ -84,11 +99,10 @@ export default function Sidebar() {
       if (user) {
         const { data: profile, error } = await supabase
           .from('profiles')
-          .select('role, organization_id')
+          .select('role, organization_id, company_id')
           .eq('id', user.id)
           .single()
         
-        // If profile doesn't exist (user was deleted), sign them out
         if (error || !profile) {
           console.log('User profile not found, signing out...')
           await supabase.auth.signOut()
@@ -96,19 +110,27 @@ export default function Sidebar() {
           return
         }
         
-        setIsSuperAdmin(profile?.role === 'super_admin')
+        setUserRole(profile?.role || 'trainer')
         
-        // Fetch org name and subscription status for trainers
+        // Check if trainer is solo (no company_id) or under a company
+        if (profile?.role === 'trainer') {
+          setIsSoloTrainer(!profile.company_id)
+        }
+        
+        // Fetch org name and subscription status
         if (profile?.organization_id && profile?.role !== 'super_admin') {
           const { data: org } = await supabase
             .from('organizations')
-            .select('name, subscription_status, trial_ends_at, stripe_subscription_id, subscription_tier')
+            .select('name, subscription_status, trial_ends_at, stripe_subscription_id, subscription_tier, organization_type')
             .eq('id', profile.organization_id)
             .single()
+          
           if (org?.name) {
             setOrgName(org.name)
           }
-          if (org?.subscription_status === 'trialing') {
+          
+          // Only show trial banner for solo trainers
+          if (org?.organization_type === 'solo' && org?.subscription_status === 'trialing') {
             setIsTrialing(true)
             if (org?.trial_ends_at) {
               const trialEnd = new Date(org.trial_ends_at)
@@ -116,7 +138,6 @@ export default function Sidebar() {
               const daysLeft = Math.max(0, Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
               setTrialDaysLeft(daysLeft)
             }
-            // Check if plan is selected during trial
             if (org?.stripe_subscription_id) {
               setHasPlanSelected(true)
               setSelectedTier(org?.subscription_tier || '')
@@ -126,9 +147,36 @@ export default function Sidebar() {
       }
     }
     checkRole()
-  }, [supabase])
+  }, [supabase, router])
   
-  const navItems = isSuperAdmin && !isImpersonating ? superAdminNavItems : trainerNavItems
+  // Determine which nav items to show
+  const getNavItems = () => {
+    if (isImpersonating) {
+      return trainerNavItems // When impersonating, show trainer view
+    }
+    switch (userRole) {
+      case 'super_admin':
+        return superAdminNavItems
+      case 'company_admin':
+        return companyAdminNavItems
+      case 'trainer':
+        return isSoloTrainer ? soloTrainerNavItems : trainerNavItems
+      default:
+        return trainerNavItems
+    }
+  }
+  
+  const navItems = getNavItems()
+  
+  const getPortalLabel = () => {
+    if (isImpersonating) return 'Viewing as Trainer'
+    switch (userRole) {
+      case 'super_admin': return 'Super Admin'
+      case 'company_admin': return 'Company Portal'
+      case 'trainer': return isSoloTrainer ? 'Trainer Portal' : 'Trainer'
+      default: return 'Portal'
+    }
+  }
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -137,7 +185,6 @@ export default function Sidebar() {
   }
 
   const handleBackToPlatform = async () => {
-    // Clear impersonation cookie via API
     await fetch('/api/impersonate', { method: 'DELETE' })
     sessionStorage.removeItem('impersonating_org')
     router.push('/platform')
@@ -159,7 +206,7 @@ export default function Sidebar() {
       
       {/* Logo */}
       <div className="p-6 border-b border-zinc-800">
-        <Link href={isSuperAdmin && !isImpersonating ? "/platform" : "/dashboard"} className="flex items-center gap-3">
+        <Link href={userRole === 'super_admin' && !isImpersonating ? "/platform" : "/dashboard"} className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center">
             <span className="text-black font-bold">
               {isImpersonating ? impersonatedOrgName.charAt(0).toUpperCase() : orgName.charAt(0).toUpperCase()}
@@ -167,11 +214,9 @@ export default function Sidebar() {
           </div>
           <div>
             <h1 className="font-bold text-white truncate max-w-[140px]">
-              {isImpersonating ? impersonatedOrgName : (isSuperAdmin ? 'CMPD' : orgName)}
+              {isImpersonating ? impersonatedOrgName : (userRole === 'super_admin' ? 'CMPD' : orgName)}
             </h1>
-            <p className="text-xs text-zinc-500">
-              {isImpersonating ? 'Viewing as Trainer' : (isSuperAdmin ? 'Platform Admin' : 'Trainer Portal')}
-            </p>
+            <p className="text-xs text-zinc-500">{getPortalLabel()}</p>
           </div>
         </Link>
       </div>
@@ -198,8 +243,8 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Upgrade Banner for Trial Users */}
-      {isTrialing && !isSuperAdmin && !isImpersonating && (
+      {/* Upgrade Banner for Solo Trainers on Trial */}
+      {isTrialing && isSoloTrainer && !isImpersonating && (
         <div className="p-4 border-t border-zinc-800">
           <Link
             href="/billing"
@@ -211,9 +256,9 @@ export default function Sidebar() {
             </div>
             <p className="text-xs text-zinc-400">
               {hasPlanSelected ? (
-                <><span className="text-green-400 capitalize">{selectedTier}</span> selected · <span className="text-yellow-400">Billing</span></>
+                <><span className="text-green-400 capitalize">{selectedTier}</span> selected</>
               ) : (
-                <>Pick a plan to continue · <span className="text-yellow-400">Billing</span></>
+                <>Pick a plan to continue</>
               )}
             </p>
           </Link>
