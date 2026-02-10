@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { X, Download, Loader2, FileText, Calendar } from 'lucide-react'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -22,15 +22,6 @@ interface ExportOptions {
 
 type DateRange = 'week' | 'month' | '3months' | '6months' | 'year' | 'all'
 
-const PROGRESSION_EXERCISES = [
-  'Barbell Bench Press',
-  'Barbell Squats',
-  'Romanian Deadlifts',
-  'Lat Pulldowns',
-  'Shoulder Press',
-  'Leg Press',
-]
-
 export default function ExportProgressModal({ isOpen, onClose, clientId, clientName }: ExportProgressModalProps) {
   const [options, setOptions] = useState<ExportOptions>({
     streak: true,
@@ -41,9 +32,31 @@ export default function ExportProgressModal({ isOpen, onClose, clientId, clientN
   })
   const [dateRange, setDateRange] = useState<DateRange>('month')
   const [exporting, setExporting] = useState(false)
-  const [selectedExercises, setSelectedExercises] = useState<string[]>(PROGRESSION_EXERCISES)
+  const [availableExercises, setAvailableExercises] = useState<string[]>([])
+  const [selectedExercises, setSelectedExercises] = useState<string[]>([])
+  const [loadingExercises, setLoadingExercises] = useState(false)
 
-  const allSelected = selectedExercises.length === PROGRESSION_EXERCISES.length
+  // Fetch client's exercises when modal opens
+  useEffect(() => {
+    if (isOpen && clientId) {
+      setLoadingExercises(true)
+      fetch(`/api/users/${clientId}/exercises`)
+        .then(res => res.json())
+        .then(data => {
+          const exercises = (data.exercises || []).map((e: { name: string }) => e.name)
+          setAvailableExercises(exercises)
+          setSelectedExercises(exercises) // Select all by default
+        })
+        .catch(err => {
+          console.error('Failed to fetch exercises:', err)
+          setAvailableExercises([])
+          setSelectedExercises([])
+        })
+        .finally(() => setLoadingExercises(false))
+    }
+  }, [isOpen, clientId])
+
+  const allSelected = availableExercises.length > 0 && selectedExercises.length === availableExercises.length
   const noneSelected = selectedExercises.length === 0
 
   const toggleExercise = (exercise: string) => {
@@ -58,7 +71,7 @@ export default function ExportProgressModal({ isOpen, onClose, clientId, clientN
     if (allSelected) {
       setSelectedExercises([])
     } else {
-      setSelectedExercises([...PROGRESSION_EXERCISES])
+      setSelectedExercises([...availableExercises])
     }
   }
 
@@ -391,49 +404,61 @@ export default function ExportProgressModal({ isOpen, onClose, clientId, clientN
           {options.progression && (
             <div>
               <label className="text-sm font-medium text-zinc-400 mb-2 block">Progression Exercises</label>
-              <div className="space-y-2">
-                {/* Select All */}
-                <label
-                  className={`flex items-center gap-3 p-3 rounded-xl border transition-colors cursor-pointer ${
-                    allSelected
-                      ? 'bg-indigo-400/10 border-indigo-400/30'
-                      : 'bg-zinc-800/50 border-zinc-700 hover:border-zinc-600'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    onChange={toggleAllExercises}
-                    className="w-4 h-4 rounded border-zinc-600 text-indigo-400 focus:ring-indigo-400 focus:ring-offset-0 bg-zinc-700"
-                  />
-                  <div className="flex-1">
-                    <p className="text-white font-medium text-sm">Select All</p>
-                    <p className="text-zinc-500 text-xs">{selectedExercises.length} of {PROGRESSION_EXERCISES.length} selected</p>
-                  </div>
-                </label>
-
-                {/* Individual Exercises */}
-                <div className="max-h-48 overflow-y-auto space-y-1.5 rounded-lg">
-                  {PROGRESSION_EXERCISES.map((exercise) => (
-                    <label
-                      key={exercise}
-                      className={`flex items-center gap-3 p-2.5 rounded-lg border transition-colors cursor-pointer ${
-                        selectedExercises.includes(exercise)
-                          ? 'bg-indigo-400/10 border-indigo-400/30'
-                          : 'bg-zinc-800/50 border-zinc-700 hover:border-zinc-600'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedExercises.includes(exercise)}
-                        onChange={() => toggleExercise(exercise)}
-                        className="w-4 h-4 rounded border-zinc-600 text-indigo-400 focus:ring-indigo-400 focus:ring-offset-0 bg-zinc-700"
-                      />
-                      <span className="text-white text-sm">{exercise}</span>
-                    </label>
-                  ))}
+              {loadingExercises ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-5 h-5 text-zinc-400 animate-spin" />
+                  <span className="ml-2 text-zinc-500 text-sm">Loading exercises...</span>
                 </div>
-              </div>
+              ) : availableExercises.length === 0 ? (
+                <div className="py-6 text-center">
+                  <p className="text-zinc-500 text-sm">No exercises found for this client.</p>
+                  <p className="text-zinc-600 text-xs mt-1">Assign a program with exercises first.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {/* Select All */}
+                  <label
+                    className={`flex items-center gap-3 p-3 rounded-xl border transition-colors cursor-pointer ${
+                      allSelected
+                        ? 'bg-indigo-400/10 border-indigo-400/30'
+                        : 'bg-zinc-800/50 border-zinc-700 hover:border-zinc-600'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={toggleAllExercises}
+                      className="w-4 h-4 rounded border-zinc-600 text-indigo-400 focus:ring-indigo-400 focus:ring-offset-0 bg-zinc-700"
+                    />
+                    <div className="flex-1">
+                      <p className="text-white font-medium text-sm">Select All</p>
+                      <p className="text-zinc-500 text-xs">{selectedExercises.length} of {availableExercises.length} selected</p>
+                    </div>
+                  </label>
+
+                  {/* Individual Exercises */}
+                  <div className="max-h-48 overflow-y-auto space-y-1.5 rounded-lg">
+                    {availableExercises.map((exercise) => (
+                      <label
+                        key={exercise}
+                        className={`flex items-center gap-3 p-2.5 rounded-lg border transition-colors cursor-pointer ${
+                          selectedExercises.includes(exercise)
+                            ? 'bg-indigo-400/10 border-indigo-400/30'
+                            : 'bg-zinc-800/50 border-zinc-700 hover:border-zinc-600'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedExercises.includes(exercise)}
+                          onChange={() => toggleExercise(exercise)}
+                          className="w-4 h-4 rounded border-zinc-600 text-indigo-400 focus:ring-indigo-400 focus:ring-offset-0 bg-zinc-700"
+                        />
+                        <span className="text-white text-sm">{exercise}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
