@@ -391,7 +391,7 @@ export default function CoachSessionPage() {
           if (log && (log.weight_kg !== null || log.reps_completed !== null)) {
             setLogsToInsert.push({
               workout_log_id: workoutLog.id,
-              workout_exercise_id: exercise.id,
+              exercise_id: exercise.id,
               set_number: set.set_number,
               weight_kg: log.weight_kg,
               reps_completed: log.reps_completed
