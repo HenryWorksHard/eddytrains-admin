@@ -35,7 +35,9 @@ export async function GET(
         break
       case 'week':
         startDate = new Date(now)
-        startDate.setDate(now.getDate() - now.getDay()) // Start of week (Sunday)
+        const dayOfWeek = now.getDay()
+        const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1 // Monday = 0 days back
+        startDate.setDate(now.getDate() - daysFromMonday)
         startDate.setHours(0, 0, 0, 0)
         break
       case 'month':
