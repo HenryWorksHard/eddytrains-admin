@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { TrendingUp, Flame, Weight, Save, Loader2, Edit2, Camera } from 'lucide-react'
+import { TrendingUp, Flame, Weight, Save, Loader2, Edit2, Camera, ChevronDown } from 'lucide-react'
 import UserProgressGallery from '../UserProgressGallery'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts'
 
 interface ProgressTabProps {
   clientId: string
@@ -21,7 +22,19 @@ interface Streak {
   last_workout_date: string
 }
 
+interface ExerciseOption {
+  id: string
+  name: string
+}
+
+interface ProgressionPoint {
+  date: string
+  weight: number
+  reps: number
+}
+
 type TonnagePeriod = 'day' | 'week' | 'month' | 'year'
+type ProgressionPeriod = 'week' | 'month' | 'year'
 
 export default function ProgressTab({ clientId }: ProgressTabProps) {
   const supabase = createClient()
@@ -34,14 +47,29 @@ export default function ProgressTab({ clientId }: ProgressTabProps) {
   const [editing1RM, setEditing1RM] = useState(false)
   const [saving1RM, setSaving1RM] = useState(false)
   const [editable1RMs, setEditable1RMs] = useState<{exercise_name: string, weight_kg: number}[]>([])
+  
+  // Exercise progression state
+  const [exercises, setExercises] = useState<ExerciseOption[]>([])
+  const [selectedExercise, setSelectedExercise] = useState<string>('')
+  const [progressionPeriod, setProgressionPeriod] = useState<ProgressionPeriod>('month')
+  const [progressionData, setProgressionData] = useState<ProgressionPoint[]>([])
+  const [loadingProgression, setLoadingProgression] = useState(false)
+  const [exerciseDropdownOpen, setExerciseDropdownOpen] = useState(false)
 
   useEffect(() => {
     fetchProgressData()
+    fetchExercises()
   }, [clientId])
 
   useEffect(() => {
     fetchTonnage(tonnagePeriod)
   }, [clientId, tonnagePeriod])
+
+  useEffect(() => {
+    if (selectedExercise) {
+      fetchProgression(selectedExercise, progressionPeriod)
+    }
+  }, [selectedExercise, progressionPeriod])
 
   async function fetchProgressData() {
     setLoading(true)
@@ -86,6 +114,41 @@ export default function ProgressTab({ clientId }: ProgressTabProps) {
     }
 
     setLoadingTonnage(false)
+  }
+
+  async function fetchExercises() {
+    try {
+      const response = await fetch(`/api/users/${clientId}/exercises`)
+      if (response.ok) {
+        const { exercises: exerciseList } = await response.json()
+        setExercises(exerciseList || [])
+        // Auto-select first exercise if available
+        if (exerciseList && exerciseList.length > 0 && !selectedExercise) {
+          setSelectedExercise(exerciseList[0].name)
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch exercises:', err)
+    }
+  }
+
+  async function fetchProgression(exerciseName: string, period: ProgressionPeriod) {
+    setLoadingProgression(true)
+    
+    try {
+      const response = await fetch(`/api/users/${clientId}/progression?exercise=${encodeURIComponent(exerciseName)}&period=${period}`)
+      if (response.ok) {
+        const { progression } = await response.json()
+        setProgressionData(progression || [])
+      } else {
+        setProgressionData([])
+      }
+    } catch (err) {
+      console.error('Failed to fetch progression:', err)
+      setProgressionData([])
+    }
+
+    setLoadingProgression(false)
   }
 
   const startEditing1RM = () => {
@@ -220,6 +283,133 @@ export default function ProgressTab({ clientId }: ProgressTabProps) {
               <p className="text-4xl font-bold text-green-400">{formatTonnage(tonnage)} kg</p>
               <p className="text-sm text-zinc-400 mt-1">{getPeriodLabel(tonnagePeriod)}</p>
             </>
+          )}
+        </div>
+      </div>
+
+      {/* Exercise Progression */}
+      <div className="card p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <TrendingUp className="w-5 h-5 text-orange-400" />
+            <h3 className="text-lg font-semibold text-white">Exercise Progression</h3>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Exercise Selector */}
+            <div className="relative">
+              <button
+                onClick={() => setExerciseDropdownOpen(!exerciseDropdownOpen)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white hover:bg-zinc-700 transition-colors min-w-[180px]"
+              >
+                <span className="truncate">{selectedExercise || 'Select Exercise'}</span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${exerciseDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {exerciseDropdownOpen && (
+                <div className="absolute right-0 mt-1 w-64 max-h-64 overflow-y-auto bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-50">
+                  {exercises.map((exercise) => (
+                    <button
+                      key={exercise.id}
+                      onClick={() => {
+                        setSelectedExercise(exercise.name)
+                        setExerciseDropdownOpen(false)
+                      }}
+                      className={`w-full px-4 py-2 text-left text-sm hover:bg-zinc-700 transition-colors ${
+                        selectedExercise === exercise.name ? 'bg-zinc-700 text-yellow-400' : 'text-white'
+                      }`}
+                    >
+                      {exercise.name}
+                    </button>
+                  ))}
+                  {exercises.length === 0 && (
+                    <p className="px-4 py-2 text-sm text-zinc-500">No exercises found</p>
+                  )}
+                </div>
+              )}
+            </div>
+            {/* Period Selector */}
+            <div className="flex rounded-lg overflow-hidden border border-zinc-700">
+              {(['week', 'month', 'year'] as ProgressionPeriod[]).map((period) => (
+                <button
+                  key={period}
+                  type="button"
+                  onClick={() => setProgressionPeriod(period)}
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                    progressionPeriod === period
+                      ? 'bg-yellow-400 text-black'
+                      : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'
+                  }`}
+                >
+                  {period.charAt(0).toUpperCase() + period.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-orange-500/5 border border-orange-500/20 rounded-xl p-4">
+          {loadingProgression ? (
+            <div className="h-64 flex items-center justify-center">
+              <Loader2 className="w-8 h-8 animate-spin text-orange-400" />
+            </div>
+          ) : progressionData.length > 0 ? (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={progressionData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#f97316" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#f97316" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="#9ca3af" 
+                    fontSize={12}
+                    tickFormatter={(value) => {
+                      const date = new Date(value)
+                      return `${date.getDate()}/${date.getMonth() + 1}`
+                    }}
+                  />
+                  <YAxis 
+                    stroke="#9ca3af" 
+                    fontSize={12}
+                    tickFormatter={(value) => `${value}kg`}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1f2937', 
+                      border: '1px solid #374151',
+                      borderRadius: '8px',
+                      color: '#fff'
+                    }}
+                    formatter={(value: number, name: string) => [
+                      `${value} kg`,
+                      'Weight'
+                    ]}
+                    labelFormatter={(label) => {
+                      const date = new Date(label)
+                      return date.toLocaleDateString()
+                    }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="weight" 
+                    stroke="#f97316" 
+                    strokeWidth={2}
+                    fill="url(#colorWeight)"
+                    dot={{ fill: '#f97316', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: '#f97316' }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-64 flex flex-col items-center justify-center text-zinc-500">
+              <TrendingUp className="w-12 h-12 mb-2 opacity-50" />
+              <p>No progression data yet</p>
+              <p className="text-sm">Complete workouts to see your progress</p>
+            </div>
           )}
         </div>
       </div>
