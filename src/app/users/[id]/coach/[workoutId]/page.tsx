@@ -300,17 +300,17 @@ export default function CoachSessionPage() {
       const existing = newMap.get(key) || { set_number: setNumber, weight_kg: null, reps_completed: null }
       newMap.set(key, { ...existing, [field]: value })
       
-      // Auto-fill weight to subsequent sets if this is set 1 (or any set) and updating weight
-      if (field === 'weight_kg' && value !== null) {
+      // Auto-fill weight/reps to subsequent sets
+      if (value !== null) {
         const exercise = exercises.find(e => e.id === exerciseId)
         if (exercise) {
-          // Fill subsequent sets that don't have a weight yet
+          // Fill subsequent sets that don't have a value yet for this field
           for (let i = setNumber + 1; i <= exercise.exercise_sets.length; i++) {
             const nextKey = getSetKey(exerciseId, i)
             const nextExisting = newMap.get(nextKey) || { set_number: i, weight_kg: null, reps_completed: null }
-            // Only auto-fill if the next set doesn't already have a weight
-            if (nextExisting.weight_kg === null) {
-              newMap.set(nextKey, { ...nextExisting, weight_kg: value })
+            // Only auto-fill if the next set doesn't already have a value for this field
+            if (nextExisting[field] === null) {
+              newMap.set(nextKey, { ...nextExisting, [field]: value })
             }
           }
         }
