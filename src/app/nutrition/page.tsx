@@ -2,208 +2,222 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Apple, Plus, Search, Users, Edit, Trash2 } from 'lucide-react'
+import { Apple, Search, User, ChevronRight, Check, X } from 'lucide-react'
 import Link from 'next/link'
-import { FeatureGate } from '@/components/FeatureGate'
 
-interface NutritionPlan {
+interface ClientNutrition {
   id: string
-  name: string
-  description: string | null
-  calories: number
-  protein: number
-  carbs: number
-  fats: number
-  is_template: boolean
-  created_at: string
+  full_name: string | null
+  email: string
+  profile_picture_url: string | null
+  nutrition: {
+    calories: number
+    protein: number
+    carbs: number
+    fats: number
+    plan_name?: string
+  } | null
 }
 
 export default function NutritionPage() {
-  const [plans, setPlans] = useState<NutritionPlan[]>([])
+  const [clients, setClients] = useState<ClientNutrition[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const supabase = createClient()
 
   useEffect(() => {
-    fetchPlans()
+    fetchClients()
   }, [])
 
-  // Helper to get cookie value
-  const getCookie = (name: string): string | null => {
-    const value = `; ${document.cookie}`
-    const parts = value.split(`; ${name}=`)
-    if (parts.length === 2) return parts.pop()?.split(';').shift() || null
-    return null
-  }
-
-  const fetchPlans = async () => {
-    // Check for impersonation cookie first (for super admins viewing as trainers)
-    const impersonatingOrg = getCookie('impersonating_org')
-    
-    let orgId = impersonatingOrg
-    
-    if (!orgId) {
-      // Get current trainer's organization_id
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        setLoading(false)
-        return
-      }
-
-      // Get trainer's organization_id from profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('id', user.id)
-        .single()
-
-      if (!profile?.organization_id) {
-        setLoading(false)
-        return
-      }
-      
-      orgId = profile.organization_id
+  const fetchClients = async () => {
+    // Get current trainer
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setLoading(false)
+      return
     }
 
-    const { data, error } = await supabase
-      .from('nutrition_plans')
-      .select('*')
-      .eq('organization_id', orgId)
-      .order('created_at', { ascending: false })
+    // Get trainer's profile to find their org
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single()
 
-    if (!error && data) {
-      setPlans(data)
+    if (!profile?.organization_id) {
+      setLoading(false)
+      return
     }
+
+    // Get all clients for this trainer
+    const { data: clientsData } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, profile_picture_url')
+      .eq('trainer_id', user.id)
+      .eq('role', 'client')
+      .order('full_name')
+
+    if (!clientsData) {
+      setLoading(false)
+      return
+    }
+
+    // Get nutrition data for each client
+    const clientIds = clientsData.map(c => c.id)
+    
+    const { data: nutritionData } = await supabase
+      .from('client_nutrition')
+      .select(`
+        client_id,
+        calories,
+        protein,
+        carbs,
+        fats,
+        nutrition_plans(name)
+      `)
+      .in('client_id', clientIds)
+
+    // Map nutrition to clients
+    const nutritionMap = new Map(
+      nutritionData?.map(n => [n.client_id, {
+        calories: n.calories,
+        protein: n.protein,
+        carbs: n.carbs,
+        fats: n.fats,
+        plan_name: (n.nutrition_plans as any)?.name
+      }]) || []
+    )
+
+    const clientsWithNutrition: ClientNutrition[] = clientsData.map(client => ({
+      ...client,
+      nutrition: nutritionMap.get(client.id) || null
+    }))
+
+    setClients(clientsWithNutrition)
     setLoading(false)
   }
 
-  const filteredPlans = plans.filter(plan =>
-    plan.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredClients = clients.filter(client =>
+    (client.full_name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    client.email.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const deletePlan = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this nutrition plan?')) return
-    
-    const { error } = await supabase
-      .from('nutrition_plans')
-      .delete()
-      .eq('id', id)
-
-    if (!error) {
-      setPlans(plans.filter(p => p.id !== id))
-    }
-  }
+  const clientsWithPlan = clients.filter(c => c.nutrition).length
+  const clientsWithoutPlan = clients.filter(c => !c.nutrition).length
 
   return (
-    <FeatureGate feature="nutrition">
-    <div className="space-y-8">
+    <div>
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Nutrition</h1>
-          <p className="text-zinc-400 mt-1">Manage nutrition plans and assign to clients</p>
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-green-500/10 rounded-xl">
+            <Apple className="w-6 h-6 text-green-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-white">Nutrition</h1>
+            <p className="text-zinc-500">Manage client nutrition plans</p>
+          </div>
         </div>
-        <Link
-          href="/nutrition/new"
-          className="flex items-center gap-2 px-4 py-2 bg-yellow-400 text-black font-semibold rounded-xl hover:bg-yellow-300 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          New Plan
-        </Link>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="card p-4">
+          <p className="text-2xl font-bold text-white">{clients.length}</p>
+          <p className="text-sm text-zinc-500">Total Clients</p>
+        </div>
+        <div className="card p-4">
+          <p className="text-2xl font-bold text-green-400">{clientsWithPlan}</p>
+          <p className="text-sm text-zinc-500">With Plan</p>
+        </div>
+        <div className="card p-4">
+          <p className="text-2xl font-bold text-orange-400">{clientsWithoutPlan}</p>
+          <p className="text-sm text-zinc-500">No Plan</p>
+        </div>
       </div>
 
       {/* Search */}
-      <div className="relative">
+      <div className="relative mb-6">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
         <input
           type="text"
-          placeholder="Search nutrition plans..."
+          placeholder="Search clients..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-12 pr-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-yellow-400/50"
+          className="w-full pl-12 pr-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-400"
         />
       </div>
 
-      {/* Plans Grid */}
+      {/* Client List */}
       {loading ? (
-        <div className="text-center py-12">
-          <div className="w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin mx-auto" />
+        <div className="flex items-center justify-center h-64">
+          <div className="w-8 h-8 border-2 border-green-400 border-t-transparent rounded-full animate-spin" />
         </div>
-      ) : filteredPlans.length === 0 ? (
-        <div className="text-center py-12 bg-zinc-900 rounded-2xl border border-zinc-800">
-          <Apple className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">No nutrition plans yet</h3>
-          <p className="text-zinc-400 mb-4">Create your first nutrition plan to get started</p>
-          <Link
-            href="/nutrition/new"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-400 text-black font-semibold rounded-xl hover:bg-yellow-300 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            Create Plan
-          </Link>
+      ) : filteredClients.length === 0 ? (
+        <div className="card p-12 text-center">
+          <div className="w-16 h-16 rounded-xl bg-zinc-800 flex items-center justify-center mx-auto mb-4">
+            <User className="w-8 h-8 text-zinc-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-white mb-2">No clients found</h3>
+          <p className="text-zinc-500">
+            {searchQuery ? 'Try a different search term' : 'Add clients to manage their nutrition'}
+          </p>
         </div>
       ) : (
-        <div className="grid gap-4">
-          {filteredPlans.map((plan) => (
-            <div
-              key={plan.id}
-              className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-colors"
+        <div className="space-y-2">
+          {filteredClients.map((client) => (
+            <Link
+              key={client.id}
+              href={`/users/${client.id}?tab=nutrition`}
+              className="card p-4 flex items-center justify-between hover:bg-zinc-800/50 transition-colors group"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center">
-                    <Apple className="w-6 h-6 text-green-400" />
+              <div className="flex items-center gap-4">
+                {client.profile_picture_url ? (
+                  <img
+                    src={client.profile_picture_url}
+                    alt={client.full_name || 'Client'}
+                    className="w-12 h-12 rounded-xl object-cover"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center">
+                    <User className="w-6 h-6 text-zinc-600" />
                   </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
-                    {plan.description && (
-                      <p className="text-zinc-400 text-sm mt-1">{plan.description}</p>
-                    )}
-                    <div className="flex gap-4 mt-3">
-                      <div className="text-sm">
-                        <span className="text-zinc-500">Calories:</span>{' '}
-                        <span className="text-white font-medium">{plan.calories}</span>
-                      </div>
-                      <div className="text-sm">
-                        <span className="text-zinc-500">P:</span>{' '}
-                        <span className="text-blue-400 font-medium">{plan.protein}g</span>
-                      </div>
-                      <div className="text-sm">
-                        <span className="text-zinc-500">C:</span>{' '}
-                        <span className="text-yellow-400 font-medium">{plan.carbs}g</span>
-                      </div>
-                      <div className="text-sm">
-                        <span className="text-zinc-500">F:</span>{' '}
-                        <span className="text-red-400 font-medium">{plan.fats}g</span>
-                      </div>
-                    </div>
-                    {plan.is_template && (
-                      <span className="inline-block mt-2 px-2 py-1 bg-purple-500/10 text-purple-400 text-xs font-medium rounded-lg">
-                        Template
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Link
-                    href={`/nutrition/${plan.id}`}
-                    className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
-                  >
-                    <Edit className="w-5 h-5" />
-                  </Link>
-                  <button
-                    onClick={() => deletePlan(plan.id)}
-                    className="p-2 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+                )}
+                <div>
+                  <p className="font-medium text-white">{client.full_name || 'Unnamed'}</p>
+                  <p className="text-sm text-zinc-500">{client.email}</p>
                 </div>
               </div>
-            </div>
+
+              <div className="flex items-center gap-4">
+                {client.nutrition ? (
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-white">
+                        {client.nutrition.calories} kcal
+                      </p>
+                      <p className="text-xs text-zinc-500">
+                        P: {client.nutrition.protein}g • C: {client.nutrition.carbs}g • F: {client.nutrition.fats}g
+                      </p>
+                    </div>
+                    <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center">
+                      <Check className="w-4 h-4 text-green-400" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-orange-400">No plan assigned</span>
+                    <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                      <X className="w-4 h-4 text-orange-400" />
+                    </div>
+                  </div>
+                )}
+                <ChevronRight className="w-5 h-5 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+              </div>
+            </Link>
           ))}
         </div>
       )}
     </div>
-    </FeatureGate>
   )
 }

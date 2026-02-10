@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { 
@@ -147,6 +147,8 @@ const COMMON_LIFTS = [
 export default function UserProfilePage() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
+  const initialTab = (searchParams.get('tab') as TabType) || 'overview'
   const rawId = params.id as string
   const userId = decodeURIComponent(rawId)
   const supabase = createClient()
@@ -203,8 +205,8 @@ export default function UserProfilePage() {
     created_by_type: 'client'
   } | null>(null)
   
-  // Tab navigation
-  const [activeTab, setActiveTab] = useState<TabType>('overview')
+  // Tab navigation - use URL param if provided
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab)
   const [availableNutritionPlans, setAvailableNutritionPlans] = useState<{
     id: string
     name: string

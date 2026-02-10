@@ -46,6 +46,7 @@ const trainerNavItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Clients', href: '/users', icon: Users },
   { name: 'Programs', href: '/programs', icon: Dumbbell },
+  { name: 'Nutrition', href: '/nutrition', icon: Apple },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
@@ -54,6 +55,7 @@ const soloTrainerNavItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Clients', href: '/users', icon: Users },
   { name: 'Programs', href: '/programs', icon: Dumbbell },
+  { name: 'Nutrition', href: '/nutrition', icon: Apple },
   { name: 'Billing', href: '/billing', icon: CreditCard },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
