@@ -18,6 +18,39 @@ export default function LogoUpload({ organizationId, currentLogoUrl }: LogoUploa
   const fileInputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
 
+  // Crop image to square
+  const cropToSquare = (file: File): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = new window.Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const size = Math.min(img.width, img.height)
+        canvas.width = 200 // Output size
+        canvas.height = 200
+        
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          reject(new Error('Could not get canvas context'))
+          return
+        }
+
+        // Calculate crop position (center crop)
+        const offsetX = (img.width - size) / 2
+        const offsetY = (img.height - size) / 2
+
+        // Draw cropped and resized image
+        ctx.drawImage(img, offsetX, offsetY, size, size, 0, 0, 200, 200)
+
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob)
+          else reject(new Error('Could not create blob'))
+        }, 'image/png', 0.9)
+      }
+      img.onerror = () => reject(new Error('Could not load image'))
+      img.src = URL.createObjectURL(file)
+    })
+  }
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -38,15 +71,17 @@ export default function LogoUpload({ organizationId, currentLogoUrl }: LogoUploa
     setError(null)
 
     try {
+      // Crop to square
+      const croppedBlob = await cropToSquare(file)
+      
       // Generate unique filename
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${organizationId}-logo-${Date.now()}.${fileExt}`
+      const fileName = `${organizationId}-logo-${Date.now()}.png`
       const filePath = `logos/${fileName}`
 
       // Upload to storage
       const { error: uploadError } = await supabase.storage
         .from('organization-assets')
-        .upload(filePath, file, { upsert: true })
+        .upload(filePath, croppedBlob, { upsert: true, contentType: 'image/png' })
 
       if (uploadError) throw uploadError
 
