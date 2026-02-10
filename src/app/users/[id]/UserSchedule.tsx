@@ -13,9 +13,9 @@ interface WorkoutSchedule {
 }
 
 interface WorkoutLogDetails {
-  id: string
+  id: string | null
   workout_name: string
-  completed_at: string
+  completed_at: string | null
   notes: string | null
   rating: number | null
   trainer_name: string | null
@@ -25,6 +25,9 @@ interface WorkoutLogDetails {
     weight_kg: number | null
     reps_completed: number | null
   }[]
+  scheduled?: boolean
+  workoutId?: string
+  programName?: string
 }
 
 interface UserScheduleProps {
@@ -147,7 +150,25 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
           }))
         })
       } else {
-        setWorkoutDetails(null)
+        // No completion yet - show scheduled workout info
+        const dayOfWeek = date.getDay()
+        const scheduledWorkout = scheduleByDay[dayOfWeek]
+        if (scheduledWorkout) {
+          setWorkoutDetails({
+            id: null,
+            workout_name: scheduledWorkout.workoutName,
+            completed_at: null,
+            notes: null,
+            rating: null,
+            trainer_name: null,
+            sets: [],
+            scheduled: true,
+            workoutId: scheduledWorkout.workoutId,
+            programName: scheduledWorkout.programName
+          })
+        } else {
+          setWorkoutDetails(null)
+        }
       }
     } catch (err) {
       console.error('Failed to fetch workout details:', err)
@@ -333,9 +354,10 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
             return (
               <div 
                 key={idx}
+                onClick={() => workout && fetchWorkoutDetails(date)}
                 className={`rounded-xl border p-3 text-center transition-all ${
                   workout
-                    ? getStatusColor(status)
+                    ? `${getStatusColor(status)} cursor-pointer hover:ring-2 hover:ring-white/30`
                     : 'bg-zinc-900 border-zinc-800'
                 }`}
               >
@@ -401,16 +423,15 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
               const status = getDateStatus(date)
               const hasWorkout = scheduleByDay[date.getDay()]
               
-              const isCompleted = status === 'completed'
               return (
                 <div
                   key={date.toISOString()}
-                  onClick={() => isCompleted && fetchWorkoutDetails(date)}
+                  onClick={() => hasWorkout && fetchWorkoutDetails(date)}
                   className={`aspect-square rounded-lg flex flex-col items-center justify-center text-xs transition-all ${
                     hasWorkout
-                      ? getStatusColor(status)
+                      ? `${getStatusColor(status)} cursor-pointer hover:ring-2 hover:ring-white/30`
                       : 'text-zinc-600'
-                  } ${hasWorkout ? 'border' : ''} ${isToday ? 'font-bold' : ''} ${isCompleted ? 'cursor-pointer hover:ring-2 hover:ring-white/30' : ''}`}
+                  } ${hasWorkout ? 'border' : ''} ${isToday ? 'font-bold' : ''}`}
                 >
                   <span className={isToday && !hasWorkout ? 'text-white' : ''}>{date.getDate()}</span>
                   {/* Today indicator - white dot */}
@@ -441,7 +462,7 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
               <span className="text-zinc-400 text-xs">Today</span>
             </div>
           </div>
-          <p className="text-center text-zinc-500 text-xs mt-2">Click completed workouts to view details</p>
+          <p className="text-center text-zinc-500 text-xs mt-2">Click any workout day to view details</p>
         </div>
       </div>
 
@@ -520,8 +541,25 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
                     ))
                   })()}
 
-                  {workoutDetails.sets.length === 0 && (
+                  {workoutDetails.sets.length === 0 && !workoutDetails.scheduled && (
                     <p className="text-zinc-500 text-center py-4">No set data recorded</p>
+                  )}
+
+                  {/* Show Coach Session button for scheduled/upcoming workouts */}
+                  {workoutDetails.scheduled && workoutDetails.workoutId && (
+                    <div className="text-center py-4">
+                      <p className="text-zinc-400 mb-3">
+                        {workoutDetails.programName && <span className="text-zinc-500">{workoutDetails.programName}</span>}
+                      </p>
+                      <p className="text-zinc-500 text-sm mb-4">This workout hasn't been completed yet</p>
+                      <Link
+                        href={`/users/${userId}/coach/${workoutDetails.workoutId}`}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-xl transition-colors"
+                      >
+                        <Play className="w-4 h-4" />
+                        Start Coaching Session
+                      </Link>
+                    </div>
                   )}
                 </div>
               ) : (
