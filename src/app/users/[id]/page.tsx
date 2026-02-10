@@ -49,6 +49,9 @@ interface User {
   profile_picture_url: string | null
   created_at: string
   updated_at: string
+  goals: string | null
+  presenting_condition: string | null
+  medical_history: string | null
 }
 
 interface Program {
@@ -162,6 +165,13 @@ export default function UserProfilePage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [clientPrograms, setClientPrograms] = useState<ClientProgram[]>([])
+  
+  // Client info fields
+  const [editingClientInfo, setEditingClientInfo] = useState(false)
+  const [savingClientInfo, setSavingClientInfo] = useState(false)
+  const [clientGoals, setClientGoals] = useState('')
+  const [clientPresentingCondition, setClientPresentingCondition] = useState('')
+  const [clientMedicalHistory, setClientMedicalHistory] = useState('')
 
   // Assign Program Modal State
   const [showAssignModal, setShowAssignModal] = useState(false)
@@ -273,6 +283,9 @@ export default function UserProfilePage() {
       setUser(data.user)
       setFullName(data.user.full_name || '')
       setEmail(data.user.email || '')
+      setClientGoals(data.user.goals || '')
+      setClientPresentingCondition(data.user.presenting_condition || '')
+      setClientMedicalHistory(data.user.medical_history || '')
       setPermissions({
         programs: data.user.user_permissions?.[0]?.can_access_strength || data.user.can_access_strength || false,
         nutrition: data.user.can_access_nutrition || false,
@@ -927,6 +940,32 @@ export default function UserProfilePage() {
       setError('Failed to update user')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const saveClientInfo = async () => {
+    if (!user) return
+    setSavingClientInfo(true)
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          goals: clientGoals || null,
+          presenting_condition: clientPresentingCondition || null,
+          medical_history: clientMedicalHistory || null
+        })
+        .eq('id', user.id)
+
+      if (error) throw error
+
+      setEditingClientInfo(false)
+      fetchUser()
+    } catch (err) {
+      console.error('Failed to save client info:', err)
+      setError('Failed to save client info')
+    } finally {
+      setSavingClientInfo(false)
     }
   }
 
@@ -1803,6 +1842,103 @@ export default function UserProfilePage() {
               </button>
             )
           })}
+        </div>
+      </div>
+
+      {/* Client Info - Goals, Presenting Condition, Medical History */}
+      <div className="card p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <UserIcon className="w-5 h-5 text-blue-400" />
+            <h2 className="text-lg font-semibold text-white">Client Information</h2>
+          </div>
+          {editingClientInfo ? (
+            <div className="flex gap-2">
+              <button
+                onClick={saveClientInfo}
+                disabled={savingClientInfo}
+                className="flex items-center gap-2 px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-black font-medium rounded-xl transition-colors disabled:opacity-50"
+              >
+                {savingClientInfo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Save
+              </button>
+              <button
+                onClick={() => {
+                  setEditingClientInfo(false)
+                  setClientGoals(user?.goals || '')
+                  setClientPresentingCondition(user?.presenting_condition || '')
+                  setClientMedicalHistory(user?.medical_history || '')
+                }}
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setEditingClientInfo(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-colors"
+            >
+              <Edit2 className="w-4 h-4" />
+              Edit
+            </button>
+          )}
+        </div>
+
+        <div className="space-y-4">
+          {/* Goals */}
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-2">Goals</label>
+            {editingClientInfo ? (
+              <textarea
+                value={clientGoals}
+                onChange={(e) => setClientGoals(e.target.value)}
+                placeholder="What are the client's fitness goals?"
+                rows={3}
+                className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 resize-none"
+              />
+            ) : (
+              <p className="text-white bg-zinc-800/50 rounded-xl p-4 min-h-[60px]">
+                {user?.goals || <span className="text-zinc-500">No goals set</span>}
+              </p>
+            )}
+          </div>
+
+          {/* Presenting Condition */}
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-2">Presenting Condition</label>
+            {editingClientInfo ? (
+              <textarea
+                value={clientPresentingCondition}
+                onChange={(e) => setClientPresentingCondition(e.target.value)}
+                placeholder="Current physical condition, injuries, limitations..."
+                rows={3}
+                className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 resize-none"
+              />
+            ) : (
+              <p className="text-white bg-zinc-800/50 rounded-xl p-4 min-h-[60px]">
+                {user?.presenting_condition || <span className="text-zinc-500">No presenting condition recorded</span>}
+              </p>
+            )}
+          </div>
+
+          {/* Medical History */}
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-2">Medical History</label>
+            {editingClientInfo ? (
+              <textarea
+                value={clientMedicalHistory}
+                onChange={(e) => setClientMedicalHistory(e.target.value)}
+                placeholder="Relevant medical history, surgeries, conditions..."
+                rows={3}
+                className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 resize-none"
+              />
+            ) : (
+              <p className="text-white bg-zinc-800/50 rounded-xl p-4 min-h-[60px]">
+                {user?.medical_history || <span className="text-zinc-500">No medical history recorded</span>}
+              </p>
+            )}
+          </div>
         </div>
       </div>
         </>
