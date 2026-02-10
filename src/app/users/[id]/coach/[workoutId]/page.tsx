@@ -77,9 +77,21 @@ export default function CoachSessionPage() {
   const [clientProgramId, setClientProgramId] = useState<string | null>(null)
   const [sessionNotes, setSessionNotes] = useState('')
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
+  const [trainerId, setTrainerId] = useState<string | null>(null)
 
   // Local storage key for this workout session
   const storageKey = `coach-session-${clientId}-${workoutId}`
+
+  // Get current trainer's ID
+  useEffect(() => {
+    async function getTrainerId() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setTrainerId(user.id)
+      }
+    }
+    getTrainerId()
+  }, [supabase])
 
   // Restore from localStorage on mount
   useEffect(() => {
@@ -291,7 +303,23 @@ export default function CoachSessionPage() {
     try {
       const today = new Date().toISOString().split('T')[0]
 
-      // Create workout completion record
+      // Create workout log first (with trainer_id and scheduled_date)
+      const { data: workoutLog, error: logError } = await supabase
+        .from('workout_logs')
+        .insert({
+          client_id: clientId,
+          workout_id: workoutId,
+          completed_at: new Date().toISOString(),
+          notes: sessionNotes.trim() || null,
+          trainer_id: trainerId,
+          scheduled_date: today
+        })
+        .select()
+        .single()
+
+      if (logError) throw logError
+
+      // Create workout completion record (linked to workout_log)
       const { data: completion, error: completionError } = await supabase
         .from('workout_completions')
         .insert({
@@ -299,26 +327,13 @@ export default function CoachSessionPage() {
           workout_id: workoutId,
           client_program_id: clientProgramId,
           scheduled_date: today,
-          completed_at: new Date().toISOString()
+          completed_at: new Date().toISOString(),
+          workout_log_id: workoutLog.id
         })
         .select()
         .single()
 
       if (completionError) throw completionError
-
-      // Create workout log
-      const { data: workoutLog, error: logError } = await supabase
-        .from('workout_logs')
-        .insert({
-          client_id: clientId,
-          workout_id: workoutId,
-          completed_at: new Date().toISOString(),
-          notes: sessionNotes.trim() || null
-        })
-        .select()
-        .single()
-
-      if (logError) throw logError
 
       // Save all set logs
       const setLogsToInsert: any[] = []
