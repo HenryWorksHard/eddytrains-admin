@@ -13,7 +13,11 @@ import {
   Trophy,
   Play,
   Square,
-  FileText
+  FileText,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  X
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -79,6 +83,15 @@ export default function CoachSessionPage() {
   const [sessionNotes, setSessionNotes] = useState('')
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [trainerId, setTrainerId] = useState<string | null>(null)
+
+  // Calendar modal state
+  const [showCalendar, setShowCalendar] = useState(false)
+  const [calendarMonth, setCalendarMonth] = useState(new Date())
+  const [scheduleByDay, setScheduleByDay] = useState<Record<number, { workoutId: string; workoutName: string; programName: string }>>({})
+  const [completionsByDate, setCompletionsByDate] = useState<Record<string, string>>({})
+  const [selectedHistoryDate, setSelectedHistoryDate] = useState<Date | null>(null)
+  const [historyDetails, setHistoryDetails] = useState<any>(null)
+  const [loadingHistory, setLoadingHistory] = useState(false)
 
   // Local storage key for this workout session
   const storageKey = `coach-session-${clientId}-${workoutId}`
@@ -272,6 +285,102 @@ export default function CoachSessionPage() {
     setLoading(false)
   }
 
+  // Calendar helper functions
+  const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+  const toMondayFirstIndex = (jsDay: number) => (jsDay + 6) % 7
+  
+  const formatDateLocal = (date: Date): string => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  const fetchScheduleData = async () => {
+    try {
+      const response = await fetch(`/api/users/${clientId}/schedule`)
+      const { scheduleByDay: schedule, completionsByDate: completions } = await response.json()
+      setScheduleByDay(schedule || {})
+      setCompletionsByDate(completions || {})
+    } catch (err) {
+      console.error('Failed to fetch schedule:', err)
+    }
+  }
+
+  const fetchHistoryDetails = async (date: Date) => {
+    setLoadingHistory(true)
+    setSelectedHistoryDate(date)
+    
+    const dateStr = formatDateLocal(date)
+    
+    try {
+      const response = await fetch(`/api/coaching/details?clientId=${clientId}&date=${dateStr}`)
+      const data = await response.json()
+      
+      if (data.workoutLog) {
+        setHistoryDetails(data.workoutLog)
+      } else {
+        setHistoryDetails(null)
+      }
+    } catch (err) {
+      console.error('Failed to fetch history:', err)
+      setHistoryDetails(null)
+    } finally {
+      setLoadingHistory(false)
+    }
+  }
+
+  const openCalendar = () => {
+    setShowCalendar(true)
+    fetchScheduleData()
+  }
+
+  const getCalendarDays = () => {
+    const year = calendarMonth.getFullYear()
+    const month = calendarMonth.getMonth()
+    const firstDay = new Date(year, month, 1)
+    const lastDay = new Date(year, month + 1, 0)
+    const days: (Date | null)[] = []
+    
+    const firstDayMondayIndex = toMondayFirstIndex(firstDay.getDay())
+    for (let i = 0; i < firstDayMondayIndex; i++) {
+      days.push(null)
+    }
+    
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+      days.push(new Date(year, month, d))
+    }
+    
+    return days
+  }
+
+  const getDateStatus = (date: Date): 'completed' | 'skipped' | 'upcoming' | 'rest' => {
+    const dateStr = formatDateLocal(date)
+    const dayOfWeek = date.getDay()
+    const hasWorkout = scheduleByDay[dayOfWeek]
+    const today = new Date()
+    
+    if (!hasWorkout) return 'rest'
+    
+    const todayStart = new Date(today)
+    todayStart.setHours(0, 0, 0, 0)
+    const dateStart = new Date(date)
+    dateStart.setHours(0, 0, 0, 0)
+    
+    if (completionsByDate[dateStr]) return 'completed'
+    if (dateStart < todayStart) return 'skipped'
+    return 'upcoming'
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'bg-green-500/20 border-green-500/50 text-green-400'
+      case 'skipped': return 'bg-red-500/20 border-red-500/50 text-red-400'
+      case 'upcoming': return 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400'
+      default: return 'bg-zinc-800/50 border-zinc-700 text-zinc-500'
+    }
+  }
+
   const calculateSuggestedWeight = (exerciseName: string, intensityType: string, intensityValue: string): number | null => {
     const oneRM = client1RMs.get(exerciseName)
     if (!oneRM) return null
@@ -433,6 +542,13 @@ export default function CoachSessionPage() {
         >
           <ArrowLeft className="w-5 h-5 text-zinc-400" />
         </Link>
+        <button
+          onClick={openCalendar}
+          className="p-2 hover:bg-zinc-800 rounded-xl transition-colors"
+          title="View workout history"
+        >
+          <Calendar className="w-5 h-5 text-yellow-400" />
+        </button>
         <div className="flex-1">
           <h1 className="text-xl font-bold text-white">{workout?.name}</h1>
           <p className="text-zinc-500 text-sm">
@@ -627,6 +743,165 @@ export default function CoachSessionPage() {
               </>
             )}
           </button>
+        </div>
+      )}
+
+      {/* Calendar History Modal */}
+      {showCalendar && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center" onClick={() => { setShowCalendar(false); setSelectedHistoryDate(null); setHistoryDetails(null) }}>
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 w-full max-w-lg max-h-[85vh] overflow-hidden mx-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Workout History</h3>
+                <p className="text-sm text-zinc-400">{clientName}</p>
+              </div>
+              <button onClick={() => { setShowCalendar(false); setSelectedHistoryDate(null); setHistoryDetails(null) }} className="p-2 hover:bg-zinc-800 rounded-lg transition-colors">
+                <X className="w-5 h-5 text-zinc-400" />
+              </button>
+            </div>
+
+            <div className="p-4 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 80px)' }}>
+              {selectedHistoryDate ? (
+                // Workout Details View
+                <div>
+                  <button
+                    onClick={() => { setSelectedHistoryDate(null); setHistoryDetails(null) }}
+                    className="flex items-center gap-2 text-yellow-400 text-sm mb-4 hover:text-yellow-300"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    Back to calendar
+                  </button>
+                  
+                  <h4 className="font-semibold text-white mb-2">
+                    {selectedHistoryDate.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
+                  </h4>
+                  
+                  {loadingHistory ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin text-yellow-400" />
+                    </div>
+                  ) : historyDetails ? (
+                    <div className="space-y-4">
+                      <p className="text-zinc-400 text-sm">{historyDetails.workout_name}</p>
+                      
+                      {historyDetails.notes && (
+                        <div className="p-3 bg-zinc-800/50 rounded-xl">
+                          <p className="text-xs text-zinc-500 mb-1">Session Notes</p>
+                          <p className="text-sm text-zinc-300">{historyDetails.notes}</p>
+                        </div>
+                      )}
+                      
+                      {(() => {
+                        const groups = historyDetails.sets.reduce((acc: any, s: any) => {
+                          if (!acc[s.exercise_name]) acc[s.exercise_name] = []
+                          acc[s.exercise_name].push(s)
+                          return acc
+                        }, {} as Record<string, any[]>)
+                        
+                        return Object.entries(groups).map(([name, sets]: [string, any[]]) => (
+                          <div key={name} className="bg-zinc-800/30 rounded-xl p-3">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Dumbbell className="w-4 h-4 text-yellow-400" />
+                              <h4 className="font-medium text-white">{name}</h4>
+                            </div>
+                            <div className="space-y-1">
+                              {sets.map((s: any) => (
+                                <div key={s.set_number} className="flex justify-between text-sm">
+                                  <span className="text-zinc-500">Set {s.set_number}</span>
+                                  <span className="text-white font-medium">
+                                    {s.weight_kg !== null ? `${s.weight_kg}kg` : '—'} × {s.reps_completed ?? '—'}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))
+                      })()}
+                      
+                      {historyDetails.sets.length === 0 && (
+                        <p className="text-zinc-500 text-center py-4">No set data recorded</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-zinc-500 text-center py-8">No workout data for this date</p>
+                  )}
+                </div>
+              ) : (
+                // Calendar View
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-medium text-zinc-400">
+                      {calendarMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
+                    </h4>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1))}
+                        className="p-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
+                      >
+                        <ChevronLeft className="w-4 h-4 text-zinc-400" />
+                      </button>
+                      <button
+                        onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1))}
+                        className="p-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
+                      >
+                        <ChevronRight className="w-4 h-4 text-zinc-400" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-3">
+                    <div className="grid grid-cols-7 gap-1 mb-2">
+                      {daysOfWeek.map(day => (
+                        <div key={day} className="text-center text-zinc-500 text-xs font-medium py-1">
+                          {day}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="grid grid-cols-7 gap-1">
+                      {getCalendarDays().map((date, idx) => {
+                        if (!date) {
+                          return <div key={`empty-${idx}`} className="aspect-square" />
+                        }
+                        
+                        const today = new Date()
+                        const isToday = date.toDateString() === today.toDateString()
+                        const status = getDateStatus(date)
+                        const hasWorkout = scheduleByDay[date.getDay()]
+                        const isCompleted = status === 'completed'
+                        
+                        return (
+                          <div
+                            key={date.toISOString()}
+                            onClick={() => isCompleted && fetchHistoryDetails(date)}
+                            className={`aspect-square rounded-lg flex flex-col items-center justify-center text-xs transition-all ${
+                              hasWorkout
+                                ? `${getStatusColor(status)} ${isCompleted ? 'cursor-pointer hover:ring-2 hover:ring-white/30' : ''}`
+                                : 'text-zinc-600'
+                            } ${hasWorkout ? 'border' : ''} ${isToday ? 'font-bold ring-2 ring-yellow-400' : ''}`}
+                          >
+                            <span className={isToday ? 'text-yellow-400' : ''}>{date.getDate()}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    
+                    <div className="flex items-center justify-center gap-4 mt-3 pt-3 border-t border-zinc-800">
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full bg-green-500" />
+                        <span className="text-zinc-400 text-xs">Complete</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full bg-red-500" />
+                        <span className="text-zinc-400 text-xs">Missed</span>
+                      </div>
+                    </div>
+                    <p className="text-center text-zinc-500 text-xs mt-2">Click completed workouts to view details</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
