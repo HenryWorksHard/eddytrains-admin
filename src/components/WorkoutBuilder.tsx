@@ -1639,23 +1639,25 @@ export default function WorkoutBuilder({ workouts, onChange, programType }: Work
 
           <div className="flex-1" />
 
-          {/* Expand for individual editing */}
-          <button type="button"
-            onClick={() => toggleExerciseExpanded(exercise.id)}
-            className="flex items-center gap-1 text-xs text-zinc-500 hover:text-yellow-400 transition-colors"
-          >
-            <Settings2 className="w-3.5 h-3.5" />
-            <span>{isExpanded ? 'Hide' : 'Edit'} sets</span>
-            {isExpanded ? (
-              <ChevronUp className="w-3.5 h-3.5" />
-            ) : (
-              <ChevronDown className="w-3.5 h-3.5" />
-            )}
-          </button>
+          {/* Expand for individual editing - hide for cardio duration/distance/calories/steps (no sets needed) */}
+          {!(showCardioFields && firstSet?.cardioType !== 'intervals') && (
+            <button type="button"
+              onClick={() => toggleExerciseExpanded(exercise.id)}
+              className="flex items-center gap-1 text-xs text-zinc-500 hover:text-yellow-400 transition-colors"
+            >
+              <Settings2 className="w-3.5 h-3.5" />
+              <span>{isExpanded ? 'Hide' : 'Edit'} sets</span>
+              {isExpanded ? (
+                <ChevronUp className="w-3.5 h-3.5" />
+              ) : (
+                <ChevronDown className="w-3.5 h-3.5" />
+              )}
+            </button>
+          )}
         </div>
 
-        {/* Individual Sets Table */}
-        {isExpanded && (
+        {/* Individual Sets Table - hide for cardio duration/distance/calories/steps */}
+        {isExpanded && !(showCardioFields && firstSet?.cardioType !== 'intervals') && (
           <div className={`mt-3 border-t border-zinc-800 ${isSuperset ? 'ml-10' : ''}`}>
             <table className="w-full">
               <thead>
