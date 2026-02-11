@@ -326,7 +326,7 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-8">
-      {/* Trial Expiry Warning - shows when ≤3 days remaining */}
+      {/* Trial Expiry Warning - shows when ≤3 days remaining OR expired */}
       {orgInfo?.status === 'trialing' && orgInfo.trialDaysRemaining <= 3 && (
         <TrialExpiryBanner daysRemaining={orgInfo.trialDaysRemaining} />
       )}
