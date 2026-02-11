@@ -136,6 +136,9 @@ function BillingContent() {
     ? Math.max(0, Math.ceil((new Date(organization.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : null;
 
+  const isCanceledRedirect = searchParams.get('canceled') === 'true';
+  const isExpiredRedirect = searchParams.get('expired') === 'true';
+
   useEffect(() => {
     // Check for successful checkout return
     const sessionId = searchParams.get('session_id');
@@ -374,6 +377,30 @@ function BillingContent() {
           }`}
         >
           {message.text}
+        </div>
+      )}
+
+      {/* Subscription Canceled/Expired Banner */}
+      {(isCanceledRedirect || isExpiredRedirect || organization?.subscription_status === 'canceled') && (
+        <div className="bg-gradient-to-r from-red-500/20 to-orange-500/20 border border-red-500/30 rounded-xl p-6 mb-8">
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-red-500/20 rounded-xl">
+              <AlertTriangle className="w-6 h-6 text-red-400" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-lg font-semibold text-white mb-1">
+                {isExpiredRedirect ? 'Trial Expired' : 'Subscription Canceled'}
+              </h2>
+              <p className="text-zinc-300 text-sm mb-3">
+                {isExpiredRedirect 
+                  ? 'Your free trial has ended. Subscribe to a plan to regain access to all features.'
+                  : 'Your subscription has been canceled. Resubscribe to regain access to all features.'}
+              </p>
+              <p className="text-zinc-400 text-sm">
+                Your data is safe and will be available when you resubscribe.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -674,6 +701,7 @@ function BillingContent() {
           const isCurrentTier = organization?.subscription_tier === tier.id;
           const isSelectedForTrial = isTrialing && isCurrentTier && !!organization?.stripe_subscription_id;
           const hasSubscription = !!organization?.stripe_subscription_id;
+          const isCanceled = organization?.subscription_status === 'canceled';
           const isRecommended = isTrialing && !hasSubscription && tier.id === getRecommendedTier();
 
           return (
@@ -727,10 +755,12 @@ function BillingContent() {
 
               <button
                 onClick={() => handleSubscribe(tier.id)}
-                disabled={(isSelectedForTrial || (isCurrentTier && !isTrialing)) || actionLoading}
+                disabled={(isSelectedForTrial || (isCurrentTier && !isTrialing && !isCanceled)) || actionLoading}
                 className={`w-full mt-6 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
                   isSelectedForTrial
                     ? 'bg-green-500/20 text-green-400 cursor-not-allowed border border-green-500/30'
+                    : isCanceled
+                    ? 'bg-yellow-500 hover:bg-yellow-400 text-zinc-900'
                     : isCurrentTier && !isTrialing
                     ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
                     : isRecommended
@@ -743,6 +773,8 @@ function BillingContent() {
                 )}
                 {isSelectedForTrial
                   ? '✓ Selected'
+                  : isCanceled
+                  ? 'Resubscribe'
                   : isCurrentTier && !isTrialing
                   ? 'Current Plan'
                   : hasSubscription

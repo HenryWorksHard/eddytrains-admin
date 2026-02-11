@@ -71,6 +71,14 @@ export async function middleware(request: NextRequest) {
         .eq('id', profile.organization_id)
         .single()
 
+      // Check for canceled subscription - block features
+      if (org?.subscription_status === 'canceled') {
+        const url = request.nextUrl.clone()
+        url.pathname = '/billing'
+        url.searchParams.set('canceled', 'true')
+        return NextResponse.redirect(url)
+      }
+
       if (org?.subscription_status === 'trialing' && org.trial_ends_at) {
         const trialEnd = new Date(org.trial_ends_at)
         const now = new Date()
