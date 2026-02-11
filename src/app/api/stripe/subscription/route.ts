@@ -201,6 +201,7 @@ export async function POST(req: Request) {
           .from('organizations')
           .update({ 
             subscription_status: 'canceling',
+            trial_ends_at: periodEnd, // Reusing this field to store subscription end date
             updated_at: new Date().toISOString(),
           })
           .eq('id', organizationId);

@@ -9,6 +9,7 @@ interface Organization {
   stripe_subscription_id: string | null;
   subscription_status: string;
   subscription_tier: string;
+  trial_ends_at: string | null;
 }
 
 async function stripeAction(action: string, organizationId: string) {
@@ -42,7 +43,7 @@ export default function DangerZone() {
       if (profile?.organization_id) {
         const { data: org } = await supabase
           .from('organizations')
-          .select('id, stripe_subscription_id, subscription_status, subscription_tier')
+          .select('id, stripe_subscription_id, subscription_status, subscription_tier, trial_ends_at')
           .eq('id', profile.organization_id)
           .single();
         
@@ -57,7 +58,7 @@ export default function DangerZone() {
     if (!organization) return;
     const { data: org } = await supabase
       .from('organizations')
-      .select('id, stripe_subscription_id, subscription_status, subscription_tier')
+      .select('id, stripe_subscription_id, subscription_status, subscription_tier, trial_ends_at')
       .eq('id', organization.id)
       .single();
     if (org) setOrganization(org);
@@ -141,6 +142,15 @@ export default function DangerZone() {
     return null; // Already cancelled
   }
 
+  // Format the end date
+  const endDate = organization.trial_ends_at
+    ? new Date(organization.trial_ends_at).toLocaleDateString('en-AU', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : null;
+
   // Show "Cancellation Scheduled" state
   if (isPendingCancel) {
     return (
@@ -159,7 +169,9 @@ export default function DangerZone() {
         )}
 
         <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4">
-          <p className="text-yellow-400 font-medium mb-2">Your subscription will cancel at the end of your billing period</p>
+          <p className="text-yellow-400 font-medium mb-2">
+            Your subscription will cancel on {endDate || 'the end of your billing period'}
+          </p>
           <p className="text-sm text-zinc-400 mb-4">
             You&apos;ll keep full access to all features until then. Changed your mind?
           </p>
