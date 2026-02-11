@@ -188,11 +188,28 @@ export async function POST(req: Request) {
         });
       } else {
         // Active subscription: cancel at period end
-        await stripe.subscriptions.update(org.stripe_subscription_id, {
+        const updatedSub = await stripe.subscriptions.update(org.stripe_subscription_id, {
           cancel_at_period_end: true,
         });
 
-        return NextResponse.json({ success: true, message: 'Subscription will cancel at period end' });
+        // Update DB status to 'canceling' and store period end date
+        const periodEnd = updatedSub.current_period_end 
+          ? new Date(updatedSub.current_period_end * 1000).toISOString()
+          : null;
+
+        await supabase
+          .from('organizations')
+          .update({ 
+            subscription_status: 'canceling',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', organizationId);
+
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Subscription will cancel at period end',
+          periodEnd,
+        });
       }
     }
 
@@ -205,6 +222,15 @@ export async function POST(req: Request) {
       await stripe.subscriptions.update(org.stripe_subscription_id, {
         cancel_at_period_end: false,
       });
+
+      // Update DB status back to 'active'
+      await supabase
+        .from('organizations')
+        .update({ 
+          subscription_status: 'active',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', organizationId);
 
       return NextResponse.json({ success: true, message: 'Subscription reactivated' });
     }

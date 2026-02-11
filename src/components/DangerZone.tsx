@@ -11,11 +11,6 @@ interface Organization {
   subscription_tier: string;
 }
 
-interface SubscriptionDetails {
-  cancel_at_period_end: boolean;
-  current_period_end: string | null;
-}
-
 async function stripeAction(action: string, organizationId: string) {
   const response = await fetch('/api/stripe/subscription', {
     method: 'POST',
@@ -25,23 +20,8 @@ async function stripeAction(action: string, organizationId: string) {
   return response.json();
 }
 
-async function fetchSubscriptionDetails(organizationId: string): Promise<SubscriptionDetails | null> {
-  try {
-    const response = await fetch(`/api/stripe/subscription?organizationId=${organizationId}`);
-    if (!response.ok) return null;
-    const data = await response.json();
-    return {
-      cancel_at_period_end: data.subscription?.cancelAtPeriodEnd || false,
-      current_period_end: data.subscription?.currentPeriodEnd || null,
-    };
-  } catch {
-    return null;
-  }
-}
-
 export default function DangerZone() {
   const [organization, setOrganization] = useState<Organization | null>(null);
-  const [subscriptionDetails, setSubscriptionDetails] = useState<SubscriptionDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -66,20 +46,22 @@ export default function DangerZone() {
           .eq('id', profile.organization_id)
           .single();
         
-        if (org) {
-          setOrganization(org);
-          
-          // Fetch Stripe subscription details
-          if (org.stripe_subscription_id) {
-            const details = await fetchSubscriptionDetails(org.id);
-            setSubscriptionDetails(details);
-          }
-        }
+        if (org) setOrganization(org);
       }
       setLoading(false);
     }
     loadOrg();
   }, [supabase]);
+
+  const refreshOrg = async () => {
+    if (!organization) return;
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('id, stripe_subscription_id, subscription_status, subscription_tier')
+      .eq('id', organization.id)
+      .single();
+    if (org) setOrganization(org);
+  };
 
   const handleCancel = async () => {
     if (!organization) return;
@@ -104,9 +86,8 @@ export default function DangerZone() {
           return;
         }
         
-        // Refresh subscription details to show cancellation scheduled
-        const details = await fetchSubscriptionDetails(organization.id);
-        setSubscriptionDetails(details);
+        // Refresh org data to get new status
+        await refreshOrg();
       }
     } catch {
       setMessage({ type: 'error', text: 'Failed to cancel subscription' });
@@ -127,9 +108,8 @@ export default function DangerZone() {
       } else {
         setMessage({ type: 'success', text: 'Subscription reactivated!' });
         
-        // Refresh subscription details
-        const details = await fetchSubscriptionDetails(organization.id);
-        setSubscriptionDetails(details);
+        // Refresh org data
+        await refreshOrg();
       }
     } catch {
       setMessage({ type: 'error', text: 'Failed to reactivate subscription' });
@@ -155,20 +135,11 @@ export default function DangerZone() {
 
   const isTrialing = organization.subscription_status === 'trialing';
   const isCancelled = organization.subscription_status === 'canceled';
-  const isPendingCancel = subscriptionDetails?.cancel_at_period_end === true;
+  const isPendingCancel = organization.subscription_status === 'canceling';
 
   if (isCancelled) {
     return null; // Already cancelled
   }
-
-  // Format the cancellation date
-  const cancelDate = subscriptionDetails?.current_period_end 
-    ? new Date(subscriptionDetails.current_period_end).toLocaleDateString('en-AU', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      })
-    : null;
 
   // Show "Cancellation Scheduled" state
   if (isPendingCancel) {
@@ -188,7 +159,7 @@ export default function DangerZone() {
         )}
 
         <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4">
-          <p className="text-yellow-400 font-medium mb-2">Your subscription will cancel on {cancelDate}</p>
+          <p className="text-yellow-400 font-medium mb-2">Your subscription will cancel at the end of your billing period</p>
           <p className="text-sm text-zinc-400 mb-4">
             You&apos;ll keep full access to all features until then. Changed your mind?
           </p>
