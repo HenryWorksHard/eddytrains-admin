@@ -190,7 +190,7 @@ export async function POST(req: Request) {
         // Active subscription: cancel at period end
         const updatedSub = await stripe.subscriptions.update(org.stripe_subscription_id, {
           cancel_at_period_end: true,
-        });
+        }) as any;
 
         // Update DB status to 'canceling' and store period end date
         const periodEnd = updatedSub.current_period_end 
