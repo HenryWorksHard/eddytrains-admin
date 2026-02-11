@@ -23,6 +23,8 @@ export async function GET(
     const { searchParams } = new URL(request.url)
     const exerciseName = searchParams.get('exercise')
     const period = searchParams.get('period') || 'month'
+    // Get timezone from query param, default to Australia/Adelaide
+    const timezone = searchParams.get('tz') || 'Australia/Adelaide'
     
     if (!exerciseName) {
       return NextResponse.json({ error: 'Exercise name required' }, { status: 400 })
@@ -30,47 +32,61 @@ export async function GET(
 
     const adminClient = getAdminClient()
     
-    // Calculate date range based on period
-    const now = new Date()
-    let startDate: Date
+    // Calculate date range based on period using user's timezone
+    const nowInTz = new Date(new Date().toLocaleString('en-US', { timeZone: timezone }))
+    
+    // Helper to format date as YYYY-MM-DD
+    const formatDate = (d: Date) => {
+      const year = d.getFullYear()
+      const month = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
+    
+    let startDateStr: string
     
     switch (period) {
       case 'week':
-        startDate = new Date(now)
-        startDate.setDate(now.getDate() - 7)
+        const weekStart = new Date(nowInTz)
+        weekStart.setDate(nowInTz.getDate() - 7)
+        startDateStr = formatDate(weekStart)
         break
       case 'month':
-        startDate = new Date(now)
-        startDate.setMonth(now.getMonth() - 1)
+        const monthStart = new Date(nowInTz)
+        monthStart.setMonth(nowInTz.getMonth() - 1)
+        startDateStr = formatDate(monthStart)
         break
       case '3months':
-        startDate = new Date(now)
-        startDate.setMonth(now.getMonth() - 3)
+        const threeMonthStart = new Date(nowInTz)
+        threeMonthStart.setMonth(nowInTz.getMonth() - 3)
+        startDateStr = formatDate(threeMonthStart)
         break
       case '6months':
-        startDate = new Date(now)
-        startDate.setMonth(now.getMonth() - 6)
+        const sixMonthStart = new Date(nowInTz)
+        sixMonthStart.setMonth(nowInTz.getMonth() - 6)
+        startDateStr = formatDate(sixMonthStart)
         break
       case 'year':
-        startDate = new Date(now)
-        startDate.setFullYear(now.getFullYear() - 1)
+        const yearStart = new Date(nowInTz)
+        yearStart.setFullYear(nowInTz.getFullYear() - 1)
+        startDateStr = formatDate(yearStart)
         break
       case 'all':
-        startDate = new Date('2020-01-01')
+        startDateStr = '2020-01-01'
         break
       default:
-        startDate = new Date(now)
-        startDate.setMonth(now.getMonth() - 1)
+        const defaultStart = new Date(nowInTz)
+        defaultStart.setMonth(nowInTz.getMonth() - 1)
+        startDateStr = formatDate(defaultStart)
     }
-    startDate.setHours(0, 0, 0, 0)
 
-    // Get workout_logs for this client in the date range
+    // Use scheduled_date (local date) instead of completed_at (UTC timestamp)
     const { data: workoutLogs } = await adminClient
       .from('workout_logs')
       .select('id, completed_at, scheduled_date')
       .eq('client_id', clientId)
-      .gte('completed_at', startDate.toISOString())
-      .order('completed_at', { ascending: true })
+      .gte('scheduled_date', startDateStr)
+      .order('scheduled_date', { ascending: true })
 
     if (!workoutLogs || workoutLogs.length === 0) {
       return NextResponse.json({ progression: [] })

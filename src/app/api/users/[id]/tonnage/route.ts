@@ -22,41 +22,54 @@ export async function GET(
     const { id: clientId } = await params
     const { searchParams } = new URL(request.url)
     const period = searchParams.get('period') || 'week'
+    // Get timezone from query param, default to Australia/Adelaide
+    const timezone = searchParams.get('tz') || 'Australia/Adelaide'
     
     const adminClient = getAdminClient()
     
-    // Calculate date range based on period
-    const now = new Date()
-    let startDate: Date
+    // Calculate date range based on period using user's timezone
+    // Use Intl.DateTimeFormat to get the current date in user's timezone
+    const nowInTz = new Date(new Date().toLocaleString('en-US', { timeZone: timezone }))
+    
+    // Helper to format date as YYYY-MM-DD
+    const formatDate = (d: Date) => {
+      const year = d.getFullYear()
+      const month = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
+    
+    let startDateStr: string
     
     switch (period) {
       case 'day':
-        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        startDateStr = formatDate(nowInTz)
         break
       case 'week':
-        startDate = new Date(now)
-        const dayOfWeek = now.getDay()
+        const dayOfWeek = nowInTz.getDay()
         const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1 // Monday = 0 days back
-        startDate.setDate(now.getDate() - daysFromMonday)
-        startDate.setHours(0, 0, 0, 0)
+        const weekStart = new Date(nowInTz)
+        weekStart.setDate(nowInTz.getDate() - daysFromMonday)
+        startDateStr = formatDate(weekStart)
         break
       case 'month':
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+        startDateStr = `${nowInTz.getFullYear()}-${String(nowInTz.getMonth() + 1).padStart(2, '0')}-01`
         break
       case 'year':
-        startDate = new Date(now.getFullYear(), 0, 1)
+        startDateStr = `${nowInTz.getFullYear()}-01-01`
         break
       default:
-        startDate = new Date(now)
-        startDate.setDate(now.getDate() - 7)
+        const defaultStart = new Date(nowInTz)
+        defaultStart.setDate(nowInTz.getDate() - 7)
+        startDateStr = formatDate(defaultStart)
     }
 
-    // First get workout_logs for this client in the date range
+    // Use scheduled_date (local date) instead of completed_at (UTC timestamp)
     const { data: workoutLogs } = await adminClient
       .from('workout_logs')
       .select('id')
       .eq('client_id', clientId)
-      .gte('completed_at', startDate.toISOString())
+      .gte('scheduled_date', startDateStr)
 
     if (!workoutLogs || workoutLogs.length === 0) {
       return NextResponse.json({ tonnage: 0 })
