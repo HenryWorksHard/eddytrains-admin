@@ -66,13 +66,14 @@ export async function GET(
     if (workoutLogs && workoutLogs.length > 0) {
       const logIds = workoutLogs.map(wl => wl.id)
 
-      const { data: exerciseLogs } = await adminClient
-        .from('exercise_logs')
+      // Get set_logs for these workout_logs (not exercise_logs - that table doesn't exist)
+      const { data: setLogs } = await adminClient
+        .from('set_logs')
         .select('exercise_id')
         .in('workout_log_id', logIds)
 
-      if (exerciseLogs && exerciseLogs.length > 0) {
-        const exerciseIds = [...new Set(exerciseLogs.map(el => el.exercise_id))]
+      if (setLogs && setLogs.length > 0) {
+        const exerciseIds = [...new Set(setLogs.map(sl => sl.exercise_id))]
 
         const { data: exercises } = await adminClient
           .from('workout_exercises')
