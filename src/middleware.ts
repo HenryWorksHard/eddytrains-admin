@@ -32,7 +32,7 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   // Protected routes - redirect to login if not authenticated
-  const protectedPaths = ['/dashboard', '/users', '/programs', '/schedules', '/settings']
+  const protectedPaths = ['/dashboard', '/users', '/programs', '/schedules', '/settings', '/nutrition', '/organization']
   const isProtectedPath = protectedPaths.some(path => 
     request.nextUrl.pathname.startsWith(path)
   )
@@ -48,6 +48,42 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
+  }
+
+  // Check for expired trial - block access to features (but allow billing page)
+  const blockedWhenExpired = ['/users', '/programs', '/schedules', '/settings', '/nutrition', '/organization']
+  const isBlockedPath = blockedWhenExpired.some(path => 
+    request.nextUrl.pathname.startsWith(path)
+  )
+
+  if (user && isBlockedPath) {
+    // Get user's organization and check trial status
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.organization_id) {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('subscription_status, trial_ends_at')
+        .eq('id', profile.organization_id)
+        .single()
+
+      if (org?.subscription_status === 'trialing' && org.trial_ends_at) {
+        const trialEnd = new Date(org.trial_ends_at)
+        const now = new Date()
+        
+        if (trialEnd < now) {
+          // Trial has expired - redirect to billing
+          const url = request.nextUrl.clone()
+          url.pathname = '/billing'
+          url.searchParams.set('expired', 'true')
+          return NextResponse.redirect(url)
+        }
+      }
+    }
   }
 
   return supabaseResponse
