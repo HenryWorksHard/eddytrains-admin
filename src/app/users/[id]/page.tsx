@@ -2016,29 +2016,35 @@ export default function UserProfilePage() {
                     cp.is_active ? 'bg-yellow-400/5 border-yellow-400/20' : 'bg-zinc-800/30 border-zinc-800'
                   }`}
                 >
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${getCategoryColor(cp.program?.category)}`}>
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="font-medium text-white">{cp.program?.name || 'Unknown Program'}</p>
-                      {cp.is_active && (
-                        <span className="px-2 py-0.5 text-xs font-medium bg-yellow-400/20 text-yellow-400 rounded-full">Active</span>
+                  {/* Clickable area - links to program */}
+                  <Link 
+                    href={`/programs/${cp.program_id}`}
+                    className="flex items-center gap-4 flex-1 min-w-0 hover:opacity-80 transition-opacity"
+                  >
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${getCategoryColor(cp.program?.category)}`}>
+                      <Icon className="w-6 h-6" />
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-medium text-white">{cp.program?.name || 'Unknown Program'}</p>
+                        {cp.is_active && (
+                          <span className="px-2 py-0.5 text-xs font-medium bg-yellow-400/20 text-yellow-400 rounded-full">Active</span>
+                        )}
+                      </div>
+                      {cp.phase_name && (
+                        <p className="text-sm text-yellow-400/80 mb-1">{cp.phase_name}</p>
                       )}
+                      <div className="flex items-center gap-3 text-sm text-zinc-400">
+                        <span className={`px-2 py-0.5 rounded text-xs ${getDifficultyColor(cp.program?.difficulty)}`}>
+                          {cp.program?.difficulty || 'Unknown'}
+                        </span>
+                        <span>{cp.duration_weeks} weeks</span>
+                        <span>•</span>
+                        <span>Started {new Date(cp.start_date).toLocaleDateString()}</span>
+                      </div>
                     </div>
-                    {cp.phase_name && (
-                      <p className="text-sm text-yellow-400/80 mb-1">{cp.phase_name}</p>
-                    )}
-                    <div className="flex items-center gap-3 text-sm text-zinc-400">
-                      <span className={`px-2 py-0.5 rounded text-xs ${getDifficultyColor(cp.program?.difficulty)}`}>
-                        {cp.program?.difficulty || 'Unknown'}
-                      </span>
-                      <span>{cp.duration_weeks} weeks</span>
-                      <span>•</span>
-                      <span>Started {new Date(cp.start_date).toLocaleDateString()}</span>
-                    </div>
-                  </div>
+                  </Link>
 
                   <div className="text-right text-sm">
                     {cp.end_date && (
