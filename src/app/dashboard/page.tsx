@@ -1,8 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveOrgId } from '@/lib/org-context'
 import Link from 'next/link'
-import { Users, Dumbbell, Calendar, Activity, TrendingUp, UserPlus, AlertTriangle, CheckCircle, Sparkles, Clock } from 'lucide-react'
+import { Users, Dumbbell, Calendar, Activity, TrendingUp, UserPlus, AlertTriangle, CheckCircle, Sparkles, Clock, Zap } from 'lucide-react'
 import OnboardingBanner from '@/components/OnboardingBanner'
+import TrialExpiryBanner from '@/components/TrialExpiryBanner'
 
 // Force dynamic rendering - no caching
 export const dynamic = 'force-dynamic'
@@ -325,6 +326,11 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-8">
+      {/* Trial Expiry Warning - shows when ≤3 days remaining */}
+      {orgInfo?.status === 'trialing' && orgInfo.trialDaysRemaining <= 3 && (
+        <TrialExpiryBanner daysRemaining={orgInfo.trialDaysRemaining} />
+      )}
+
       {/* Onboarding Banner - handles animation when all tasks complete */}
       {(isWelcome || showChecklist || showSetupComplete) && orgInfo && (
         <OnboardingBanner
