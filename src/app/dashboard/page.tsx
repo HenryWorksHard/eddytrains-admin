@@ -326,6 +326,21 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-8">
+      {/* Subscription Canceled Banner */}
+      {orgInfo?.status === 'canceled' && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-400" />
+            <span className="text-zinc-300">
+              <span className="font-semibold text-red-400">Subscription Canceled</span> — Resubscribe to regain full access
+            </span>
+          </div>
+          <Link href="/billing" className="px-4 py-2 bg-red-500 hover:bg-red-400 text-white font-medium rounded-lg transition-colors text-sm">
+            Resubscribe
+          </Link>
+        </div>
+      )}
+
       {/* Trial Expiry Warning - shows when ≤3 days remaining OR expired */}
       {orgInfo?.status === 'trialing' && orgInfo.trialDaysRemaining <= 3 && (
         <TrialExpiryBanner daysRemaining={orgInfo.trialDaysRemaining} />
