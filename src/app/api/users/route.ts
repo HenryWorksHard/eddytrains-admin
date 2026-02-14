@@ -139,12 +139,16 @@ export async function GET() {
     
     // Get effective organization (handles impersonation for super admins)
     const organizationId = await getEffectiveOrgId()
+    console.log('[GET /api/users] organizationId:', organizationId)
+    
     if (!organizationId) {
-      return NextResponse.json({ users: [] })
+      console.log('[GET /api/users] No organizationId, returning empty')
+      return NextResponse.json({ users: [], debug: { reason: 'no_org_id' } })
     }
     
     // Get current user's profile to check role
     const currentUser = await getCurrentUserProfile()
+    console.log('[GET /api/users] currentUser:', currentUser)
     
     // Get organization's visibility settings
     const { data: org } = await adminClient
@@ -152,6 +156,7 @@ export async function GET() {
       .select('trainer_visibility, organization_type')
       .eq('id', organizationId)
       .single()
+    console.log('[GET /api/users] org settings:', org)
     
     // Build the query
     let query = adminClient
@@ -174,6 +179,7 @@ export async function GET() {
     }
     
     const { data: profiles, error } = await query.order('created_at', { ascending: false })
+    console.log('[GET /api/users] profiles count:', profiles?.length, 'error:', error)
     
     if (error) throw error
 
