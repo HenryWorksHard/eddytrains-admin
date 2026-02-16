@@ -170,13 +170,36 @@ export async function GET(
       completionsByDateAndWorkout[`${c.scheduled_date}:any`] = true
     })
 
+    // Debug logging
+    const today = new Date().toISOString().split('T')[0]
+    const todayCompletions = completions?.filter(c => c.scheduled_date === today) || []
+    console.log('[Schedule API Debug]', {
+      userId,
+      today,
+      todayCompletions,
+      totalCompletions: completions?.length || 0,
+      programStartDate: earliestProgramStart,
+      maxWeek,
+      activeClientProgramIds
+    })
+
     return NextResponse.json({ 
       scheduleByDay,  // Legacy flat structure
       scheduleByWeekAndDay,  // New week-based structure
       completionsByDate,  // Legacy: date -> workoutId
       completionsByDateAndWorkout,  // New: precise completion tracking
       programStartDate: earliestProgramStart,
-      maxWeek
+      maxWeek,
+      // Debug info (can remove later)
+      _debug: {
+        today,
+        todayCompletionsCount: todayCompletions.length,
+        todayCompletions: todayCompletions.map(c => ({
+          scheduled_date: c.scheduled_date,
+          workout_id: c.workout_id,
+          client_program_id: c.client_program_id
+        }))
+      }
     })
   } catch (error) {
     console.error('Schedule fetch error:', error)
