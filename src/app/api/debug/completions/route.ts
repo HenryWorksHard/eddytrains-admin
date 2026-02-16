@@ -29,6 +29,12 @@ async function resolveUserId(adminClient: ReturnType<typeof getAdminClient>, ide
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const userIdOrSlug = searchParams.get('userId') || searchParams.get('slug')
+  const secret = searchParams.get('secret')
+  
+  // Simple auth check for debug endpoint
+  if (secret !== 'henrydebug2026') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   
   if (!userIdOrSlug) {
     return NextResponse.json({ error: 'userId or slug required' }, { status: 400 })
@@ -82,6 +88,12 @@ export async function DELETE(request: NextRequest) {
   const completionId = searchParams.get('id')
   const userIdOrSlug = searchParams.get('userId') || searchParams.get('slug')
   const date = searchParams.get('date') // YYYY-MM-DD format
+  const secret = searchParams.get('secret')
+  
+  // Simple auth check for debug endpoint
+  if (secret !== 'henrydebug2026') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   
   const adminClient = getAdminClient()
   
