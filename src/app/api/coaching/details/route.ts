@@ -20,10 +20,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Try to find workout log by scheduled_date first
+    // Try to find workout log by scheduled_date first (use maybeSingle to avoid errors)
     let workoutLog = null
     
-    const { data: byScheduled } = await supabaseAdmin
+    const { data: byScheduled, error: schedError } = await supabaseAdmin
       .from('workout_logs')
       .select(`
         id,
@@ -35,10 +35,11 @@ export async function GET(request: NextRequest) {
       `)
       .eq('client_id', clientId)
       .eq('scheduled_date', date)
-      .single()
+      .order('created_at', { ascending: false })
+      .limit(1)
     
-    if (byScheduled) {
-      workoutLog = byScheduled
+    if (byScheduled && byScheduled.length > 0) {
+      workoutLog = byScheduled[0]
     } else {
       // Fallback: check by completed_at date
       const startOfDay = new Date(date + 'T00:00:00.000Z')
@@ -57,9 +58,12 @@ export async function GET(request: NextRequest) {
         .eq('client_id', clientId)
         .gte('completed_at', startOfDay.toISOString())
         .lte('completed_at', endOfDay.toISOString())
-        .single()
+        .order('created_at', { ascending: false })
+        .limit(1)
       
-      workoutLog = byCompleted
+      if (byCompleted && byCompleted.length > 0) {
+        workoutLog = byCompleted[0]
+      }
     }
 
     if (!workoutLog) {
