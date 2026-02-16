@@ -124,23 +124,29 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
 
   // Get workouts for a specific date (considering week number)
   const getWorkoutsForDate = (date: Date): WorkoutSchedule[] => {
-    const weekNum = getWeekForDate(date)
     const dayOfWeek = date.getDay()
     
-    // Return workouts for specific week+day
-    // Do NOT fallback to week 1 - if no workouts, return empty array (rest day)
-    if (scheduleByWeekAndDay[weekNum]?.[dayOfWeek] !== undefined) {
-      return scheduleByWeekAndDay[weekNum][dayOfWeek]
-    }
-    
-    // Only use legacy scheduleByDay if no week data exists at all
-    if (Object.keys(scheduleByWeekAndDay).length === 0) {
+    // If no program start date or no week data, use legacy flat schedule
+    if (!programStartDate || Object.keys(scheduleByWeekAndDay).length === 0) {
       const legacy = scheduleByDay[dayOfWeek]
       return legacy ? [legacy] : []
     }
     
-    // No workouts for this week+day = rest day
-    return []
+    // Check if date is before program start - no workouts (rest day)
+    const startDate = new Date(programStartDate + 'T00:00:00')
+    startDate.setHours(0, 0, 0, 0)
+    const targetDate = new Date(date)
+    targetDate.setHours(0, 0, 0, 0)
+    if (targetDate < startDate) {
+      return []
+    }
+    
+    const weekNum = getWeekForDate(date)
+    
+    // Return workouts for this specific week+day
+    // Use empty array fallback if day not defined (rest day)
+    const workouts = scheduleByWeekAndDay[weekNum]?.[dayOfWeek]
+    return Array.isArray(workouts) ? workouts : []
   }
 
   // Check if a specific workout is completed for a date
