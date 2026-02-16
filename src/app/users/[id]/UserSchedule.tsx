@@ -10,6 +10,8 @@ interface WorkoutSchedule {
   workoutId: string
   workoutName: string
   programName: string
+  clientProgramId: string
+  weekNumber: number
 }
 
 interface WorkoutLogDetails {
@@ -43,7 +45,11 @@ interface UserScheduleProps {
 export default function UserSchedule({ userId }: UserScheduleProps) {
   const [loading, setLoading] = useState(true)
   const [scheduleByDay, setScheduleByDay] = useState<Record<number, WorkoutSchedule>>({})
+  const [scheduleByWeekAndDay, setScheduleByWeekAndDay] = useState<Record<number, Record<number, WorkoutSchedule[]>>>({})
   const [completionsByDate, setCompletionsByDate] = useState<Record<string, string>>({})
+  const [completionsByDateAndWorkout, setCompletionsByDateAndWorkout] = useState<Record<string, boolean>>({})
+  const [programStartDate, setProgramStartDate] = useState<string | null>(null)
+  const [maxWeek, setMaxWeek] = useState(1)
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [workoutDetails, setWorkoutDetails] = useState<WorkoutLogDetails | null>(null)
@@ -68,17 +74,125 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
     setLoading(true)
     try {
       const response = await fetch(`/api/users/${userId}/schedule`)
-      const { scheduleByDay: schedule, completionsByDate: completions, error } = await response.json()
+      const data = await response.json()
       
-      if (error) throw new Error(error)
+      if (data.error) throw new Error(data.error)
       
-      setScheduleByDay(schedule || {})
-      setCompletionsByDate(completions || {})
+      setScheduleByDay(data.scheduleByDay || {})
+      setScheduleByWeekAndDay(data.scheduleByWeekAndDay || {})
+      setCompletionsByDate(data.completionsByDate || {})
+      setCompletionsByDateAndWorkout(data.completionsByDateAndWorkout || {})
+      setProgramStartDate(data.programStartDate || null)
+      setMaxWeek(data.maxWeek || 1)
     } catch (err) {
       console.error('Failed to fetch schedule:', err)
     } finally {
       setLoading(false)
     }
+  }
+
+  // Format date to YYYY-MM-DD in local timezone (not UTC)
+  const formatDateLocal = (date: Date): string => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  // Calculate which week a date falls into based on program start date
+  const getWeekForDate = (date: Date): number => {
+    if (!programStartDate) return 1
+    
+    const startDate = new Date(programStartDate + 'T00:00:00')
+    const targetDate = new Date(date)
+    targetDate.setHours(0, 0, 0, 0)
+    startDate.setHours(0, 0, 0, 0)
+    
+    const daysSinceStart = Math.floor((targetDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+    
+    if (daysSinceStart < 0) return 1 // Before program start, show week 1
+    
+    const weekNum = Math.floor(daysSinceStart / 7) + 1
+    
+    // Cycle through weeks if we exceed maxWeek (programs repeat)
+    if (weekNum > maxWeek) {
+      return ((weekNum - 1) % maxWeek) + 1
+    }
+    
+    return weekNum
+  }
+
+  // Get workouts for a specific date (considering week number)
+  const getWorkoutsForDate = (date: Date): WorkoutSchedule[] => {
+    const weekNum = getWeekForDate(date)
+    const dayOfWeek = date.getDay()
+    
+    // Try week-specific schedule first
+    if (scheduleByWeekAndDay[weekNum]?.[dayOfWeek]) {
+      return scheduleByWeekAndDay[weekNum][dayOfWeek]
+    }
+    
+    // Fallback to week 1 if specific week not found
+    if (scheduleByWeekAndDay[1]?.[dayOfWeek]) {
+      return scheduleByWeekAndDay[1][dayOfWeek]
+    }
+    
+    // Legacy fallback to flat scheduleByDay
+    const legacy = scheduleByDay[dayOfWeek]
+    return legacy ? [legacy] : []
+  }
+
+  // Check if a specific workout is completed for a date
+  const isWorkoutCompleted = (date: Date, workout: WorkoutSchedule): boolean => {
+    const dateStr = formatDateLocal(date)
+    
+    // Check precise match first (date:workoutId:clientProgramId)
+    const keyWithProgram = `${dateStr}:${workout.workoutId}:${workout.clientProgramId}`
+    if (completionsByDateAndWorkout[keyWithProgram]) return true
+    
+    // Fallback to date:workoutId
+    const keyWithoutProgram = `${dateStr}:${workout.workoutId}`
+    if (completionsByDateAndWorkout[keyWithoutProgram]) return true
+    
+    return false
+  }
+
+  // Get status for a specific date
+  const getDateStatus = (date: Date): 'completed' | 'partial' | 'skipped' | 'upcoming' | 'rest' => {
+    const workouts = getWorkoutsForDate(date)
+    
+    if (workouts.length === 0) return 'rest'
+    
+    const todayStart = new Date(today)
+    todayStart.setHours(0, 0, 0, 0)
+    const dateStart = new Date(date)
+    dateStart.setHours(0, 0, 0, 0)
+    
+    // If date is before program started, treat as rest (not skipped)
+    if (programStartDate) {
+      const programStart = new Date(programStartDate + 'T00:00:00')
+      programStart.setHours(0, 0, 0, 0)
+      if (dateStart < programStart) {
+        return 'rest'
+      }
+    }
+    
+    // Check how many workouts are completed for this date
+    const completedCount = workouts.filter(w => isWorkoutCompleted(date, w)).length
+    
+    if (completedCount === workouts.length) {
+      return 'completed'
+    }
+    
+    if (completedCount > 0) {
+      return 'partial'
+    }
+    
+    if (dateStart < todayStart) {
+      return 'skipped'
+    }
+    
+    return 'upcoming'
   }
 
   // Fetch workout details for a specific date
@@ -87,6 +201,8 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
     setSelectedDate(date)
     
     const dateStr = formatDateLocal(date)
+    const workouts = getWorkoutsForDate(date)
+    const firstWorkout = workouts[0]
     
     try {
       // Use API to fetch workout details (bypasses RLS)
@@ -97,24 +213,22 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
         setWorkoutDetails(data.workoutLog)
       } else {
         // No completion yet - show scheduled workout info with preview
-        const dayOfWeek = date.getDay()
-        const scheduledWorkout = scheduleByDay[dayOfWeek]
-        if (scheduledWorkout) {
+        if (firstWorkout) {
           // Fetch workout preview (exercises, sets)
-          const previewResponse = await fetch(`/api/coaching/preview?workoutId=${scheduledWorkout.workoutId}`)
+          const previewResponse = await fetch(`/api/coaching/preview?workoutId=${firstWorkout.workoutId}`)
           const previewData = await previewResponse.json()
           
           setWorkoutDetails({
             id: null,
-            workout_name: scheduledWorkout.workoutName,
+            workout_name: firstWorkout.workoutName,
             completed_at: null,
             notes: null,
             rating: null,
             trainer_name: null,
             sets: [],
             scheduled: true,
-            workoutId: scheduledWorkout.workoutId,
-            programName: scheduledWorkout.programName,
+            workoutId: firstWorkout.workoutId,
+            programName: firstWorkout.programName,
             preview: previewData.workout?.exercises || []
           })
         } else {
@@ -187,38 +301,6 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
     }
   }
 
-  // Format date to YYYY-MM-DD in local timezone (not UTC)
-  const formatDateLocal = (date: Date): string => {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-  }
-
-  // Get status for a specific date
-  const getDateStatus = (date: Date): 'completed' | 'skipped' | 'upcoming' | 'rest' => {
-    const dateStr = formatDateLocal(date)
-    const dayOfWeek = date.getDay()
-    const hasWorkout = scheduleByDay[dayOfWeek]
-    
-    if (!hasWorkout) return 'rest'
-    
-    const todayStart = new Date(today)
-    todayStart.setHours(0, 0, 0, 0)
-    const dateStart = new Date(date)
-    dateStart.setHours(0, 0, 0, 0)
-    
-    if (completionsByDate[dateStr]) {
-      return 'completed'
-    }
-    
-    if (dateStart < todayStart) {
-      return 'skipped'
-    }
-    
-    return 'upcoming'
-  }
-
   // Get week dates starting from Monday
   const getWeekDates = () => {
     const startOfWeek = new Date(today)
@@ -262,6 +344,7 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return 'bg-green-500/20 border-green-500/50 text-green-400'
+      case 'partial': return 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400'
       case 'skipped': return 'bg-red-500/20 border-red-500/50 text-red-400'
       case 'upcoming': return 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400'
       default: return 'bg-zinc-800/50 border-zinc-700 text-zinc-500'
@@ -271,6 +354,7 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
   const getStatusDot = (status: string) => {
     switch (status) {
       case 'completed': return 'bg-green-500'
+      case 'partial': return 'bg-yellow-500'
       case 'skipped': return 'bg-red-500'
       case 'upcoming': return 'bg-yellow-500'
       default: return 'bg-zinc-700'
@@ -289,7 +373,7 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
 
   const weekDates = getWeekDates()
   const calendarDays = getCalendarDays()
-  const hasSchedule = Object.keys(scheduleByDay).length > 0
+  const hasSchedule = Object.keys(scheduleByDay).length > 0 || Object.keys(scheduleByWeekAndDay).length > 0
 
   if (!hasSchedule) {
     return (
@@ -307,31 +391,40 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
     )
   }
 
+  // Get current week number for display
+  const currentWeekNum = getWeekForDate(today)
+
   return (
     <div className="card p-6">
-      <div className="flex items-center gap-3 mb-6">
-        <Calendar className="w-5 h-5 text-yellow-400" />
-        <h2 className="text-lg font-semibold text-white">Training Schedule</h2>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Calendar className="w-5 h-5 text-yellow-400" />
+          <h2 className="text-lg font-semibold text-white">Training Schedule</h2>
+        </div>
+        {maxWeek > 1 && (
+          <span className="px-2 py-1 bg-yellow-400/20 text-yellow-400 text-xs font-medium rounded">
+            Week {currentWeekNum} of {maxWeek}
+          </span>
+        )}
       </div>
 
       {/* Today's Workout - Coach Session */}
       {(() => {
-        const todayDayOfWeek = today.getDay()
-        const todayWorkout = scheduleByDay[todayDayOfWeek]
-        const todayStr = formatDateLocal(today)
-        const isCompleted = completionsByDate[todayStr]
+        const todayWorkouts = getWorkoutsForDate(today)
+        const incompleteWorkouts = todayWorkouts.filter(w => !isWorkoutCompleted(today, w))
         
-        if (todayWorkout && !isCompleted) {
+        if (incompleteWorkouts.length > 0) {
+          const firstIncomplete = incompleteWorkouts[0]
           return (
             <div className="mb-6 p-4 bg-yellow-400/10 border border-yellow-400/30 rounded-xl">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-yellow-400 text-xs font-medium uppercase tracking-wider mb-1">Today's Workout</p>
-                  <p className="text-white font-semibold">{todayWorkout.workoutName}</p>
-                  <p className="text-zinc-400 text-sm">{todayWorkout.programName}</p>
+                  <p className="text-white font-semibold">{firstIncomplete.workoutName}</p>
+                  <p className="text-zinc-400 text-sm">{firstIncomplete.programName}</p>
                 </div>
                 <Link
-                  href={`/users/${userId}/coach/${todayWorkout.workoutId}`}
+                  href={`/users/${userId}/coach/${firstIncomplete.workoutId}`}
                   className="flex items-center gap-2 px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-xl transition-colors"
                 >
                   <Play className="w-4 h-4" />
@@ -352,30 +445,32 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
             const isToday = date.toDateString() === today.toDateString()
             const dayOfWeek = date.getDay() // 0=Sun for scheduleByDay lookup
             const dayIndex = toMondayFirstIndex(dayOfWeek) // 0=Mon for display
-            const workout = scheduleByDay[dayOfWeek]
+            const workouts = getWorkoutsForDate(date)
+            const hasWorkouts = workouts.length > 0
             const status = getDateStatus(date)
+            const firstWorkout = workouts[0]
             
             return (
               <div 
                 key={idx}
-                onClick={() => workout && fetchWorkoutDetails(date)}
+                onClick={() => hasWorkouts && fetchWorkoutDetails(date)}
                 className={`rounded-xl border p-3 text-center transition-all ${
-                  workout
+                  hasWorkouts
                     ? `${getStatusColor(status)} cursor-pointer hover:ring-2 hover:ring-white/30`
                     : 'bg-zinc-900 border-zinc-800'
                 }`}
               >
                 <div className="text-xs text-zinc-500 mb-1">{daysOfWeek[dayIndex]}</div>
-                <div className={`text-lg font-bold ${workout ? 'text-white' : 'text-zinc-600'}`}>
+                <div className={`text-lg font-bold ${hasWorkouts ? 'text-white' : 'text-zinc-600'}`}>
                   {date.getDate()}
                 </div>
                 {/* Today indicator - white dot only on today */}
                 {isToday && (
                   <div className="w-2 h-2 rounded-full mx-auto mt-1 bg-white" />
                 )}
-                {workout && (
-                  <div className="text-[10px] text-zinc-400 mt-1 truncate" title={workout.workoutName}>
-                    {workout.workoutName.length > 8 ? workout.workoutName.slice(0, 8) + '...' : workout.workoutName}
+                {hasWorkouts && firstWorkout && (
+                  <div className="text-[10px] text-zinc-400 mt-1 truncate" title={firstWorkout.workoutName}>
+                    {firstWorkout.workoutName.length > 8 ? firstWorkout.workoutName.slice(0, 8) + '...' : firstWorkout.workoutName}
                   </div>
                 )}
               </div>
@@ -425,19 +520,20 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
               
               const isToday = date.toDateString() === today.toDateString()
               const status = getDateStatus(date)
-              const hasWorkout = scheduleByDay[date.getDay()]
+              const workouts = getWorkoutsForDate(date)
+              const hasWorkouts = workouts.length > 0
               
               return (
                 <div
                   key={date.toISOString()}
-                  onClick={() => hasWorkout && fetchWorkoutDetails(date)}
+                  onClick={() => hasWorkouts && fetchWorkoutDetails(date)}
                   className={`aspect-square rounded-lg flex flex-col items-center justify-center text-xs transition-all ${
-                    hasWorkout
+                    hasWorkouts
                       ? `${getStatusColor(status)} cursor-pointer hover:ring-2 hover:ring-white/30`
                       : 'text-zinc-600'
-                  } ${hasWorkout ? 'border' : ''} ${isToday ? 'font-bold' : ''}`}
+                  } ${hasWorkouts ? 'border' : ''} ${isToday ? 'font-bold' : ''}`}
                 >
-                  <span className={isToday && !hasWorkout ? 'text-white' : ''}>{date.getDate()}</span>
+                  <span className={isToday && !hasWorkouts ? 'text-white' : ''}>{date.getDate()}</span>
                   {/* Today indicator - white dot */}
                   {isToday && (
                     <div className="w-1 h-1 rounded-full mt-0.5 bg-white" />

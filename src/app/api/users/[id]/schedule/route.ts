@@ -23,19 +23,23 @@ export async function GET(
     const { id: userId } = await params
     const adminClient = getAdminClient()
     
-    // Get user's active programs with workouts
+    // Get user's active programs with workouts (including week_number)
     const { data: clientPrograms } = await adminClient
       .from('client_programs')
       .select(`
         id,
         program_id,
+        start_date,
+        duration_weeks,
         programs (
           id,
           name,
           program_workouts (
             id,
             name,
-            day_of_week
+            day_of_week,
+            week_number,
+            parent_workout_id
           )
         )
       `)
@@ -62,33 +66,83 @@ export async function GET(
     
     const { data: completions } = await completionsQuery
 
-    // Build schedule data
+    // Build schedule data with week support
     interface WorkoutSchedule {
       dayOfWeek: number
       workoutId: string
       workoutName: string
       programName: string
+      clientProgramId: string
+      weekNumber: number
     }
 
+    // Legacy flat structure (week 1 only, for backwards compat)
     const scheduleByDay: Record<number, WorkoutSchedule> = {}
+    
+    // New structure: scheduleByWeekAndDay[weekNum][dayOfWeek] = WorkoutSchedule[]
+    const scheduleByWeekAndDay: Record<number, Record<number, WorkoutSchedule[]>> = {}
+    
+    let maxWeek = 1
+    let earliestProgramStart: string | null = null
+    
+    // Initialize week 1
+    scheduleByWeekAndDay[1] = {}
+    for (let i = 0; i < 7; i++) {
+      scheduleByWeekAndDay[1][i] = []
+    }
     
     if (clientPrograms) {
       for (const cp of clientPrograms) {
+        // Track earliest program start date
+        if (cp.start_date && (!earliestProgramStart || cp.start_date < earliestProgramStart)) {
+          earliestProgramStart = cp.start_date
+        }
+        
         const programData = cp.programs as unknown
         const program = (Array.isArray(programData) ? programData[0] : programData) as {
           id: string
           name: string
-          program_workouts?: { id: string; name: string; day_of_week: number | null }[]
+          program_workouts?: { 
+            id: string
+            name: string
+            day_of_week: number | null
+            week_number?: number | null
+            parent_workout_id?: string | null
+          }[]
         } | null
         
         if (program?.program_workouts) {
           for (const workout of program.program_workouts) {
+            // Skip child workouts (variations)
+            if (workout.parent_workout_id) continue
+            
             if (workout.day_of_week !== null) {
-              scheduleByDay[workout.day_of_week] = {
+              const weekNum = workout.week_number || 1
+              maxWeek = Math.max(maxWeek, weekNum)
+              
+              // Initialize week if needed
+              if (!scheduleByWeekAndDay[weekNum]) {
+                scheduleByWeekAndDay[weekNum] = {}
+                for (let i = 0; i < 7; i++) {
+                  scheduleByWeekAndDay[weekNum][i] = []
+                }
+              }
+              
+              const workoutData: WorkoutSchedule = {
                 dayOfWeek: workout.day_of_week,
                 workoutId: workout.id,
                 workoutName: workout.name,
-                programName: program.name
+                programName: program.name,
+                clientProgramId: cp.id,
+                weekNumber: weekNum
+              }
+              
+              // Add to week-based structure
+              scheduleByWeekAndDay[weekNum][workout.day_of_week].push(workoutData)
+              
+              // Legacy: only add week 1 to flat scheduleByDay (last one wins for backwards compat)
+              if (weekNum === 1) {
+                scheduleByDay[workout.day_of_week] = workoutData
               }
             }
           }
@@ -96,13 +150,34 @@ export async function GET(
       }
     }
 
-    // Format completions
+    // Format completions with more precise keys
+    // Key format: "YYYY-MM-DD:workoutId:clientProgramId" for exact match
+    // Also include "YYYY-MM-DD:workoutId" and "YYYY-MM-DD:any" for backwards compatibility
     const completionsByDate: Record<string, string> = {}
+    const completionsByDateAndWorkout: Record<string, boolean> = {}
+    
     completions?.forEach(c => {
+      // Legacy format (just date -> workoutId)
       completionsByDate[c.scheduled_date] = c.workout_id
+      
+      // Precise format: date:workoutId:clientProgramId
+      if (c.client_program_id) {
+        completionsByDateAndWorkout[`${c.scheduled_date}:${c.workout_id}:${c.client_program_id}`] = true
+      }
+      // Fallback format: date:workoutId
+      completionsByDateAndWorkout[`${c.scheduled_date}:${c.workout_id}`] = true
+      // Any workout on this date
+      completionsByDateAndWorkout[`${c.scheduled_date}:any`] = true
     })
 
-    return NextResponse.json({ scheduleByDay, completionsByDate })
+    return NextResponse.json({ 
+      scheduleByDay,  // Legacy flat structure
+      scheduleByWeekAndDay,  // New week-based structure
+      completionsByDate,  // Legacy: date -> workoutId
+      completionsByDateAndWorkout,  // New: precise completion tracking
+      programStartDate: earliestProgramStart,
+      maxWeek
+    })
   } catch (error) {
     console.error('Schedule fetch error:', error)
     return NextResponse.json({ error: 'Failed to fetch schedule' }, { status: 500 })
