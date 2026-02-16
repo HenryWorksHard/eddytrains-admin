@@ -127,19 +127,20 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
     const weekNum = getWeekForDate(date)
     const dayOfWeek = date.getDay()
     
-    // Try week-specific schedule first
-    if (scheduleByWeekAndDay[weekNum]?.[dayOfWeek]) {
+    // Return workouts for specific week+day
+    // Do NOT fallback to week 1 - if no workouts, return empty array (rest day)
+    if (scheduleByWeekAndDay[weekNum]?.[dayOfWeek] !== undefined) {
       return scheduleByWeekAndDay[weekNum][dayOfWeek]
     }
     
-    // Fallback to week 1 if specific week not found
-    if (scheduleByWeekAndDay[1]?.[dayOfWeek]) {
-      return scheduleByWeekAndDay[1][dayOfWeek]
+    // Only use legacy scheduleByDay if no week data exists at all
+    if (Object.keys(scheduleByWeekAndDay).length === 0) {
+      const legacy = scheduleByDay[dayOfWeek]
+      return legacy ? [legacy] : []
     }
     
-    // Legacy fallback to flat scheduleByDay
-    const legacy = scheduleByDay[dayOfWeek]
-    return legacy ? [legacy] : []
+    // No workouts for this week+day = rest day
+    return []
   }
 
   // Check if a specific workout is completed for a date
@@ -148,29 +149,11 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
     
     // Check precise match first (date:workoutId:clientProgramId)
     const keyWithProgram = `${dateStr}:${workout.workoutId}:${workout.clientProgramId}`
-    const foundWithProgram = completionsByDateAndWorkout[keyWithProgram]
+    if (completionsByDateAndWorkout[keyWithProgram]) return true
     
-    // Fallback to date:workoutId
+    // Fallback to date:workoutId (for legacy completions without clientProgramId)
     const keyWithoutProgram = `${dateStr}:${workout.workoutId}`
-    const foundWithoutProgram = completionsByDateAndWorkout[keyWithoutProgram]
-    
-    // Debug log for today only
-    const todayStr = formatDateLocal(today)
-    if (dateStr === todayStr) {
-      console.log('[DEBUG isWorkoutCompleted]', {
-        dateStr,
-        workoutId: workout.workoutId,
-        clientProgramId: workout.clientProgramId,
-        keyWithProgram,
-        keyWithoutProgram,
-        foundWithProgram,
-        foundWithoutProgram,
-        allCompletionKeys: Object.keys(completionsByDateAndWorkout)
-      })
-    }
-    
-    if (foundWithProgram) return true
-    if (foundWithoutProgram) return true
+    if (completionsByDateAndWorkout[keyWithoutProgram]) return true
     
     return false
   }

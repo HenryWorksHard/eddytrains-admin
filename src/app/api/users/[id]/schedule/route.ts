@@ -85,11 +85,8 @@ export async function GET(
     let maxWeek = 1
     let earliestProgramStart: string | null = null
     
-    // Initialize week 1
-    scheduleByWeekAndDay[1] = {}
-    for (let i = 0; i < 7; i++) {
-      scheduleByWeekAndDay[1][i] = []
-    }
+    // First pass: determine maxWeek and collect workout data
+    const workoutDataList: { weekNum: number; dayOfWeek: number; data: WorkoutSchedule }[] = []
     
     if (clientPrograms) {
       for (const cp of clientPrograms) {
@@ -120,33 +117,40 @@ export async function GET(
               const weekNum = workout.week_number || 1
               maxWeek = Math.max(maxWeek, weekNum)
               
-              // Initialize week if needed
-              if (!scheduleByWeekAndDay[weekNum]) {
-                scheduleByWeekAndDay[weekNum] = {}
-                for (let i = 0; i < 7; i++) {
-                  scheduleByWeekAndDay[weekNum][i] = []
-                }
-              }
-              
-              const workoutData: WorkoutSchedule = {
+              workoutDataList.push({
+                weekNum,
                 dayOfWeek: workout.day_of_week,
-                workoutId: workout.id,
-                workoutName: workout.name,
-                programName: program.name,
-                clientProgramId: cp.id,
-                weekNumber: weekNum
-              }
-              
-              // Add to week-based structure
-              scheduleByWeekAndDay[weekNum][workout.day_of_week].push(workoutData)
-              
-              // Legacy: only add week 1 to flat scheduleByDay (last one wins for backwards compat)
-              if (weekNum === 1) {
-                scheduleByDay[workout.day_of_week] = workoutData
-              }
+                data: {
+                  dayOfWeek: workout.day_of_week,
+                  workoutId: workout.id,
+                  workoutName: workout.name,
+                  programName: program.name,
+                  clientProgramId: cp.id,
+                  weekNumber: weekNum
+                }
+              })
             }
           }
         }
+      }
+    }
+    
+    // Initialize ALL weeks from 1 to maxWeek with empty arrays for all 7 days
+    // This ensures rest days are properly represented as empty arrays
+    for (let w = 1; w <= maxWeek; w++) {
+      scheduleByWeekAndDay[w] = {}
+      for (let d = 0; d < 7; d++) {
+        scheduleByWeekAndDay[w][d] = []
+      }
+    }
+    
+    // Now populate with actual workout data
+    for (const { weekNum, dayOfWeek, data } of workoutDataList) {
+      scheduleByWeekAndDay[weekNum][dayOfWeek].push(data)
+      
+      // Legacy: only add week 1 to flat scheduleByDay (last one wins for backwards compat)
+      if (weekNum === 1) {
+        scheduleByDay[dayOfWeek] = data
       }
     }
 
@@ -170,36 +174,13 @@ export async function GET(
       completionsByDateAndWorkout[`${c.scheduled_date}:any`] = true
     })
 
-    // Debug logging
-    const today = new Date().toISOString().split('T')[0]
-    const todayCompletions = completions?.filter(c => c.scheduled_date === today) || []
-    console.log('[Schedule API Debug]', {
-      userId,
-      today,
-      todayCompletions,
-      totalCompletions: completions?.length || 0,
-      programStartDate: earliestProgramStart,
-      maxWeek,
-      activeClientProgramIds
-    })
-
     return NextResponse.json({ 
       scheduleByDay,  // Legacy flat structure
       scheduleByWeekAndDay,  // New week-based structure
       completionsByDate,  // Legacy: date -> workoutId
       completionsByDateAndWorkout,  // New: precise completion tracking
       programStartDate: earliestProgramStart,
-      maxWeek,
-      // Debug info (can remove later)
-      _debug: {
-        today,
-        todayCompletionsCount: todayCompletions.length,
-        todayCompletions: todayCompletions.map(c => ({
-          scheduled_date: c.scheduled_date,
-          workout_id: c.workout_id,
-          client_program_id: c.client_program_id
-        }))
-      }
+      maxWeek
     })
   } catch (error) {
     console.error('Schedule fetch error:', error)
