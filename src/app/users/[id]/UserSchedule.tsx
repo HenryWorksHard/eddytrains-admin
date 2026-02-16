@@ -148,11 +148,29 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
     
     // Check precise match first (date:workoutId:clientProgramId)
     const keyWithProgram = `${dateStr}:${workout.workoutId}:${workout.clientProgramId}`
-    if (completionsByDateAndWorkout[keyWithProgram]) return true
+    const foundWithProgram = completionsByDateAndWorkout[keyWithProgram]
     
     // Fallback to date:workoutId
     const keyWithoutProgram = `${dateStr}:${workout.workoutId}`
-    if (completionsByDateAndWorkout[keyWithoutProgram]) return true
+    const foundWithoutProgram = completionsByDateAndWorkout[keyWithoutProgram]
+    
+    // Debug log for today only
+    const todayStr = formatDateLocal(today)
+    if (dateStr === todayStr) {
+      console.log('[DEBUG isWorkoutCompleted]', {
+        dateStr,
+        workoutId: workout.workoutId,
+        clientProgramId: workout.clientProgramId,
+        keyWithProgram,
+        keyWithoutProgram,
+        foundWithProgram,
+        foundWithoutProgram,
+        allCompletionKeys: Object.keys(completionsByDateAndWorkout)
+      })
+    }
+    
+    if (foundWithProgram) return true
+    if (foundWithoutProgram) return true
     
     return false
   }
