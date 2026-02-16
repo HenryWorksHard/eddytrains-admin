@@ -9,15 +9,39 @@ function getAdminClient() {
   )
 }
 
+// Resolve slug or UUID to user ID
+async function resolveUserId(adminClient: ReturnType<typeof getAdminClient>, identifier: string) {
+  // If it's a UUID (has dashes and is 36 chars), use directly
+  if (identifier.includes('-') && identifier.length === 36) {
+    return identifier
+  }
+  
+  // Otherwise, look up by slug
+  const { data: profile } = await adminClient
+    .from('profiles')
+    .select('id')
+    .eq('slug', identifier)
+    .single()
+  
+  return profile?.id || null
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
-  const userId = searchParams.get('userId')
+  const userIdOrSlug = searchParams.get('userId') || searchParams.get('slug')
   
-  if (!userId) {
-    return NextResponse.json({ error: 'userId required' }, { status: 400 })
+  if (!userIdOrSlug) {
+    return NextResponse.json({ error: 'userId or slug required' }, { status: 400 })
   }
   
   const adminClient = getAdminClient()
+  
+  // Resolve to UUID
+  const userId = await resolveUserId(adminClient, userIdOrSlug)
+  
+  if (!userId) {
+    return NextResponse.json({ error: 'User not found' }, { status: 404 })
+  }
   
   // Get completions for this user in Feb 2026
   const { data: completions, error } = await adminClient
@@ -32,7 +56,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
   
+  // Also get active programs to understand the context
+  const { data: activePrograms } = await adminClient
+    .from('client_programs')
+    .select('id, program_id, start_date, is_active')
+    .eq('client_id', userId)
+    .eq('is_active', true)
+  
   return NextResponse.json({ 
+    userId,
+    activePrograms: activePrograms || [],
     count: completions?.length || 0,
     completions: completions?.map(c => ({
       id: c.id,
@@ -47,21 +80,46 @@ export async function GET(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const completionId = searchParams.get('id')
-  
-  if (!completionId) {
-    return NextResponse.json({ error: 'id required' }, { status: 400 })
-  }
+  const userIdOrSlug = searchParams.get('userId') || searchParams.get('slug')
+  const date = searchParams.get('date') // YYYY-MM-DD format
   
   const adminClient = getAdminClient()
   
-  const { error } = await adminClient
-    .from('workout_completions')
-    .delete()
-    .eq('id', completionId)
-  
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  // Option 1: Delete by completion ID
+  if (completionId) {
+    const { error } = await adminClient
+      .from('workout_completions')
+      .delete()
+      .eq('id', completionId)
+    
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+    
+    return NextResponse.json({ success: true, deleted: completionId })
   }
   
-  return NextResponse.json({ success: true, deleted: completionId })
+  // Option 2: Delete by user + date (delete ALL completions for that date)
+  if (userIdOrSlug && date) {
+    const userId = await resolveUserId(adminClient, userIdOrSlug)
+    
+    if (!userId) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+    
+    const { data: deleted, error } = await adminClient
+      .from('workout_completions')
+      .delete()
+      .eq('client_id', userId)
+      .eq('scheduled_date', date)
+      .select()
+    
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+    
+    return NextResponse.json({ success: true, deletedCount: deleted?.length || 0, deleted })
+  }
+  
+  return NextResponse.json({ error: 'Provide either id, or userId+date' }, { status: 400 })
 }
