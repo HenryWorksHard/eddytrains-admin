@@ -150,18 +150,17 @@ export default function UserSchedule({ userId }: UserScheduleProps) {
   }
 
   // Check if a specific workout is completed for a date
+  // Uses STRICT matching: must match exact date + workout + program
   const isWorkoutCompleted = (date: Date, workout: WorkoutSchedule): boolean => {
     const dateStr = formatDateLocal(date)
     
-    // Check precise match first (date:workoutId:clientProgramId)
+    // Primary: exact match with date, workout, and program
     const keyWithProgram = `${dateStr}:${workout.workoutId}:${workout.clientProgramId}`
     if (completionsByDateAndWorkout[keyWithProgram]) return true
     
-    // Fallback to date:workoutId (for legacy completions without clientProgramId)
+    // Fallback for old completions without client_program_id
     const keyWithoutProgram = `${dateStr}:${workout.workoutId}`
-    if (completionsByDateAndWorkout[keyWithoutProgram]) return true
-    
-    return false
+    return completionsByDateAndWorkout[keyWithoutProgram] === true
   }
 
   // Get status for a specific date

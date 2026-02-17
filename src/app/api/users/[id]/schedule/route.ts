@@ -154,24 +154,25 @@ export async function GET(
       }
     }
 
-    // Format completions with more precise keys
+    // Format completions with STRICT date matching
     // Key format: "YYYY-MM-DD:workoutId:clientProgramId" for exact match
-    // Also include "YYYY-MM-DD:workoutId" and "YYYY-MM-DD:any" for backwards compatibility
+    // This ensures Week 1's completion doesn't show as complete for Week 2
     const completionsByDate: Record<string, string> = {}
     const completionsByDateAndWorkout: Record<string, boolean> = {}
     
     completions?.forEach(c => {
-      // Legacy format (just date -> workoutId)
+      // Legacy format (just date -> workoutId) - for backwards compat display only
       completionsByDate[c.scheduled_date] = c.workout_id
       
-      // Precise format: date:workoutId:clientProgramId
-      if (c.client_program_id) {
-        completionsByDateAndWorkout[`${c.scheduled_date}:${c.workout_id}:${c.client_program_id}`] = true
+      // Primary: exact match with date, workout, and program
+      const keyWithProgram = `${c.scheduled_date}:${c.workout_id}:${c.client_program_id}`
+      completionsByDateAndWorkout[keyWithProgram] = true
+      
+      // Fallback for old completions without client_program_id
+      if (!c.client_program_id) {
+        completionsByDateAndWorkout[`${c.scheduled_date}:${c.workout_id}`] = true
       }
-      // Fallback format: date:workoutId
-      completionsByDateAndWorkout[`${c.scheduled_date}:${c.workout_id}`] = true
-      // Any workout on this date
-      completionsByDateAndWorkout[`${c.scheduled_date}:any`] = true
+      // REMOVED: "any" fallback - was too loose and could match wrong workouts
     })
 
     return NextResponse.json({ 
